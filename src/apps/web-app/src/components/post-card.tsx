@@ -59,7 +59,7 @@ export default function PostCard({
             <PostTag key={tagProp.label} {...tagProp} />
           ))}
           <span className="text-xs text-text-secondary">
-            Posted by {author} {timestamp}
+            Posted by <span>{author}</span> <span>{timestamp}</span>
           </span>
         </div>
         <h3 className="font-medium text-[20px] text-text-primary leading-[27.5px]">
