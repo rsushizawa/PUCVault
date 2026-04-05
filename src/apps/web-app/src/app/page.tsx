@@ -2,6 +2,7 @@
 import NavBar from "@/components/navbar";
 import CommunityHero from "@/components/community-hero";
 import PostCard from "@/components/post-card";
+import CreatePost from "@/components/create-post";
 export default function Home() {
   const defaultProps = {
     communityName: "Engenharia da Computação",
@@ -15,6 +16,7 @@ export default function Home() {
       <NavBar />
       <main className="p-8 flex flex-col gap-4">
         <CommunityHero {...defaultProps}></CommunityHero>
+        <CreatePost onPost={() => console.log("new post")}></CreatePost>
         <PostCard
           title="Resumo de Derivadas e Integrais para a P1"
           body="Pessoal, montei um guia rápido com as principais regras de derivação que o professor comentou que vai cair na prova de quarta."
