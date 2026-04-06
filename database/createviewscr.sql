@@ -46,3 +46,16 @@ SELECT
 		identidade_visual.img_banner,
 		karma.total;
 
+CREATE OR REPLACE VIEW privado.login_usuario AS
+SELECT
+	usuario.id,
+	usuario.nome_usuario,
+	usuario.email,
+	usuario.senha_hash
+	FROM privado.usuario AS usuario
+
+	WHERE usuario.excluido_em IS NULL
+	ORDER BY usuario.id;
+
+
+DROP VIEW privado.perfil_usuario CASCADE;
