@@ -29,7 +29,13 @@ export default function CreatePost({
   const [content, setContent] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [notifyOnReply, setNotifyOnReply] = useState(false);
+  const [customTags, setCustomTags] = useState<string[]>([]);
+  const [isAddingTag, setIsAddingTag] = useState(false);
+  const [newTagInput, setNewTagInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const newTagInputRef = useRef<HTMLInputElement>(null);
+
+  const allTags = [...availableTags, ...customTags];
 
   function applyInlineFormat(before: string, after = before, placeholder = "") {
     const el = textareaRef.current;
@@ -61,6 +67,9 @@ export default function CreatePost({
     setContent("");
     setIsExpanded(false);
     setNotifyOnReply(false);
+    setCustomTags([]);
+    setIsAddingTag(false);
+    setNewTagInput("");
   }
 
   function handleCancel() {
@@ -68,6 +77,27 @@ export default function CreatePost({
     setSelectedTags([]);
     setIsExpanded(false);
     setNotifyOnReply(false);
+    setCustomTags([]);
+    setIsAddingTag(false);
+    setNewTagInput("");
+  }
+
+  function handleConfirmNewTag() {
+    const trimmed = newTagInput.trim().toLowerCase();
+    if (trimmed && !allTags.includes(trimmed)) {
+      setCustomTags([...customTags, trimmed]);
+      setSelectedTags([...selectedTags, trimmed]);
+    }
+    setNewTagInput("");
+    setIsAddingTag(false);
+  }
+
+  function handleNewTagKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") handleConfirmNewTag();
+    if (e.key === "Escape") {
+      setNewTagInput("");
+      setIsAddingTag(false);
+    }
   }
 
   function handleTagToggle(tag: string) {
@@ -120,8 +150,8 @@ export default function CreatePost({
         </div>
       </div>
 
-      <div className="flex gap-2 items-center">
-        {availableTags.map((tag) => (
+      <div className="flex gap-2 items-center flex-wrap">
+        {allTags.map((tag) => (
           <button
             key={tag}
             type="button"
@@ -133,13 +163,29 @@ export default function CreatePost({
             {tag}
           </button>
         ))}
-        <button
-          type="button"
-          aria-label="Add tag"
-          className="bg-text-secondary text-surface-base rounded-full p-3 flex items-center justify-center"
-        >
-          <Plus size={12} aria-hidden />
-        </button>
+        {isAddingTag ? (
+          <input
+            ref={newTagInputRef}
+            type="text"
+            value={newTagInput}
+            onChange={(e) => setNewTagInput(e.target.value)}
+            onKeyDown={handleNewTagKeyDown}
+            onBlur={handleConfirmNewTag}
+            placeholder="new tag"
+            aria-label="New tag name"
+            className="rounded-full border border-text-secondary bg-transparent px-4 py-2 text-sm text-text-secondary placeholder:text-text-muted outline-none w-28"
+            autoFocus
+          />
+        ) : (
+          <button
+            type="button"
+            aria-label="Add tag"
+            onClick={() => setIsAddingTag(true)}
+            className="bg-text-secondary text-surface-base rounded-full p-3 flex items-center justify-center"
+          >
+            <Plus size={12} aria-hidden />
+          </button>
+        )}
       </div>
 
       <div className="flex items-center gap-3">
