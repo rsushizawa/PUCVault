@@ -31,7 +31,7 @@ describe("CreatePost", () => {
     await user.type(screen.getByRole("textbox"), "hello");
     await user.click(screen.getByRole("button", { name: /^post$/i }));
     expect(defaultProps.onPost).toHaveBeenCalled();
-    expect(defaultProps.onPost).toHaveBeenCalledWith("hello", []);
+    expect(defaultProps.onPost).toHaveBeenCalledWith("hello", [], false);
   });
   test("collapses back when Cancel is clicked", async () => {
     const user = userEvent.setup();
@@ -95,6 +95,152 @@ describe("CreatePost tag selection", () => {
     await user.click(screen.getByRole("button", { name: /resource/i }));
     await user.click(screen.getByRole("button", { name: /^post$/i }));
     expect(defaultProps.onPost).toHaveBeenCalled();
-    expect(defaultProps.onPost).toHaveBeenCalledWith("hello", ["resource"]);
+    expect(defaultProps.onPost).toHaveBeenCalledWith(
+      "hello",
+      ["resource"],
+      false,
+    );
+  });
+});
+describe("CreatePost toolbar", () => {
+  async function expandPost() {
+    const user = userEvent.setup();
+    render(<CreatePost {...defaultProps} />);
+    await user.click(
+      screen.getByPlaceholderText("Ask a question or share an insight..."),
+    );
+    return user;
+  }
+
+  function textarea() {
+    return screen.getByRole("textbox") as HTMLTextAreaElement;
+  }
+
+  test("toolbar is not visible when collapsed", () => {
+    render(<CreatePost {...defaultProps} />);
+    expect(screen.queryByRole("button", { name: /bold/i })).not.toBeInTheDocument();
+  });
+
+  test("toolbar renders when expanded", async () => {
+    await expandPost();
+    expect(screen.getByRole("button", { name: /bold/i })).toBeInTheDocument();
+  });
+
+  test.each([
+    "Bold",
+    "Italic",
+    "Link",
+    "Strikethrough",
+    "Code",
+    "Bulleted list",
+    "Numbered list",
+    "Quote",
+    "Insert image",
+    "Embed",
+  ])("toolbar has %s button", async (label) => {
+    await expandPost();
+    expect(screen.getByRole("button", { name: new RegExp(label, "i") })).toBeInTheDocument();
+  });
+
+  test("bold wraps selection with **", async () => {
+    const user = await expandPost();
+    await user.type(textarea(), "hello world");
+    textarea().setSelectionRange(6, 11);
+    await user.click(screen.getByRole("button", { name: /bold/i }));
+    expect(textarea().value).toBe("hello **world**");
+  });
+
+  test("bold inserts placeholder when nothing is selected", async () => {
+    const user = await expandPost();
+    await user.click(screen.getByRole("button", { name: /bold/i }));
+    expect(textarea().value).toBe("**bold text**");
+  });
+
+  test("italic wraps selection with *", async () => {
+    const user = await expandPost();
+    await user.type(textarea(), "hello world");
+    textarea().setSelectionRange(6, 11);
+    await user.click(screen.getByRole("button", { name: /italic/i }));
+    expect(textarea().value).toBe("hello *world*");
+  });
+
+  test("link wraps selection as [text](url)", async () => {
+    const user = await expandPost();
+    await user.type(textarea(), "hello world");
+    textarea().setSelectionRange(6, 11);
+    await user.click(screen.getByRole("button", { name: /link/i }));
+    expect(textarea().value).toBe("hello [world](url)");
+  });
+
+  test("strikethrough wraps selection with ~~", async () => {
+    const user = await expandPost();
+    await user.type(textarea(), "hello world");
+    textarea().setSelectionRange(6, 11);
+    await user.click(screen.getByRole("button", { name: /strikethrough/i }));
+    expect(textarea().value).toBe("hello ~~world~~");
+  });
+
+  test("code wraps selection with backticks", async () => {
+    const user = await expandPost();
+    await user.type(textarea(), "hello world");
+    textarea().setSelectionRange(6, 11);
+    await user.click(screen.getByRole("button", { name: /^code$/i }));
+    expect(textarea().value).toBe("hello `world`");
+  });
+
+  test("bulleted list prefixes current line with -", async () => {
+    const user = await expandPost();
+    await user.type(textarea(), "item");
+    await user.click(screen.getByRole("button", { name: /bulleted list/i }));
+    expect(textarea().value).toBe("- item");
+  });
+
+  test("numbered list prefixes current line with 1.", async () => {
+    const user = await expandPost();
+    await user.type(textarea(), "item");
+    await user.click(screen.getByRole("button", { name: /numbered list/i }));
+    expect(textarea().value).toBe("1. item");
+  });
+
+  test("quote prefixes current line with >", async () => {
+    const user = await expandPost();
+    await user.type(textarea(), "item");
+    await user.click(screen.getByRole("button", { name: /quote/i }));
+    expect(textarea().value).toBe("> item");
+  });
+
+  test("insert image wraps selection as ![alt](url)", async () => {
+    const user = await expandPost();
+    await user.type(textarea(), "photo");
+    textarea().setSelectionRange(0, 5);
+    await user.click(screen.getByRole("button", { name: /insert image/i }));
+    expect(textarea().value).toBe("![photo](url)");
+  });
+
+  test("embed wraps selection as [embed](url)", async () => {
+    const user = await expandPost();
+    await user.type(textarea(), "https://example.com");
+    textarea().setSelectionRange(0, 19);
+    await user.click(screen.getByRole("button", { name: /embed/i }));
+    expect(textarea().value).toBe("[embed](https://example.com)");
+  });
+});
+
+describe("CreatePost notifications", () => {
+  test("notification checkbox notifyOnReply", async () => {
+    const user = userEvent.setup();
+    render(<CreatePost {...defaultProps}></CreatePost>);
+    await user.click(
+      screen.getByPlaceholderText("Ask a question or share an insight..."),
+    );
+    await user.type(screen.getByRole("textbox"), "hello");
+    const checkbox = screen.getByRole("checkbox", {
+      name: /send me post reply/i,
+    });
+    await user.click(checkbox);
+    expect(checkbox).toBeChecked();
+    await user.click(screen.getByRole("button", { name: /^post$/i }));
+    expect(defaultProps.onPost).toHaveBeenCalled();
+    expect(defaultProps.onPost).toHaveBeenCalledWith("hello", [], true);
   });
 });
