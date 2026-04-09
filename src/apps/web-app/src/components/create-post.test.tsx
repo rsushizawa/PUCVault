@@ -226,6 +226,70 @@ describe("CreatePost toolbar", () => {
   });
 });
 
+describe("CreatePost new tag creator", () => {
+  async function expandPost() {
+    const user = userEvent.setup();
+    render(<CreatePost {...defaultProps} />);
+    await user.click(
+      screen.getByPlaceholderText("Ask a question or share an insight..."),
+    );
+    return user;
+  }
+
+  test("shows add tag button when expanded", async () => {
+    await expandPost();
+    expect(screen.getByRole("button", { name: /add tag/i })).toBeInTheDocument();
+  });
+
+  test("clicking add tag shows an input", async () => {
+    const user = await expandPost();
+    await user.click(screen.getByRole("button", { name: /add tag/i }));
+    expect(screen.getByRole("textbox", { name: /new tag name/i })).toBeInTheDocument();
+  });
+
+  test("add tag button is hidden while input is open", async () => {
+    const user = await expandPost();
+    await user.click(screen.getByRole("button", { name: /add tag/i }));
+    expect(screen.queryByRole("button", { name: /add tag/i })).not.toBeInTheDocument();
+  });
+
+  test("pressing Enter confirms new tag and renders it as a pill", async () => {
+    const user = await expandPost();
+    await user.click(screen.getByRole("button", { name: /add tag/i }));
+    await user.type(screen.getByRole("textbox", { name: /new tag name/i }), "announcement{Enter}");
+    expect(screen.getByRole("button", { name: /announcement/i })).toBeInTheDocument();
+  });
+
+  test("new tag is auto-selected after creation", async () => {
+    const user = await expandPost();
+    await user.click(screen.getByRole("button", { name: /add tag/i }));
+    await user.type(screen.getByRole("textbox", { name: /new tag name/i }), "announcement{Enter}");
+    expect(screen.getByRole("button", { name: /announcement/i })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("pressing Escape cancels without adding a tag", async () => {
+    const user = await expandPost();
+    await user.click(screen.getByRole("button", { name: /add tag/i }));
+    await user.type(screen.getByRole("textbox", { name: /new tag name/i }), "announcement{Escape}");
+    expect(screen.queryByRole("button", { name: /announcement/i })).not.toBeInTheDocument();
+  });
+
+  test("duplicate tags are not added", async () => {
+    const user = await expandPost();
+    await user.click(screen.getByRole("button", { name: /add tag/i }));
+    await user.type(screen.getByRole("textbox", { name: /new tag name/i }), "question{Enter}");
+    expect(screen.getAllByRole("button", { name: /question/i })).toHaveLength(1);
+  });
+
+  test("new tag is included in onPost call when selected", async () => {
+    const user = await expandPost();
+    await user.click(screen.getByRole("button", { name: /add tag/i }));
+    await user.type(screen.getByRole("textbox", { name: /new tag name/i }), "announcement{Enter}");
+    await user.click(screen.getByRole("button", { name: /^post$/i }));
+    expect(defaultProps.onPost).toHaveBeenCalledWith("", ["announcement"], false);
+  });
+});
+
 describe("CreatePost notifications", () => {
   test("notification checkbox notifyOnReply", async () => {
     const user = userEvent.setup();
