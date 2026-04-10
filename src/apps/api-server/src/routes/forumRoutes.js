@@ -1,30 +1,27 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const forumController = require('../controllers/forumController');
+const forumController = require("../controllers/forumController");
 
-const authMiddleware = require('../middlewares/authMiddleware');
+const authMiddleware = require("../middlewares/authMiddleware");
 
-router.get('/print/forums', forumController.print);
+router.get("/print/forums", forumController.print);
 
-router.patch('/:forum_id/description',
+router.patch(
+  "/:forum_id/description",
   authMiddleware,
-  forumController.updateForumDescription
+  forumController.updateForumDescription,
 );
 
-router.post('/create', authMiddleware, forumController.createForum);
+router.post("/create", authMiddleware, forumController.createForum);
 
-router.patch('/:forum_id/validate',
+router.patch(
+  "/:forum_id/validate",
   authMiddleware,
-  forumController.validateForum
+  forumController.validateForum,
 );
 
-router.patch('/:forum_id/follow',
-  authMiddleware,
-  forumController.follow
-);
+router.patch("/:forum_id/follow", authMiddleware, forumController.follow);
 
-router.patch('/:forum_id/list',
-  forumController.listForumFollowers
-);
+router.patch("/:forum_id/list", forumController.listForumFollowers);
 
 module.exports = router;
