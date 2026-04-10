@@ -1,8 +1,28 @@
-const express = require("express");
-const { add } = require("@pucvault/utils"); // import here
+const express = require('express');
+let app = express();
+//const { add } = require("@pucvault/utils"); // import here
 
-const app = express();
-const port = 5000;
+const authRoutes = require('./routes/authRoutes.js');
+const forumRoutes = require('./routes/forumRoutes.js');
+
+
+app.use(express.json());
+
+app.use('/auth', authRoutes);
+
+app.use('/forums', forumRoutes);
+
+
+app.get('/', (req, res) => {
+  res.send('Online');
+});
+
+
+const port = 8000;
+
+
+
+
 
 app.get("/add", (req, res) => {
   const { a, b } = req.query;
