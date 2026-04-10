@@ -51,11 +51,9 @@ SELECT
 	usuario.id,
 	usuario.nome_usuario,
 	usuario.email,
+	usuario.status,
 	usuario.senha_hash
 	FROM privado.usuario AS usuario
 
 	WHERE usuario.excluido_em IS NULL
 	ORDER BY usuario.id;
-
-
-DROP VIEW privado.perfil_usuario CASCADE;
