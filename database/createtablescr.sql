@@ -1,5 +1,3 @@
-CREATE SCHEMA IF NOT EXISTS privado;
-
 -- identidade visual
 CREATE TABLE privado.identidade_visual (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -39,7 +37,7 @@ CREATE TABLE privado.usuario (
 -- uso: CALL publico.inserir_forum(<titulo>, <descricao>, <id do criador>);
 CREATE TABLE privado.forum (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	titulo VARCHAR(20) NOT NULL UNIQUE,
+	nome VARCHAR(20) NOT NULL UNIQUE,
 	descricao VARCHAR(100) NOT NULL,
 	criado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 	excluido_em TIMESTAMP WITH TIME ZONE,
