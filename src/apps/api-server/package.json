@@ -2,5 +2,8 @@
   "name": "api-server",
   "version": "1.0.0",
   "main": "index.js",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "jsonwebtoken": "^9.0.3"
+  }
 }
