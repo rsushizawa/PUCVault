@@ -1,9 +1,6 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/src/node_modules
-/src/api-server/node_modules
-/src/frontend/node
 /node_modules
 /.pnp
 .pnp.*
@@ -14,14 +11,14 @@
 !.yarn/versions
 
 # testing
-/apps/web-app/coverage
+/coverage
 
 # next.js
-/apps/web-app/.next/
-/apps/web-app/out/
+/.next/
+/out/
 
 # production
-/apps/web-app/build
+/build
 
 # misc
 .DS_Store
@@ -42,9 +39,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-
-# password
-.env
-.env.local
-.env.*.local
