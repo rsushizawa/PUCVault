@@ -1,4 +1,4 @@
-const authService = require('../services/services');
+const authService = require('../services/userServices');
 const { z } = require('zod');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -10,7 +10,7 @@ require('dotenv').config({ path: envPath });
 
 const passAccess = process.env.DB_PASS;
 
-
+//deleteUser(user_id)
 
 const saltRounds = 10;
 
@@ -21,6 +21,15 @@ const signinSchema = z.object({
   username: z.string().min(3, "Username (mínimo 3 caracteres)").max(20),
   password: z.string().min(8, "Senha (mínimo 8 caracteres)")
 });
+
+const print = async (req, res) => {
+  try {
+    await authService.printLogins();
+  } catch (error) {
+    console.log('internal server error', error.message);
+  }
+};
+
 
 
 const signin = async (req, res) => {
@@ -84,5 +93,7 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { login, signin };
+
+
+module.exports = { print, login, signin };
 

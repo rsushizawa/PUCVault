@@ -4,7 +4,7 @@ const { z } = require('zod');
 const bcrypt = require('bcryptjs');
 const { Pool } = require('pg');
 const path = require('path');
-const { error } = require('console');
+const { error, log } = require('console');
 const saltRounds = 10;
 const envPath = path.resolve(__dirname, '../../src/.env');
 
@@ -98,6 +98,17 @@ module.exports = {
     }
   },
 
+  async deleteUser(user_id) {
+    let client;
+    try {
+      client = await pool.connect();
+      console.log('conexão sucedida deleteUser');
+      await pool.query('SELECT * FROM publico.deletar_usuario( $1 )', [user_id]);
+    } catch (error) {
+      errorMsg(error);
+    }
+  },
+
   async addLogin(name, username, email, hashedPassword) {
     let client;
     try {
@@ -143,49 +154,52 @@ module.exports = {
     }
   },
 
-  async searchForums(name) {
-    let connect;
+  async toggleUserStatus(user_id) {
+    let client;
     try {
-      connect = await pool.connect();
-      console.log('conexão sucedida searchForums');
+      client = await pool.connect();
+      console.log('conexão sucedida alternateUserStatus');
 
-      let returnvalue = await pool.query('SELECT * FROM publico.buscar_forum_por_nome( $1 )', [name]);
-      if (returnvalue.rows[0] === 0) {
-        return null;
-      }
-      return returnvalue;
+      await pool.query('CALL publico.alternar_status_usuario( $1 )', [user_id]);
     } catch (error) {
       errorMsg(error);
     }
   },
 
-
-  async createForum(name, description, user_id) {
-    let connect;
+  async changeUserRole(executor_id, target_id, newRole) {
+    let client;
     try {
-      connect = await pool.connect();
-      console.log('conexão sucedida createForum');
+      client = await pool.connect();
+      console.log('conexão sucedida changeUserRole');
 
-      await pool.query('CALL publico.inserir_forum( $1, $2, $3)', [name, description, user_id]);
-
+      await pool.query('CALL publico.alterar_cargo_usuario($1,$2,$3)', [executor_id, target_id, newRole]);
     } catch (error) {
       errorMsg(error);
     }
   },
 
-  async updateForumDescription(forum_id, user_id, newDescription) {
-    let connect;
+  async reportUser(type, reportee_id, reported_id) {
+    let client;
     try {
-      connect = await pool.connect();
-      console.log('conexão sucedida updateForumDescription');
+      client = await pool.connect();
+      console.log('conexão sucedida reportUser');
 
-      await pool.query('CALL publico.atualizar_descricao_forum( $1, $2, $3 )', [forum_id, user_id, newDescription]);
+      await pool.query('CALL publico.inserir_denuncia_usuario($1,$2,$3)', [type, reportee_id, reported_id]);
+    } catch (error) {
+      errorMsg(error);
+    }
+  },
+
+  async toggleFollowUser(follower_id, following_id) {
+    let client;
+    try {
+      client = await pool.connect();
+      console.log('conexão sucedida toggleFollowUser');
+
+      await pool.query('CALL publico.alternar_seguir_usuario($1,$2)', [follower_id, following_id]);
     } catch (error) {
       errorMsg(error);
     }
   }
-
-
-
 };
 
