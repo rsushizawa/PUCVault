@@ -4,12 +4,15 @@ let app = express();
 
 const authRoutes = require("./routes/authRoutes.js");
 const forumRoutes = require("./routes/forumRoutes.js");
+const userRoutes = require("./routes/userRoutes.js");
 
 app.use(express.json());
 
 app.use("/auth", authRoutes);
 
 app.use("/forums", forumRoutes);
+
+app.use("/user", userRoutes);
 
 app.get("/", (req, res) => {
   res.send("Online");

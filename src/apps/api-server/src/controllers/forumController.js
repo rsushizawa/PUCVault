@@ -48,14 +48,12 @@ exports.createForum = async (req, res) => {
   try {
     await forumService.createForum(name, description, user_id);
     console.log("forum created");
-    return res
-      .status(200)
-      .json({
-        message: "forum created successfully",
-        name,
-        description,
-        user_id,
-      });
+    return res.status(200).json({
+      message: "forum created successfully",
+      name,
+      description,
+      user_id,
+    });
   } catch (error) {
     if (error.code === "23505") {
       return res
@@ -74,11 +72,15 @@ const descriptionSchema = z.object({
 
 exports.updateForumDescription = (req, res) => {
   try {
-    const newDescription = descriptionSchema.safeParse(req.body);
+    const validation = descriptionSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({ error: validation.error });
+    }
+    const { description } = validation.data;
     const user_id = req.user.id;
-    const forum_id = req.params;
+    const { forum_id } = req.params;
 
-    forumService.updateForumDescription(forum_id, user_id, newDescription);
+    forumService.updateForumDescription(forum_id, user_id, description);
 
     res.status(200).json({ message: "success" });
   } catch (error) {
@@ -91,6 +93,28 @@ exports.listForumFollowers = (req, res) => {
     const { forum_id } = req.params;
 
     forumService.listForumFollowers(forum_id);
+
+    res.status(200).json({ message: "success" });
+  } catch (error) {
+    res.status(500).json({ message: "server error" });
+  }
+};
+
+forumService.listForumFollowers(forum_id);
+
+exports.validateForum = (req, res) => {
+  try {
+    const validator_id = req.user.id;
+    const { forum_id } = req.params;
+    const { forumState } = req.body;
+    let status;
+    if (forumState === 1) status = "ATIVO";
+    else if (forumState === 0) status = "RECUSADO";
+    else {
+      return res.status(400).json({ error: "invalid input" });
+    }
+
+    forumService.validateForum(forum_id, validator_id, status);
 
     res.status(200).json({ message: "success" });
   } catch (error) {
