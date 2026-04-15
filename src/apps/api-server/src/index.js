@@ -26,11 +26,3 @@ const port = 8000;
 
 
 
-app.get("/add", (req, res) => {
-  const { a, b } = req.query;
-  res.json({ result: add(Number(a), Number(b)) });
-});
-
-app.listen(port, () => {
-  console.log(`API server running on http://localhost:${port}`);
-});
