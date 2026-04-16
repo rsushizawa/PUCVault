@@ -110,7 +110,7 @@ export default function CreatePost({
 
   if (!isExpanded) {
     return (
-      <div className="bg-surface-raised p-4 rounded-sm w-full max-w-[770px]">
+      <div className="bg-surface-raised p-4 rounded-sm w-full">
         <input
           className="bg-surface-input w-full px-4 py-2 rounded-sm text-sm text-text-muted cursor-pointer outline-none"
           role="button"
@@ -123,7 +123,7 @@ export default function CreatePost({
   }
 
   return (
-    <div className="bg-surface-raised p-4 rounded-sm w-full max-w-[770px] flex flex-col gap-3">
+    <div className="bg-surface-raised p-4 rounded-sm w-full flex flex-col gap-3">
       <div className="bg-surface-input rounded-sm overflow-hidden">
         <textarea
           ref={textareaRef}

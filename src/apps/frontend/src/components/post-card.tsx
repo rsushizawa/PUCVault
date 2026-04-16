@@ -31,7 +31,7 @@ export default function PostCard({
   onDownvote,
 }: PostCardProps) {
   return (
-    <article className="max-w-[770px] bg-surface-raised flex gap-5 p-5 items-start rounded-sm w-full">
+    <article className="bg-surface-raised flex gap-5 p-5 items-start rounded-sm w-full">
       {/* Left column: cote button + count */}
       <div className="w-[30px] bg-[#0e0e0e] flex flex-col items-center p-1 rounded-sm ">
         <button
