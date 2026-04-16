@@ -7,6 +7,7 @@ import TabsNavigation, { Tab } from "@/components/tabs-navigation";
 import CreatePost from "@/components/create-post";
 import PostCard from "@/components/post-card";
 import { CommunitySidebar } from "@/components/community-sidebar";
+import CommunityFiles, { Semester } from "@/components/community-files";
 
 const mockSidebarProps = {
   communityName: "Engenharia da Computação",
@@ -22,6 +23,81 @@ const mockSidebarProps = {
     { id: 3, title: "Stay on topic", description: "Keep posts relevant." },
   ],
 };
+
+const mockSemesters: Semester[] = [
+  {
+    id: "s1",
+    name: "1º Semestre",
+    courses: [
+      {
+        id: "c1",
+        name: "Introduction to Programming",
+        files: [
+          {
+            id: "f1",
+            name: "Aula 01 - Intro.pdf",
+            uploadedAt: "2024-03-15",
+            tags: ["lecture"],
+          },
+          {
+            id: "f2",
+            name: "Exercícios 01.pdf",
+            uploadedAt: "2024-02-10",
+            tags: ["exercise"],
+          },
+        ],
+      },
+      {
+        id: "c2",
+        name: "Calculus I",
+        files: [
+          {
+            id: "f3",
+            name: "Resumo Derivadas.pdf",
+            uploadedAt: "2024-03-20",
+            tags: ["summary"],
+          },
+          {
+            id: "f4",
+            name: "Lista P1.pdf",
+            uploadedAt: "2024-03-01",
+            tags: ["exercise"],
+          },
+          {
+            id: "f5",
+            name: "Gabarito P1.pdf",
+            uploadedAt: "2024-03-10",
+            tags: ["exam"],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "s2",
+    name: "2º Semestre",
+    courses: [
+      {
+        id: "c3",
+        name: "Data Structures",
+        files: [
+          {
+            id: "f6",
+            name: "Lista 1.pdf",
+            uploadedAt: "2024-04-01",
+            tags: ["exercise"],
+          },
+          {
+            id: "f7",
+            name: "Slides Árvores.pdf",
+            uploadedAt: "2024-04-15",
+            tags: ["lecture"],
+          },
+        ],
+      },
+    ],
+  },
+];
 
 const mockHeroProps = {
   communityName: "Engenharia da Computação",
@@ -67,9 +143,7 @@ export default function CommunityPage() {
               </>
             )}
             {activeTab === "arquivos" && (
-              <div className="text-text-muted text-sm">
-                Files will go here.
-              </div>
+              <CommunityFiles semesters={mockSemesters} />
             )}
           </div>
 
