@@ -8,7 +8,7 @@
 @theme inline {
   --font-sans: var(--font-inter);
   --color-surface-base: #131313;
-  --color-surface-raised: #1c1b1b;
+  --color-surface-raised: #000000;
   --color-surface-overlay: #201f1f;
   --color-surface-input: #2a2a2a;
   --color-text-primary: #e5e2e1;
