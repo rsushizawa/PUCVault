@@ -203,10 +203,11 @@ BEGIN
 END;
 $$;
 
+DROP PROCEDURE publico.inserir_forum;
 -- procedure para inserção de fórum
 -- uso: CALL publico.inserir_forum(<titulo>, <descricao>, <id do criador>);
 CREATE PROCEDURE publico.inserir_forum (
-	p_titulo VARCHAR,
+	p_nome VARCHAR,
 	p_descricao VARCHAR,
 	p_criador INT
 )
@@ -237,8 +238,8 @@ BEGIN
 	VALUES ('abc-123', 'def-456')
 	RETURNING id INTO v_identidade_visual;
 
-	INSERT INTO privado.forum (titulo, descricao, criador, identidade_visual)
-	VALUES (p_titulo, p_descricao, p_criador, v_identidade_visual);
+	INSERT INTO privado.forum (nome, descricao, criador, identidade_visual)
+	VALUES (p_nome, p_descricao, p_criador, v_identidade_visual);
 END;
 $$;
 
