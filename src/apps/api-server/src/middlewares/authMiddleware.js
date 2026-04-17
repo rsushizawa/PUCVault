@@ -5,7 +5,7 @@ const envPath = path.resolve(__dirname, '../../src/.env');
 
 require('dotenv').config({ path: envPath });
 
-const passAccess = process.env.DB_PASS;
+const passAccess = process.env.JWT_SECRET;
 
 const authMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization;
