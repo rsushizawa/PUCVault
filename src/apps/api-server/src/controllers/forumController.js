@@ -14,7 +14,7 @@ exports.print = async (req, res) => {
   } catch (error) {
     console.log('internal server error: ', error.message);
   }
-}
+};
 
 
 exports.getForumId = async (req, res) => {

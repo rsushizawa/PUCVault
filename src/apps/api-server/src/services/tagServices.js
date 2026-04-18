@@ -39,7 +39,7 @@ function errorMsg(error) {
 
 
 module.exports = {
-  async printUserTags(creator_id) {
+  async getUserTags(creator_id) {
     let connect;
 
     try {
@@ -48,7 +48,8 @@ module.exports = {
 
       const res = await pool.query('SELECT * FROM publico.buscar_tags_por_criador( $1 )', [creator_id]);
 
-      console.table(res.rows);
+      return res;
+
     } catch (error) {
       errorMsg(error);
     }

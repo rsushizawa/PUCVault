@@ -6,6 +6,7 @@ const authRoutes = require('./routes/authRoutes.js');
 const forumRoutes = require('./routes/forumRoutes.js');
 const userRoutes = require('./routes/userRoutes.js');
 const tagRoutes = require('./routes/tagRoutes.js');
+const postRoutes = require('./routes/postRoutes.js');
 
 
 app.use(express.json());
@@ -17,6 +18,8 @@ app.use('/forums', forumRoutes);
 app.use('/user', userRoutes);
 
 app.use('/tags', tagRoutes);
+
+app.use('/posts', postRoutes);
 
 app.get('/', (req, res) => {
   res.send('Online');
