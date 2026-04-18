@@ -37,13 +37,15 @@ const mockSemesters: Semester[] = [
             id: "f1",
             name: "Aula 01 - Intro.pdf",
             uploadedAt: "2024-03-15",
-            tags: ["lecture"],
+            tags: [{ id: "lecture", name: "lecture" }],
+            postId: "post-f1",
           },
           {
             id: "f2",
             name: "Exercícios 01.pdf",
             uploadedAt: "2024-02-10",
-            tags: ["exercise"],
+            tags: [{ id: "exercise", name: "exercise" }],
+            postId: "post-f2",
           },
         ],
       },
@@ -55,19 +57,22 @@ const mockSemesters: Semester[] = [
             id: "f3",
             name: "Resumo Derivadas.pdf",
             uploadedAt: "2024-03-20",
-            tags: ["summary"],
+            tags: [{ id: "summary", name: "summary" }],
+            postId: "post-f3",
           },
           {
             id: "f4",
             name: "Lista P1.pdf",
             uploadedAt: "2024-03-01",
-            tags: ["exercise"],
+            tags: [{ id: "exercise", name: "exercise" }],
+            postId: "post-f4",
           },
           {
             id: "f5",
             name: "Gabarito P1.pdf",
             uploadedAt: "2024-03-10",
-            tags: ["exam"],
+            tags: [{ id: "exam", name: "exam" }],
+            postId: "post-f5",
           },
         ],
       },
@@ -85,13 +90,15 @@ const mockSemesters: Semester[] = [
             id: "f6",
             name: "Lista 1.pdf",
             uploadedAt: "2024-04-01",
-            tags: ["exercise"],
+            tags: [{ id: "exercise", name: "exercise" }],
+            postId: "post-f6",
           },
           {
             id: "f7",
             name: "Slides Árvores.pdf",
             uploadedAt: "2024-04-15",
-            tags: ["lecture"],
+            tags: [{ id: "lecture", name: "lecture" }],
+            postId: "post-f7",
           },
         ],
       },
@@ -118,7 +125,6 @@ export default function CommunityPage() {
 
       <div className="flex-1 px-8 py-6">
         <div className="grid grid-cols-[1fr_320px] gap-6 items-start">
-          {/* Main content */}
           <div className="flex flex-col gap-4">
             {activeTab === "forum" && (
               <>
@@ -132,8 +138,8 @@ export default function CommunityPage() {
                   author="u/matheusz"
                   timestamp="4h ago"
                   tags={[
-                    { label: "Cálculo I", color: "rgba(2,84,134,0.3)" },
-                    { label: "resumo", color: "rgba(2,84,134,0.3)" },
+                    { id: "calculo-i", name: "Cálculo I" },
+                    { id: "resumo", name: "resumo" },
                   ]}
                   voteCount={142}
                   commentCount={24}
@@ -147,7 +153,6 @@ export default function CommunityPage() {
             )}
           </div>
 
-          {/* Sidebar */}
           <CommunitySidebar {...mockSidebarProps} />
         </div>
       </div>

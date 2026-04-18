@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import {
   ChevronRight,
   Folder,
@@ -8,101 +10,37 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
+import { getTagColor } from "@/lib/tag-colors";
+import {
+  getGroups,
+  rainbowColor,
+  type CourseFile,
+  type Course,
+  type FileGroup,
+  type Semester,
+  type SortOption,
+} from "@/lib/file-grouping";
 
-export type SortOption = "default" | "date" | "tag";
-
-export type CourseFile = {
-  id: string;
-  name: string;
-  uploadedAt: string;
-  tags: string[];
-};
-
-export type Course = {
-  id: string;
-  name: string;
-  files: CourseFile[];
-};
-
-export type Semester = {
-  id: string;
-  name: string;
-  courses: Course[];
-};
-
-type FileGroup = {
-  label: string;
-  color: string;
-  files: CourseFile[];
-};
-
-function rainbowColor(index: number, total: number): string {
-  const hue = Math.round((index / Math.max(total, 1)) * 360);
-  return `hsl(${hue}deg 65% 55%)`;
-}
-
-function tagColor(tag: string): string {
-  let hash = 0;
-  for (let i = 0; i < tag.length; i++) {
-    hash = ((hash << 5) - hash + tag.charCodeAt(i)) | 0;
-  }
-  const hue = Math.abs(hash) % 360;
-  return `hsl(${hue}deg 65% 55%)`;
-}
-
-function groupFilesByYear(files: CourseFile[]): FileGroup[] {
-  const byYear = new Map<string, CourseFile[]>();
-  for (const file of files) {
-    const year = new Date(file.uploadedAt).getFullYear().toString();
-    if (!byYear.has(year)) byYear.set(year, []);
-    byYear.get(year)!.push(file);
-  }
-  const years = [...byYear.keys()].sort((a, b) => Number(b) - Number(a));
-  return years.map((year, i) => ({
-    label: year,
-    color: rainbowColor(i, years.length),
-    files: [...byYear.get(year)!].sort(
-      (a, b) =>
-        new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
-    ),
-  }));
-}
-
-function groupFilesByTag(files: CourseFile[]): FileGroup[] {
-  const byTag = new Map<string, CourseFile[]>();
-  for (const file of files) {
-    const tag = file.tags[0] ?? "untagged";
-    if (!byTag.has(tag)) byTag.set(tag, []);
-    byTag.get(tag)!.push(file);
-  }
-  const tags = [...byTag.keys()].sort();
-  return tags.map((tag) => ({
-    label: tag,
-    color: tagColor(tag),
-    files: [...byTag.get(tag)!].sort((a, b) => a.name.localeCompare(b.name)),
-  }));
-}
-
-function getGroups(
-  files: CourseFile[],
-  sortBy: SortOption,
-): FileGroup[] | null {
-  if (sortBy === "date") return groupFilesByYear(files);
-  if (sortBy === "tag") return groupFilesByTag(files);
-  return null; // default: flat alphabetical, no grouping
-}
+export type { CourseFile, Course, FileGroup, Semester, SortOption };
 
 function FileRow({ file }: { file: CourseFile }) {
+  const { id: communityId } = useParams<{ id: string }>();
   return (
     <li className="flex items-center justify-between px-3 py-1.5 hover:bg-surface-overlay transition-colors">
-      <span className="text-text-secondary text-sm">{file.name}</span>
+      <Link
+        href={`/community/${communityId}/post/${file.postId}`}
+        className="text-text-secondary text-sm hover:text-text-primary transition-colors"
+      >
+        {file.name}
+      </Link>
       <div className="flex items-center gap-2 shrink-0 ml-4">
         {file.tags.map((tag) => (
           <span
-            key={tag}
-            className="text-xs text-text-muted bg-surface-overlay px-2 py-0.5 rounded"
+            key={tag.id}
+            className="text-xs bg-surface-overlay px-2 py-0.5 rounded"
+            style={{ color: getTagColor(tag.id) }}
           >
-            {tag}
+            {tag.name}
           </span>
         ))}
         <span className="text-xs text-text-muted">
@@ -119,11 +57,7 @@ interface CourseAccordionProps {
   accentColor?: string;
 }
 
-function CourseAccordion({
-  course,
-  sortBy,
-  accentColor,
-}: CourseAccordionProps) {
+function CourseAccordion({ course, sortBy, accentColor }: CourseAccordionProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const groups = getGroups(course.files, sortBy);
@@ -166,7 +100,6 @@ function CourseAccordion({
                 className="rounded-lg overflow-hidden border-l-4"
                 style={{ borderColor: group.color }}
               >
-                {/* Group header */}
                 <div className="relative px-3 py-1.5">
                   <div
                     className="absolute inset-0 opacity-15"
@@ -179,7 +112,6 @@ function CourseAccordion({
                     {group.label}
                   </span>
                 </div>
-                {/* Group files */}
                 <ul className="flex flex-col">
                   {group.files.map((file) => (
                     <FileRow key={file.id} file={file} />
@@ -206,11 +138,7 @@ interface SemesterAccordionProps {
   accentColor: string;
 }
 
-function SemesterAccordion({
-  semester,
-  sortBy,
-  accentColor,
-}: SemesterAccordionProps) {
+function SemesterAccordion({ semester, sortBy, accentColor }: SemesterAccordionProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const totalFiles = semester.courses.reduce(
@@ -280,15 +208,15 @@ function SemesterAccordion({
   );
 }
 
-interface CommunityFilesProps {
-  semesters: Semester[];
-}
-
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "default", label: "Default" },
   { value: "date", label: "By Date" },
   { value: "tag", label: "By Tag" },
 ];
+
+interface CommunityFilesProps {
+  semesters: Semester[];
+}
 
 export default function CommunityFiles({ semesters }: CommunityFilesProps) {
   const [sortBy, setSortBy] = useState<SortOption>("default");
@@ -301,7 +229,6 @@ export default function CommunityFiles({ semesters }: CommunityFilesProps) {
 
   return (
     <div className="flex flex-col gap-6 w-full">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-text-primary text-2xl font-bold">
           Community Files
@@ -347,7 +274,6 @@ export default function CommunityFiles({ semesters }: CommunityFilesProps) {
         </div>
       </div>
 
-      {/* Accordion list */}
       <div className="flex flex-col gap-px">
         {semesters.map((semester, i) => (
           <SemesterAccordion

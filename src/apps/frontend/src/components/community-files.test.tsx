@@ -1,6 +1,26 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import CommunityFiles from "./community-files";
+
+vi.mock("next/navigation", () => ({
+  useParams: () => ({ id: "test-community" }),
+}));
+
+vi.mock("next/link", () => ({
+  default: ({
+    href,
+    children,
+    className,
+  }: {
+    href: string;
+    children: React.ReactNode;
+    className?: string;
+  }) => (
+    <a href={href} className={className}>
+      {children}
+    </a>
+  ),
+}));
 
 const mockSemesters = [
   {
@@ -15,13 +35,15 @@ const mockSemesters = [
             id: "f1",
             name: "Aula 01 - Intro.pdf",
             uploadedAt: "2024-03-15",
-            tags: ["lecture"],
+            tags: [{ id: "lecture", name: "lecture" }],
+            postId: "post-1",
           },
           {
             id: "f2",
             name: "Exercícios 01.pdf",
             uploadedAt: "2024-02-10",
-            tags: ["exercise"],
+            tags: [{ id: "exercise", name: "exercise" }],
+            postId: "post-2",
           },
         ],
       },
@@ -33,7 +55,8 @@ const mockSemesters = [
             id: "f3",
             name: "Resumo Derivadas.pdf",
             uploadedAt: "2024-03-20",
-            tags: ["summary"],
+            tags: [{ id: "summary", name: "summary" }],
+            postId: "post-3",
           },
         ],
       },
@@ -51,7 +74,8 @@ const mockSemesters = [
             id: "f4",
             name: "Lista 1.pdf",
             uploadedAt: "2024-04-01",
-            tags: ["exercise"],
+            tags: [{ id: "exercise", name: "exercise" }],
+            postId: "post-4",
           },
         ],
       },
@@ -63,7 +87,7 @@ describe("CommunityFiles", () => {
   it("renders the Community Files heading", () => {
     render(<CommunityFiles semesters={mockSemesters} />);
     expect(
-      screen.getByRole("heading", { name: "Community Files" })
+      screen.getByRole("heading", { name: "Community Files" }),
     ).toBeInTheDocument();
   });
 
@@ -88,7 +112,7 @@ describe("CommunityFiles", () => {
     it("hides courses by default", () => {
       render(<CommunityFiles semesters={mockSemesters} />);
       expect(
-        screen.queryByText("Introduction to Programming")
+        screen.queryByText("Introduction to Programming"),
       ).not.toBeInTheDocument();
     });
 
@@ -96,7 +120,7 @@ describe("CommunityFiles", () => {
       render(<CommunityFiles semesters={mockSemesters} />);
       fireEvent.click(screen.getByRole("button", { name: /1º Semestre/i }));
       expect(
-        screen.getByText("Introduction to Programming")
+        screen.getByText("Introduction to Programming"),
       ).toBeInTheDocument();
       expect(screen.getByText("Calculus I")).toBeInTheDocument();
     });
@@ -107,7 +131,7 @@ describe("CommunityFiles", () => {
       fireEvent.click(semesterBtn);
       fireEvent.click(semesterBtn);
       expect(
-        screen.queryByText("Introduction to Programming")
+        screen.queryByText("Introduction to Programming"),
       ).not.toBeInTheDocument();
     });
 
@@ -124,14 +148,16 @@ describe("CommunityFiles", () => {
     it("hides files by default inside an open semester", () => {
       render(<CommunityFiles semesters={mockSemesters} />);
       fireEvent.click(screen.getByRole("button", { name: /1º Semestre/i }));
-      expect(screen.queryByText("Aula 01 - Intro.pdf")).not.toBeInTheDocument();
+      expect(
+        screen.queryByText("Aula 01 - Intro.pdf"),
+      ).not.toBeInTheDocument();
     });
 
     it("expands to show files when clicked", () => {
       render(<CommunityFiles semesters={mockSemesters} />);
       fireEvent.click(screen.getByRole("button", { name: /1º Semestre/i }));
       fireEvent.click(
-        screen.getByRole("button", { name: /Introduction to Programming/i })
+        screen.getByRole("button", { name: /Introduction to Programming/i }),
       );
       expect(screen.getByText("Aula 01 - Intro.pdf")).toBeInTheDocument();
       expect(screen.getByText("Exercícios 01.pdf")).toBeInTheDocument();
@@ -141,10 +167,21 @@ describe("CommunityFiles", () => {
       render(<CommunityFiles semesters={mockSemesters} />);
       fireEvent.click(screen.getByRole("button", { name: /1º Semestre/i }));
       fireEvent.click(
-        screen.getByRole("button", { name: /Introduction to Programming/i })
+        screen.getByRole("button", { name: /Introduction to Programming/i }),
       );
       expect(screen.getByText("lecture")).toBeInTheDocument();
       expect(screen.getByText("exercise")).toBeInTheDocument();
+    });
+
+    it("file names link to their post", () => {
+      render(<CommunityFiles semesters={mockSemesters} />);
+      fireEvent.click(screen.getByRole("button", { name: /1º Semestre/i }));
+      fireEvent.click(
+        screen.getByRole("button", { name: /Introduction to Programming/i }),
+      );
+      expect(
+        screen.getByRole("link", { name: "Aula 01 - Intro.pdf" }),
+      ).toHaveAttribute("href", "/community/test-community/post/post-1");
     });
 
     it("collapses course when clicked again", () => {
@@ -155,19 +192,19 @@ describe("CommunityFiles", () => {
       });
       fireEvent.click(courseBtn);
       fireEvent.click(courseBtn);
-      expect(screen.queryByText("Aula 01 - Intro.pdf")).not.toBeInTheDocument();
+      expect(
+        screen.queryByText("Aula 01 - Intro.pdf"),
+      ).not.toBeInTheDocument();
     });
   });
 
   describe("default mode", () => {
-    it("starts in default mode (no sort option selected)", () => {
+    it("starts in default mode (no sort group labels visible)", () => {
       render(<CommunityFiles semesters={mockSemesters} />);
-      // default mode: no group labels visible — just files alphabetically
       fireEvent.click(screen.getByRole("button", { name: /1º Semestre/i }));
       fireEvent.click(
-        screen.getByRole("button", { name: /Introduction to Programming/i })
+        screen.getByRole("button", { name: /Introduction to Programming/i }),
       );
-      // group labels like "2024" or "lecture" are NOT shown as section headers
       expect(screen.queryByText("2024")).not.toBeInTheDocument();
     });
 
@@ -175,7 +212,7 @@ describe("CommunityFiles", () => {
       render(<CommunityFiles semesters={mockSemesters} />);
       fireEvent.click(screen.getByRole("button", { name: /1º Semestre/i }));
       fireEvent.click(
-        screen.getByRole("button", { name: /Introduction to Programming/i })
+        screen.getByRole("button", { name: /Introduction to Programming/i }),
       );
 
       const fileEls = screen
@@ -183,12 +220,11 @@ describe("CommunityFiles", () => {
         .filter((el) => el.textContent?.includes(".pdf"));
 
       const introIdx = fileEls.findIndex((el) =>
-        el.textContent?.includes("Aula 01 - Intro.pdf")
+        el.textContent?.includes("Aula 01 - Intro.pdf"),
       );
       const exerciseIdx = fileEls.findIndex((el) =>
-        el.textContent?.includes("Exercícios 01.pdf")
+        el.textContent?.includes("Exercícios 01.pdf"),
       );
-      // "Aula" < "Exercícios" alphabetically
       expect(introIdx).toBeLessThan(exerciseIdx);
     });
   });
@@ -213,13 +249,10 @@ describe("CommunityFiles", () => {
       render(<CommunityFiles semesters={mockSemesters} />);
       fireEvent.click(screen.getByRole("button", { name: /filter/i }));
       fireEvent.click(screen.getByText("By Date"));
-
       fireEvent.click(screen.getByRole("button", { name: /1º Semestre/i }));
       fireEvent.click(
-        screen.getByRole("button", { name: /Introduction to Programming/i })
+        screen.getByRole("button", { name: /Introduction to Programming/i }),
       );
-
-      // Both files are from 2024, so there should be a "2024" group label
       expect(screen.getByText("2024")).toBeInTheDocument();
     });
 
@@ -227,10 +260,9 @@ describe("CommunityFiles", () => {
       render(<CommunityFiles semesters={mockSemesters} />);
       fireEvent.click(screen.getByRole("button", { name: /filter/i }));
       fireEvent.click(screen.getByText("By Date"));
-
       fireEvent.click(screen.getByRole("button", { name: /1º Semestre/i }));
       fireEvent.click(
-        screen.getByRole("button", { name: /Introduction to Programming/i })
+        screen.getByRole("button", { name: /Introduction to Programming/i }),
       );
 
       const fileEls = screen
@@ -238,12 +270,11 @@ describe("CommunityFiles", () => {
         .filter((el) => el.textContent?.includes(".pdf"));
 
       const introIdx = fileEls.findIndex((el) =>
-        el.textContent?.includes("Aula 01 - Intro.pdf")
+        el.textContent?.includes("Aula 01 - Intro.pdf"),
       );
       const exerciseIdx = fileEls.findIndex((el) =>
-        el.textContent?.includes("Exercícios 01.pdf")
+        el.textContent?.includes("Exercícios 01.pdf"),
       );
-      // 2024-03-15 is newer than 2024-02-10 → Intro before Exercícios
       expect(introIdx).toBeLessThan(exerciseIdx);
     });
 
@@ -251,13 +282,10 @@ describe("CommunityFiles", () => {
       render(<CommunityFiles semesters={mockSemesters} />);
       fireEvent.click(screen.getByRole("button", { name: /filter/i }));
       fireEvent.click(screen.getByText("By Tag"));
-
       fireEvent.click(screen.getByRole("button", { name: /1º Semestre/i }));
       fireEvent.click(
-        screen.getByRole("button", { name: /Introduction to Programming/i })
+        screen.getByRole("button", { name: /Introduction to Programming/i }),
       );
-
-      // Group headers for each tag should appear (may also appear as tag chips)
       expect(screen.getAllByText("exercise").length).toBeGreaterThan(0);
       expect(screen.getAllByText("lecture").length).toBeGreaterThan(0);
     });
@@ -266,10 +294,9 @@ describe("CommunityFiles", () => {
       render(<CommunityFiles semesters={mockSemesters} />);
       fireEvent.click(screen.getByRole("button", { name: /filter/i }));
       fireEvent.click(screen.getByText("By Tag"));
-
       fireEvent.click(screen.getByRole("button", { name: /1º Semestre/i }));
       fireEvent.click(
-        screen.getByRole("button", { name: /Introduction to Programming/i })
+        screen.getByRole("button", { name: /Introduction to Programming/i }),
       );
 
       const fileEls = screen
@@ -277,12 +304,12 @@ describe("CommunityFiles", () => {
         .filter((el) => el.textContent?.includes(".pdf"));
 
       const introIdx = fileEls.findIndex((el) =>
-        el.textContent?.includes("Aula 01 - Intro.pdf")
+        el.textContent?.includes("Aula 01 - Intro.pdf"),
       );
       const exerciseIdx = fileEls.findIndex((el) =>
-        el.textContent?.includes("Exercícios 01.pdf")
+        el.textContent?.includes("Exercícios 01.pdf"),
       );
-      // "exercise" < "lecture" → Exercícios group comes before Intro group
+      // "exercise" < "lecture" → Exercícios group before Intro group
       expect(exerciseIdx).toBeLessThan(introIdx);
     });
   });
