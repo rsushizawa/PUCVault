@@ -9,8 +9,9 @@ const tagSchema = z.object({
 exports.printUserTags = async (req, res) => {
   const { user_id } = req.params;
   try {
-    await tagService.printUserTags(user_id);
+    const res = await tagService.getUserTags(user_id);
 
+    console.table(res.rows);
   } catch (error) {
     console.log('internal server error: ', error.message);
   }

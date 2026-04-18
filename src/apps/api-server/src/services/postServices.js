@@ -50,6 +50,19 @@ module.exports = {
     } catch (error) {
       errorMsg(error);
     }
+  },
+
+  async getPost(forum_id) {
+    let connect;
+    try {
+      connect = await pool.connect;
+      console.log('conexão sucedida getPost');
+
+      await pool.query('');
+
+    } catch (error) {
+      errorMsg(error);
+    }
   }
 };
 
