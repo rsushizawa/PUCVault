@@ -3,6 +3,8 @@ import userEvent from "@testing-library/user-event";
 import PostCard from "@/components/post-card";
 
 const defaultProps = {
+  postId: "post-1",
+  communityId: "community-1",
   title: "Resumo de Derivadas",
   body: "Pessoal, montei um guia rápido...",
   author: "u/rodrigo",
@@ -48,5 +50,10 @@ describe("PostCard", () => {
     render(<PostCard {...defaultProps} />);
     await user.click(screen.getByRole("button", { name: /downvote/i }));
     expect(defaultProps.onDownvote).toHaveBeenCalled();
+  });
+  test("content links to the post detail page", () => {
+    render(<PostCard {...defaultProps} />);
+    const link = screen.getByRole("link");
+    expect(link).toHaveAttribute("href", `/community/${defaultProps.communityId}/post/${defaultProps.postId}`);
   });
 });
