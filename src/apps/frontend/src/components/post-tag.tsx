@@ -1,15 +1,17 @@
+import type { Tag } from "@/types/tag"
+import { getTagColor } from "@/lib/tag-colors"
+
 interface PostTagProps {
-  label: string;
-  color?: string;
+  tag: Tag
 }
 
-export default function PostTag({ label, color }: PostTagProps) {
+export default function PostTag({ tag }: PostTagProps) {
   return (
     <span
-      className="uppercase font-bold text-[10px] tracking-[0.5px] px-2 py-0.5 text-[#98cbff]"
-      style={{ backgroundColor: color }}
+      className="uppercase font-bold text-[10px] tracking-[0.5px] px-2 py-0.5 bg-surface-overlay rounded"
+      style={{ color: getTagColor(tag.id) }}
     >
-      {label}
+      {tag.name}
     </span>
-  );
+  )
 }
