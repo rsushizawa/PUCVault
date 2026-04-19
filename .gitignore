@@ -91,3 +91,5 @@ src/node_modules
 .env
 .env.local
 .env.*.local
+node_modules/
+src/node_modules/
