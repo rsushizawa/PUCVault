@@ -2,7 +2,11 @@
 
 # dependencies
 /node_modules
+node_modules/
+/src/node_modules
 src/node_modules/
+/src/api-server/node_modules
+/src/frontend/node
 /.pnp
 .pnp.*
 .yarn/*
@@ -12,13 +16,17 @@ src/node_modules/
 !.yarn/versions
 
 # testing
+/coverage
 /apps/web-app/coverage
 
 # next.js
+/.next/
+/out/
 /apps/web-app/.next/
 /apps/web-app/out/
 
 # production
+/build
 /apps/web-app/build
 
 # misc
@@ -31,8 +39,11 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env / passwords
+.env
 .env*
+.env.local
+.env.*.local
 
 # vercel
 .vercel
@@ -41,10 +52,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-
-# password
-.env
-.env.local
-.env.*.local
-node_modules/
-src/node_modules/
+# docs / agents (da branch dev)
+CLAUDE.md
+AGENTS.md

@@ -3,14 +3,7 @@ const roleMiddleware = require('../middlewares/roleMiddleware');
 const { z } = require('zod');
 const jwt = require('jsonwebtoken');
 
-
-
-
-
-
 //reportUser(type, reportee_id, reported_id) 
-
-
 
 exports.changeRole = async (req, res) => {
 

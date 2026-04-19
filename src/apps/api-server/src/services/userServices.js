@@ -56,7 +56,6 @@ module.exports = {
       }
     } catch (error) {
       errorMsg(error);
-
     } finally {
       client.release();
     }
@@ -146,7 +145,6 @@ module.exports = {
     } finally {
       client.release();
     }
-
   },
 
   async findIDByUsername(username) {
@@ -166,7 +164,6 @@ module.exports = {
     } finally {
       client.release();
     }
-
   },
 
   async toggleUserStatus(user_id) {
@@ -181,7 +178,6 @@ module.exports = {
     } finally {
       client.release();
     }
-
   },
 
   async changeUserRole(executor_id, target_id, newRole) {
@@ -196,7 +192,6 @@ module.exports = {
     } finally {
       client.release();
     }
-
   },
 
   async reportUser(type, reportee_id, reported_id) {
@@ -211,7 +206,6 @@ module.exports = {
     } finally {
       client.release();
     }
-
   },
 
   async toggleFollowUser(follower_id, following_id) {
@@ -226,7 +220,6 @@ module.exports = {
     } finally {
       client.release();
     }
-
   }
 };
 

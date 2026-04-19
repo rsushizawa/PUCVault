@@ -140,6 +140,7 @@ module.exports = {
     }
 
 
+
   },
 
   async toggleFollowForum(user_id, forum_id) {

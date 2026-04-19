@@ -53,7 +53,6 @@ module.exports = {
     } finally {
       connect.release();
     }
-
   },
 
   async reviewContent(user_id, content_id, review) {
@@ -69,7 +68,6 @@ module.exports = {
     } finally {
       connect.release();
     }
-
   },
 
   async reportContent(type, user_id, content_id) {
@@ -85,7 +83,6 @@ module.exports = {
     } finally {
       connect.release();
     }
-
   },
 
   async resolveReport(report_id, executor_id, reportState) {
@@ -101,7 +98,6 @@ module.exports = {
     } finally {
       connect.release();
     }
-
   }
 };
 
