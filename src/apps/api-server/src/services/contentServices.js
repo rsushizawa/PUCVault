@@ -50,7 +50,10 @@ module.exports = {
 
     } catch (error) {
       errorMsg(error);
+    } finally {
+      connect.release();
     }
+
   },
 
   async reviewContent(user_id, content_id, review) {
@@ -63,7 +66,10 @@ module.exports = {
 
     } catch (error) {
       errorMsg(error);
+    } finally {
+      connect.release();
     }
+
   },
 
   async reportContent(type, user_id, content_id) {
@@ -76,7 +82,10 @@ module.exports = {
 
     } catch (error) {
       errorMsg(error);
+    } finally {
+      connect.release();
     }
+
   },
 
   async resolveReport(report_id, executor_id, reportState) {
@@ -89,7 +98,10 @@ module.exports = {
 
     } catch (error) {
       errorMsg(error);
+    } finally {
+      connect.release();
     }
+
   }
 };
 

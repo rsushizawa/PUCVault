@@ -14,7 +14,15 @@ const postSchema = z.object({
 });
 
 exports.getPosts = async (req, res) => {
+  const { forum_id, page_num } = req.params;
+  try {
+    const res = await postService.getPost(forum_id, page_num);
 
+    console.table(res.rows);
+    res.status(200).json({ message: "success" });
+  } catch (error) {
+    res.status(500).json({ error: "internal server error" });
+  }
 };
 
 exports.createPosts = async (req, res) => {
@@ -44,7 +52,7 @@ exports.createPosts = async (req, res) => {
 
     const file_id = `${user_id}/${filename}`;
 
-    // await postService.createPost(title, content, user_id, forum_id, file_id, combinedTags);
+    await postService.createPost(title, content, user_id, forum_id, file_id, combinedTags);
 
     res.status(200).json({
       message: "success",
