@@ -5,6 +5,7 @@
 /src/api-server/node_modules
 /src/frontend/node
 /node_modules
+src/node_modules/
 /.pnp
 .pnp.*
 .yarn/*
