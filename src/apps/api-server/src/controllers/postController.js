@@ -1,7 +1,5 @@
 const postService = require('../services/postServices');
 const tagService = require('../services/tagServices');
-const roleMiddleware = require('../middlewares/roleMiddleware');
-const authMiddleware = require('../middlewares/authMiddleware')
 const { z } = require('zod');
 
 
