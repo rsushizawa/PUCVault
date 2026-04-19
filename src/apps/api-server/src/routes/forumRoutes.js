@@ -7,7 +7,7 @@ const authMiddleware = require("../middlewares/authMiddleware");
 router.get("/print/forums", forumController.print);
 
 router.patch(
-  "/:forum_id/description",
+  "/:forum_id/update",
   authMiddleware,
   forumController.updateForumDescription,
 );
