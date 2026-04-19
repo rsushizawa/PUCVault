@@ -49,7 +49,10 @@ module.exports = {
 
     } catch (error) {
       errorMsg(error);
+    } finally {
+      client.release();
     }
+
   }
 };
 

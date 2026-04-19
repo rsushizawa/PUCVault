@@ -52,7 +52,10 @@ module.exports = {
 
     } catch (error) {
       errorMsg(error);
+    } finally {
+      connect.release();
     }
+
 
   },
 
@@ -66,7 +69,10 @@ module.exports = {
       await pool.query('CALL publico.inserir_tag($1,$2)', [tagName, creator_id]);
     } catch (error) {
       errorMsg(error);
+    } finally {
+      connect.release();
     }
+
   },
 
   async validateTag(tag_id, validator_id, tagState) {
@@ -79,7 +85,10 @@ module.exports = {
       await pool.query('CALL publico.validar_tag($1,$2,$3)', [tag_id, validator_id, tagState]);
     } catch (error) {
       errorMsg(error);
+    } finally {
+      connect.release();
     }
+
   }
 };
 

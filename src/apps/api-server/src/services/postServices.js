@@ -49,19 +49,26 @@ module.exports = {
 
     } catch (error) {
       errorMsg(error);
+    } finally {
+      connect.release();
     }
   },
 
-  async getPost(forum_id) {
+  async getPost(forum_id, page_num) {
     let connect;
     try {
-      connect = await pool.connect;
+      connect = await pool.connect();
       console.log('conexão sucedida getPost');
 
-      await pool.query('');
+      const res = await pool.query('SELECT * FROM publico.listar_postagens_forum($1::int, $2::int)', [forum_id, page_num]);
+
+      return res;
 
     } catch (error) {
+      console.error("Erro no Banco:", error.message);
       errorMsg(error);
+    } finally {
+      connect.release();
     }
   }
 };

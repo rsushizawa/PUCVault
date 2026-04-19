@@ -8,7 +8,7 @@ router.patch('/:forum_id/create',
   postController.createPosts
 );
 
-router.get('/:forum_id',
+router.get('/:forum_id/page/:page_num',
   postController.getPosts
 );
 

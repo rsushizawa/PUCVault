@@ -57,7 +57,10 @@ module.exports = {
     } catch (error) {
       errorMsg(error);
 
+    } finally {
+      client.release();
     }
+
   },
 
   async validateLoginCredentials(userEmail, password) {
@@ -95,7 +98,10 @@ module.exports = {
       }
     } catch (error) {
       errorMsg(error);
+    } finally {
+      client.release();
     }
+
   },
 
   async deleteUser(user_id) {
@@ -121,7 +127,10 @@ module.exports = {
 
     } catch (error) {
       errorMsg(error);
+    } finally {
+      client.release();
     }
+
   },
 
   async printLogins() {
@@ -134,7 +143,10 @@ module.exports = {
       console.table(res.rows);
     } catch (error) {
       errorMsg(error);
+    } finally {
+      client.release();
     }
+
   },
 
   async findIDByUsername(username) {
@@ -151,7 +163,10 @@ module.exports = {
     } catch (error) {
       errorMsg(error);
       return null;
+    } finally {
+      client.release();
     }
+
   },
 
   async toggleUserStatus(user_id) {
@@ -163,7 +178,10 @@ module.exports = {
       await pool.query('CALL publico.alternar_status_usuario( $1 )', [user_id]);
     } catch (error) {
       errorMsg(error);
+    } finally {
+      client.release();
     }
+
   },
 
   async changeUserRole(executor_id, target_id, newRole) {
@@ -175,7 +193,10 @@ module.exports = {
       await pool.query('CALL publico.alterar_cargo_usuario($1,$2,$3)', [executor_id, target_id, newRole]);
     } catch (error) {
       errorMsg(error);
+    } finally {
+      client.release();
     }
+
   },
 
   async reportUser(type, reportee_id, reported_id) {
@@ -187,7 +208,10 @@ module.exports = {
       await pool.query('CALL publico.inserir_denuncia_usuario($1,$2,$3)', [type, reportee_id, reported_id]);
     } catch (error) {
       errorMsg(error);
+    } finally {
+      client.release();
     }
+
   },
 
   async toggleFollowUser(follower_id, following_id) {
@@ -199,7 +223,10 @@ module.exports = {
       await pool.query('CALL publico.alternar_seguir_usuario($1,$2)', [follower_id, following_id]);
     } catch (error) {
       errorMsg(error);
+    } finally {
+      client.release();
     }
+
   }
 };
 
