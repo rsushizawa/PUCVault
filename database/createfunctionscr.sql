@@ -138,3 +138,38 @@ BEGIN
 	WHERE seguir_forum.forum = p_id;
 END;
 $$;
+
+CREATE OR REPLACE FUNCTION publico.buscar_tags_por_criador(
+	p_id INT
+)
+RETURNS SETOF privado.tag
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+	RETURN QUERY
+	SELECT * FROM privado.tag
+	WHERE criador = p_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION publico.listar_postagens_forum (
+	p_forum_id INT,
+	p_pagina INT DEFAULT 1
+)
+RETURNS SETOF privado.visualizar_postagem
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+	RETURN QUERY
+	SELECT *
+	FROM privado.visualizar_postagem
+	WHERE forum = p_forum_id
+	ORDER BY criado_em DESC
+	LIMIT 20
+	OFFSET (p_pagina - 1) * 20;
+END;
+$$;

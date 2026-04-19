@@ -98,7 +98,7 @@ CREATE TABLE privado.conteudo (
 CREATE TABLE privado.postagem (
 	id INT PRIMARY KEY REFERENCES privado.conteudo(id) ON DELETE CASCADE,
 	titulo VARCHAR(50) NOT NULL,
-	arquivo TEXT,
+	arquivo TEXT UNIQUE,
 	forum INT NOT NULL,
 
 	FOREIGN KEY (forum) REFERENCES privado.forum(id) ON DELETE CASCADE
