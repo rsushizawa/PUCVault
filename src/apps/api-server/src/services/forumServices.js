@@ -50,6 +50,8 @@ module.exports = {
       console.table(res.rows);
     } catch (error) {
       errorMsg(error);
+    } finally {
+      client.release();
     }
   },
 
@@ -67,7 +69,10 @@ module.exports = {
       return returnvalue;
     } catch (error) {
       errorMsg(error);
+    } finally {
+      connect.release();
     }
+
   },
 
 
@@ -81,7 +86,10 @@ module.exports = {
 
     } catch (error) {
       errorMsg(error);
+    } finally {
+      connect.release();
     }
+
   },
 
   async updateForumDescription(forum_id, user_id, newDescription) {
@@ -94,7 +102,10 @@ module.exports = {
 
     } catch (error) {
       errorMsg(error);
+    } finally {
+      connect.release();
     }
+
   },
 
   async validateForum(forum_id, validator_id, forumState) {
@@ -107,7 +118,10 @@ module.exports = {
 
     } catch (error) {
       errorMsg(error);
+    } finally {
+      connect.release();
     }
+
   },
 
   async listForumFollowers(forum_id) {
@@ -121,7 +135,11 @@ module.exports = {
       console.table(res.rows);
     } catch (error) {
       errorMsg(error);
+    } finally {
+      connect.release();
     }
+
+
 
   },
 
@@ -135,7 +153,10 @@ module.exports = {
 
     } catch (error) {
       errorMsg(error);
+    } finally {
+      client.release();
     }
+
   }
 
 };

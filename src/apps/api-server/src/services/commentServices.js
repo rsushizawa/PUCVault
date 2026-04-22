@@ -45,11 +45,14 @@ module.exports = {
       connect = await pool.connect();
       console.log('conexão sucedida createComment');
 
-      await pool.query('CALL publico.inserir_postagem($1, $2, $3)', [content, creator_id, father_content_id]);
+      await pool.query('CALL publico.inserir_comentario($1, $2, $3)', [content, creator_id, father_content_id]);
 
     } catch (error) {
       errorMsg(error);
+    } finally {
+      client.release();
     }
+
   }
 };
 

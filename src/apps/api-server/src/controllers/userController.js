@@ -3,18 +3,7 @@ const roleMiddleware = require('../middlewares/roleMiddleware');
 const { z } = require('zod');
 const jwt = require('jsonwebtoken');
 
-const path = require('path');
-const envPath = path.resolve(__dirname, '../../src/.env');
-
-require('dotenv').config({ path: envPath });
-
-const passAccess = process.env.DB_PASS;
-
-
-
 //reportUser(type, reportee_id, reported_id) 
-
-
 
 exports.changeRole = async (req, res) => {
 

@@ -50,6 +50,8 @@ module.exports = {
 
     } catch (error) {
       errorMsg(error);
+    } finally {
+      connect.release();
     }
   },
 
@@ -63,6 +65,8 @@ module.exports = {
 
     } catch (error) {
       errorMsg(error);
+    } finally {
+      connect.release();
     }
   },
 
@@ -76,6 +80,8 @@ module.exports = {
 
     } catch (error) {
       errorMsg(error);
+    } finally {
+      connect.release();
     }
   },
 
@@ -89,6 +95,8 @@ module.exports = {
 
     } catch (error) {
       errorMsg(error);
+    } finally {
+      connect.release();
     }
   }
 };
