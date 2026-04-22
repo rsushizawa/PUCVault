@@ -110,18 +110,18 @@ SELECT
 
 	-- informações do criador
 	usuario.nome_usuario,
+	usuario.cargo,
+
 	identidade_visual.img_perfil,
 
-	-- primeira tag por ordem de inserção
+	-- tags da postagem em array
 	(
-		SELECT tag.tag
+		SELECT ARRAY_AGG(tag.tag ORDER BY classificacao.tag ASC)
 		FROM privado.classificacao AS classificacao
 		JOIN privado.tag AS tag
 			ON tag.id = classificacao.tag
 		WHERE classificacao.postagem = postagem.id
-		ORDER BY classificacao.tag ASC
-		LIMIT 1
-	) AS tag,
+	) AS tags,
 
 	-- engajamento: soma de upvotes e downvotes
 	COALESCE(engajamento.total, 0) AS engajamento,
@@ -130,8 +130,54 @@ SELECT
 	COALESCE(comentarios.total, 0) AS comentarios
 
 	FROM privado.postagem AS postagem
+
 	JOIN privado.conteudo AS conteudo
 		ON conteudo.id = postagem.id
+
+	JOIN privado.usuario AS usuario
+		ON usuario.id = conteudo.criador
+
+	JOIN privado.identidade_visual AS identidade_visual
+		ON identidade_visual.id = usuario.identidade_visual
+
+	LEFT JOIN (
+		SELECT avaliacao.conteudo, SUM(avaliacao.avaliacao) AS total
+		FROM privado.avaliacao AS avaliacao
+		GROUP BY avaliacao.conteudo
+	) AS engajamento ON engajamento.conteudo = postagem.id
+
+	LEFT JOIN (
+		SELECT comentario.conteudo_pai, COUNT(*) AS total
+		FROM privado.comentario AS comentario
+		GROUP BY comentario.conteudo_pai
+	) AS comentarios ON comentarios.conteudo_pai = postagem.id;
+
+CREATE OR REPLACE VIEW privado.exibir_comentarios AS
+SELECT
+	comentario.id,
+	comentario.conteudo_pai,
+	comentario.nivel,
+
+	conteudo.id AS conteudo_id,
+	conteudo.conteudo,
+	conteudo.status,
+	conteudo.criado_em,
+
+	-- tempo de vida do comentário
+	NOW() - conteudo.criado_em AS tempo_de_vida,
+
+	-- informações do criador
+	usuario.nome_usuario,
+	usuario.cargo,
+	identidade_visual.img_perfil,
+
+	-- engajamento do comentário
+	COALESCE(engajamento.total, 0) AS engajamento
+
+	FROM privado.comentario AS comentario
+
+	JOIN privado.conteudo AS conteudo
+		ON conteudo.id = comentario.id
 
 	JOIN privado.usuario AS usuario
 		ON usuario.id = conteudo.criador
@@ -143,9 +189,4 @@ SELECT
 		SELECT avaliacao.conteudo, SUM(avaliacao.avaliacao) AS total
 		FROM privado.avaliacao AS avaliacao
 		GROUP BY avaliacao.conteudo
-	) AS engajamento ON engajamento.conteudo = postagem.id
-	LEFT JOIN (
-		SELECT comentario.conteudo_pai, COUNT(*) AS total
-		FROM privado.comentario AS comentario
-		GROUP BY comentario.conteudo_pai
-	) AS comentarios ON comentarios.conteudo_pai = postagem.id;
+	) AS engajamento ON engajamento.conteudo = comentario.id;

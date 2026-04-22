@@ -1,7 +1,7 @@
 # Documentação do Esquema Publico
 
 ## Visão Geral
-Este documento descreve todas as **procedures** (escrita) e **functions** (leitura) disponíveis no esquema `publico` do banco de dados.
+Este documento descreve todas as **procedures** (escrita) e **functions** (leitura) disponíveis no esquema `publico` do banco de dados, bem como as **views** utilizadas para consulta.
 
 ---
 
@@ -286,12 +286,36 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 
 **Retorno:** SETOF `privado.login_usuario`
 
+**Colunas retornadas (na ordem):**
+| Ordem | Coluna | Tipo | Descrição |
+|-------|--------|------|-----------|
+| 1 | id | INT | ID do usuário |
+| 2 | nome_usuario | VARCHAR | Nome de usuário |
+| 3 | email | VARCHAR | Email do usuário |
+| 4 | status | VARCHAR | Status do usuário (ATIVO/SILENCIADO) |
+| 5 | senha_hash | VARCHAR | Hash da senha |
+
 ---
 
 ### 2. `listar_usuarios`
 **Descrição:** Lista todos os usuários.
 **Parâmetros:** Nenhum
+
 **Retorno:** SETOF `privado.perfil_usuario`
+
+**Colunas retornadas (na ordem):**
+| Ordem | Coluna | Tipo | Descrição |
+|-------|--------|------|-----------|
+| 1 | id | INT | ID do usuário |
+| 2 | nome | VARCHAR | Nome completo do usuário |
+| 3 | nome_usuario | VARCHAR | Nome de usuário |
+| 4 | status | VARCHAR | Status do usuário (ATIVO/SILENCIADO) |
+| 5 | criado_em | TIMESTAMPTZ | Data de criação da conta |
+| 6 | img_perfil | TEXT | ID da imagem de perfil (Cloudflare) |
+| 7 | img_banner | TEXT | ID da imagem de banner (Cloudflare) |
+| 8 | seguidores | BIGINT | Número de seguidores do usuário |
+| 9 | segue | BIGINT | Número de usuários que este usuário segue |
+| 10 | karma | BIGINT | Pontuação total do usuário (soma das avaliações recebidas) |
 
 ---
 
@@ -304,6 +328,20 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 
 **Retorno:** SETOF `privado.perfil_usuario`
 
+**Colunas retornadas (na ordem):**
+| Ordem | Coluna | Tipo | Descrição |
+|-------|--------|------|-----------|
+| 1 | id | INT | ID do usuário |
+| 2 | nome | VARCHAR | Nome completo do usuário |
+| 3 | nome_usuario | VARCHAR | Nome de usuário |
+| 4 | status | VARCHAR | Status do usuário (ATIVO/SILENCIADO) |
+| 5 | criado_em | TIMESTAMPTZ | Data de criação da conta |
+| 6 | img_perfil | TEXT | ID da imagem de perfil (Cloudflare) |
+| 7 | img_banner | TEXT | ID da imagem de banner (Cloudflare) |
+| 8 | seguidores | BIGINT | Número de seguidores do usuário |
+| 9 | segue | BIGINT | Número de usuários que este usuário segue |
+| 10 | karma | BIGINT | Pontuação total do usuário (soma das avaliações recebidas) |
+
 ---
 
 ### 4. `buscar_usuario_por_nome_usuario`
@@ -314,6 +352,20 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | p_nome_usuario | VARCHAR | Nome de usuário |
 
 **Retorno:** SETOF `privado.perfil_usuario`
+
+**Colunas retornadas (na ordem):**
+| Ordem | Coluna | Tipo | Descrição |
+|-------|--------|------|-----------|
+| 1 | id | INT | ID do usuário |
+| 2 | nome | VARCHAR | Nome completo do usuário |
+| 3 | nome_usuario | VARCHAR | Nome de usuário |
+| 4 | status | VARCHAR | Status do usuário (ATIVO/SILENCIADO) |
+| 5 | criado_em | TIMESTAMPTZ | Data de criação da conta |
+| 6 | img_perfil | TEXT | ID da imagem de perfil (Cloudflare) |
+| 7 | img_banner | TEXT | ID da imagem de banner (Cloudflare) |
+| 8 | seguidores | BIGINT | Número de seguidores do usuário |
+| 9 | segue | BIGINT | Número de usuários que este usuário segue |
+| 10 | karma | BIGINT | Pontuação total do usuário (soma das avaliações recebidas) |
 
 ---
 
@@ -326,6 +378,20 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 
 **Retorno:** SETOF `privado.perfil_usuario`
 
+**Colunas retornadas (na ordem):**
+| Ordem | Coluna | Tipo | Descrição |
+|-------|--------|------|-----------|
+| 1 | id | INT | ID do usuário |
+| 2 | nome | VARCHAR | Nome completo do usuário |
+| 3 | nome_usuario | VARCHAR | Nome de usuário |
+| 4 | status | VARCHAR | Status do usuário (ATIVO/SILENCIADO) |
+| 5 | criado_em | TIMESTAMPTZ | Data de criação da conta |
+| 6 | img_perfil | TEXT | ID da imagem de perfil (Cloudflare) |
+| 7 | img_banner | TEXT | ID da imagem de banner (Cloudflare) |
+| 8 | seguidores | BIGINT | Número de seguidores do usuário |
+| 9 | segue | BIGINT | Número de usuários que este usuário segue |
+| 10 | karma | BIGINT | Pontuação total do usuário (soma das avaliações recebidas) |
+
 ---
 
 ### 6. `buscar_forum_por_nome`
@@ -337,12 +403,39 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 
 **Retorno:** SETOF `privado.visualizar_forum`
 
+**Colunas retornadas (na ordem):**
+| Ordem | Coluna | Tipo | Descrição |
+|-------|--------|------|-----------|
+| 1 | id | INT | ID do fórum |
+| 2 | nome | VARCHAR | Nome do fórum |
+| 3 | descricao | VARCHAR | Descrição do fórum |
+| 4 | criado_em | TIMESTAMPTZ | Data de criação do fórum |
+| 5 | status | VARCHAR | Status do fórum (ATIVO/ESPERA/RECUSADO) |
+| 6 | nome_usuario | VARCHAR | Nome de usuário do criador |
+| 7 | img_perfil | TEXT | ID da imagem de perfil do fórum |
+| 8 | img_banner | TEXT | ID da imagem de banner do fórum |
+| 9 | seguidores | BIGINT | Número total de seguidores do fórum |
+
 ---
 
 ### 7. `listar_foruns`
 **Descrição:** Lista todos os fóruns ativos.
 **Parâmetros:** Nenhum
+
 **Retorno:** SETOF `privado.visualizar_forum`
+
+**Colunas retornadas (na ordem):**
+| Ordem | Coluna | Tipo | Descrição |
+|-------|--------|------|-----------|
+| 1 | id | INT | ID do fórum |
+| 2 | nome | VARCHAR | Nome do fórum |
+| 3 | descricao | VARCHAR | Descrição do fórum |
+| 4 | criado_em | TIMESTAMPTZ | Data de criação do fórum |
+| 5 | status | VARCHAR | Status do fórum (ATIVO) |
+| 6 | nome_usuario | VARCHAR | Nome de usuário do criador |
+| 7 | img_perfil | TEXT | ID da imagem de perfil do fórum |
+| 8 | img_banner | TEXT | ID da imagem de banner do fórum |
+| 9 | seguidores | BIGINT | Número total de seguidores do fórum |
 
 ---
 
@@ -355,6 +448,20 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 
 **Retorno:** SETOF `privado.perfil_usuario`
 
+**Colunas retornadas (na ordem):**
+| Ordem | Coluna | Tipo | Descrição |
+|-------|--------|------|-----------|
+| 1 | id | INT | ID do usuário seguidor |
+| 2 | nome | VARCHAR | Nome completo do seguidor |
+| 3 | nome_usuario | VARCHAR | Nome de usuário do seguidor |
+| 4 | status | VARCHAR | Status do seguidor (ATIVO/SILENCIADO) |
+| 5 | criado_em | TIMESTAMPTZ | Data de criação da conta do seguidor |
+| 6 | img_perfil | TEXT | ID da imagem de perfil do seguidor |
+| 7 | img_banner | TEXT | ID da imagem de banner do seguidor |
+| 8 | seguidores | BIGINT | Número de seguidores do seguidor |
+| 9 | segue | BIGINT | Número de usuários que o seguidor segue |
+| 10 | karma | BIGINT | Pontuação total do seguidor |
+
 ---
 
 ### 9. `buscar_tags_por_criador`
@@ -365,6 +472,17 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | p_id | INT | ID do usuário criador |
 
 **Retorno:** SETOF `privado.tag`
+
+**Colunas retornadas (na ordem):**
+| Ordem | Coluna | Tipo | Descrição |
+|-------|--------|------|-----------|
+| 1 | id | INT | ID da tag |
+| 2 | tag | VARCHAR | Nome da tag |
+| 3 | status | VARCHAR | Status da tag (ATIVO/ESPERA/RECUSADO) |
+| 4 | criado_em | TIMESTAMPTZ | Data de criação da tag |
+| 5 | status_modificado_em | TIMESTAMPTZ | Data da última modificação de status |
+| 6 | criador | INT | ID do usuário criador |
+| 7 | validador | INT | ID do usuário que validou/recusou |
 
 ---
 
@@ -378,3 +496,171 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 
 **Retorno:** SETOF `privado.visualizar_postagem`
 **Paginação:** 20 resultados por página
+
+**Colunas retornadas (na ordem):**
+| Ordem | Coluna | Tipo | Descrição |
+|-------|--------|------|-----------|
+| 1 | id | INT | ID da postagem |
+| 2 | titulo | VARCHAR | Título da postagem |
+| 3 | arquivo | TEXT | ID do arquivo anexado (Cloudflare) |
+| 4 | forum | INT | ID do fórum |
+| 5 | conteudo | TEXT | Conteúdo da postagem |
+| 6 | status | VARCHAR | Status do conteúdo |
+| 7 | criado_em | TIMESTAMPTZ | Data de criação da postagem |
+| 8 | tempo_de_vida | INTERVAL | Tempo desde a criação (NOW() - criado_em) |
+| 9 | nome_usuario | VARCHAR | Nome de usuário do criador |
+| 10 | cargo | VARCHAR | Cargo do criador |
+| 11 | img_perfil | TEXT | ID da imagem de perfil do criador |
+| 12 | tags | TEXT[] | Array de nomes das tags associadas |
+| 13 | engajamento | BIGINT | Soma das avaliações (likes - dislikes) |
+| 14 | comentarios | BIGINT | Número total de comentários na postagem |
+
+---
+
+### 11. `listar_arquivos_forum`
+**Descrição:** Lista todas as postagens que possuem arquivo anexado em um fórum com paginação.
+**Parâmetros:**
+| Parâmetro | Tipo | Descrição |
+|-----------|------|-----------|
+| p_forum_id | INT | ID do fórum |
+| p_pagina | INT | Número da página (padrão: 1) |
+
+**Retorno:** SETOF `privado.visualizar_postagem`
+**Paginação:** 20 resultados por página
+
+**Colunas retornadas (na ordem):**
+| Ordem | Coluna | Tipo | Descrição |
+|-------|--------|------|-----------|
+| 1 | id | INT | ID da postagem |
+| 2 | titulo | VARCHAR | Título da postagem |
+| 3 | arquivo | TEXT | ID do arquivo anexado (Cloudflare) - sempre não nulo |
+| 4 | forum | INT | ID do fórum |
+| 5 | conteudo | TEXT | Conteúdo da postagem |
+| 6 | status | VARCHAR | Status do conteúdo |
+| 7 | criado_em | TIMESTAMPTZ | Data de criação da postagem |
+| 8 | tempo_de_vida | INTERVAL | Tempo desde a criação (NOW() - criado_em) |
+| 9 | nome_usuario | VARCHAR | Nome de usuário do criador |
+| 10 | cargo | VARCHAR | Cargo do criador |
+| 11 | img_perfil | TEXT | ID da imagem de perfil do criador |
+| 12 | tags | TEXT[] | Array de nomes das tags associadas |
+| 13 | engajamento | BIGINT | Soma das avaliações (likes - dislikes) |
+| 14 | comentarios | BIGINT | Número total de comentários na postagem |
+
+---
+
+### 12. `listar_comentarios_postagem`
+**Descrição:** Lista todos os comentários de uma postagem de forma hierárquica (recursiva), ordenados por nível e data de criação.
+**Parâmetros:**
+| Parâmetro | Tipo | Descrição |
+|-----------|------|-----------|
+| p_postagem_id | INT | ID da postagem |
+
+**Retorno:** SETOF `privado.exibir_comentarios`
+
+**Colunas retornadas (na ordem):**
+| Ordem | Coluna | Tipo | Descrição |
+|-------|--------|------|-----------|
+| 1 | id | INT | ID do comentário |
+| 2 | conteudo_pai | INT | ID do conteúdo pai (postagem ou comentário) |
+| 3 | nivel | SMALLINT | Nível do comentário na árvore (1 a 5) |
+| 4 | conteudo_id | INT | ID do conteúdo associado |
+| 5 | conteudo | TEXT | Conteúdo do comentário |
+| 6 | status | VARCHAR | Status do comentário |
+| 7 | criado_em | TIMESTAMPTZ | Data de criação do comentário |
+| 8 | tempo_de_vida | INTERVAL | Tempo desde a criação (NOW() - criado_em) |
+| 9 | nome_usuario | VARCHAR | Nome de usuário do criador |
+| 10 | cargo | VARCHAR | Cargo do criador |
+| 11 | img_perfil | TEXT | ID da imagem de perfil do criador |
+| 12 | engajamento | BIGINT | Soma das avaliações (likes - dislikes) do comentário |
+
+---
+
+## VIEWS (Estruturas de Dados)
+
+### 1. `privado.login_usuario`
+**Descrição:** Utilizada para autenticação de usuários. Retorna apenas usuários não excluídos.
+**Colunas:**
+| Ordem | Coluna | Tipo | Descrição |
+|-------|--------|------|-----------|
+| 1 | id | INT | ID do usuário |
+| 2 | nome_usuario | VARCHAR | Nome de usuário |
+| 3 | email | VARCHAR | Email do usuário |
+| 4 | status | VARCHAR | Status do usuário (ATIVO/SILENCIADO) |
+| 5 | senha_hash | VARCHAR | Hash da senha |
+
+---
+
+### 2. `privado.perfil_usuario`
+**Descrição:** Utilizada para exibir a página de perfil de um usuário. Inclui informações de perfil, contagem de seguidores, seguidos e karma.
+**Colunas:**
+| Ordem | Coluna | Tipo | Descrição |
+|-------|--------|------|-----------|
+| 1 | id | INT | ID do usuário |
+| 2 | nome | VARCHAR | Nome completo do usuário |
+| 3 | nome_usuario | VARCHAR | Nome de usuário |
+| 4 | status | VARCHAR | Status do usuário (ATIVO/SILENCIADO) |
+| 5 | criado_em | TIMESTAMPTZ | Data de criação da conta |
+| 6 | img_perfil | TEXT | ID da imagem de perfil (Cloudflare) |
+| 7 | img_banner | TEXT | ID da imagem de banner (Cloudflare) |
+| 8 | seguidores | BIGINT | Número de seguidores do usuário |
+| 9 | segue | BIGINT | Número de usuários que este usuário segue |
+| 10 | karma | BIGINT | Pontuação total do usuário (soma das avaliações recebidas) |
+
+---
+
+### 3. `privado.visualizar_forum`
+**Descrição:** Utilizada para exibir o cabeçalho/informações de um fórum.
+**Colunas:**
+| Ordem | Coluna | Tipo | Descrição |
+|-------|--------|------|-----------|
+| 1 | id | INT | ID do fórum |
+| 2 | nome | VARCHAR | Nome do fórum |
+| 3 | descricao | VARCHAR | Descrição do fórum |
+| 4 | criado_em | TIMESTAMPTZ | Data de criação do fórum |
+| 5 | status | VARCHAR | Status do fórum (ATIVO/ESPERA/RECUSADO) |
+| 6 | nome_usuario | VARCHAR | Nome de usuário do criador |
+| 7 | img_perfil | TEXT | ID da imagem de perfil do fórum |
+| 8 | img_banner | TEXT | ID da imagem de banner do fórum |
+| 9 | seguidores | BIGINT | Número total de seguidores do fórum |
+
+---
+
+### 4. `privado.visualizar_postagem`
+**Descrição:** Utilizada para exibir postagens com todas as informações agregadas (tags, engajamento, comentários, etc.).
+**Colunas:**
+| Ordem | Coluna | Tipo | Descrição |
+|-------|--------|------|-----------|
+| 1 | id | INT | ID da postagem |
+| 2 | titulo | VARCHAR | Título da postagem |
+| 3 | arquivo | TEXT | ID do arquivo anexado (Cloudflare) |
+| 4 | forum | INT | ID do fórum |
+| 5 | conteudo | TEXT | Conteúdo da postagem |
+| 6 | status | VARCHAR | Status do conteúdo |
+| 7 | criado_em | TIMESTAMPTZ | Data de criação da postagem |
+| 8 | tempo_de_vida | INTERVAL | Tempo desde a criação (NOW() - criado_em) |
+| 9 | nome_usuario | VARCHAR | Nome de usuário do criador |
+| 10 | cargo | VARCHAR | Cargo do criador |
+| 11 | img_perfil | TEXT | ID da imagem de perfil do criador |
+| 12 | tags | TEXT[] | Array de nomes das tags associadas |
+| 13 | engajamento | BIGINT | Soma das avaliações (likes - dislikes) |
+| 14 | comentarios | BIGINT | Número total de comentários na postagem |
+
+---
+
+### 5. `privado.exibir_comentarios`
+**Descrição:** Utilizada para exibir comentários de forma hierárquica com informações do criador e engajamento.
+**Colunas:**
+| Ordem | Coluna | Tipo | Descrição |
+|-------|--------|------|-----------|
+| 1 | id | INT | ID do comentário |
+| 2 | conteudo_pai | INT | ID do conteúdo pai (postagem ou comentário) |
+| 3 | nivel | SMALLINT | Nível do comentário na árvore (1 a 5) |
+| 4 | conteudo_id | INT | ID do conteúdo associado |
+| 5 | conteudo | TEXT | Conteúdo do comentário |
+| 6 | status | VARCHAR | Status do comentário |
+| 7 | criado_em | TIMESTAMPTZ | Data de criação do comentário |
+| 8 | tempo_de_vida | INTERVAL | Tempo desde a criação (NOW() - criado_em) |
+| 9 | nome_usuario | VARCHAR | Nome de usuário do criador |
+| 10 | cargo | VARCHAR | Cargo do criador |
+| 11 | img_perfil | TEXT | ID da imagem de perfil do criador |
+| 12 | engajamento | BIGINT | Soma das avaliações (likes - dislikes) do comentário |
