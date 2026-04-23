@@ -13,30 +13,27 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/auth", authRoutes);
+app.use("/auth", authRoutes);
 
 app.use("/forums", forumRoutes);
+app.use("/forums", forumRoutes);
 
+app.use("/user", userRoutes);
 app.use("/user", userRoutes);
 
 app.use("/tags", tagRoutes);
+app.use("/tags", tagRoutes);
 
 app.use("/posts", postRoutes);
-app.use("/denuncias", denunciaRoutes);
 
 app.get("/", (req, res) => {
   res.send("Online");
-});
-
-app.listen(port, () => {
-  console.log(`running on https://localhost:${port}`);
-});
-
-app.use("/forums", forumRoutes);
-
-app.use("/user", userRoutes);
-
 app.get("/", (req, res) => {
   res.send("Online");
 });
 
 const port = 8000;
+
+app.listen(port, () => {
+  console.log(`running on https://localhost:${port}`);
+});

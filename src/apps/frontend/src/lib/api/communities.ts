@@ -11,7 +11,7 @@ export function getCommunityPosts(
   id: string,
   page = 1,
 ): Promise<{ posts: Post[]; total: number }> {
-  return apiFetch(`/forums/${id}/posts?page=${page}`)
+  return apiFetch(`/posts/${id}/page/${page}`)
 }
 
 export function getCommunityFiles(id: string, sort: SortOption): Promise<Semester[]> {

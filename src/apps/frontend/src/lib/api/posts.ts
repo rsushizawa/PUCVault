@@ -9,8 +9,8 @@ export function createPost(
   communityId: string,
   data: { title: string; content: string; tagIds: string[]; fileUrl?: string },
 ): Promise<Post> {
-  return apiFetch(`/forums/${communityId}/posts`, {
-    method: "POST",
+  return apiFetch(`/posts/${communityId}/create`, {
+    method: "PATCH",
     body: JSON.stringify(data),
   })
 }
