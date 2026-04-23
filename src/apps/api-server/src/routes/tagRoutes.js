@@ -11,7 +11,7 @@ router.patch('/:tag_id/validate',
   authMiddleware, tagController.validateTags
 );
 
-router.patch('/:user_id/print',
+router.get('/:user_id/print',
   tagController.printUserTags
 );
 

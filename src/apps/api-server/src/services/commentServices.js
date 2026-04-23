@@ -50,9 +50,24 @@ module.exports = {
     } catch (error) {
       errorMsg(error);
     } finally {
-      client.release();
+      connect.release();
     }
 
+  },
+
+  async listComments(post_id) {
+    let connect;
+    try {
+      connect = await pool.connect();
+      console.log('conexão sucedida listComments');
+
+      await pool.query('SELECT * FROM publico.listar_comentarios_postagem( $1 )', [post_id]);
+
+    } catch (error) {
+      errorMsg(error);
+    } finally {
+      connect.release();
+    }
   }
 };
 
