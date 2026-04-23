@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 let app = express();
 //const { add } = require("@pucvault/utils"); // import here
 
@@ -8,7 +9,7 @@ const userRoutes = require('./routes/userRoutes.js');
 const tagRoutes = require('./routes/tagRoutes.js');
 const postRoutes = require('./routes/postRoutes.js');
 
-
+app.use(cors());
 app.use(express.json());
 
 app.use('/auth', authRoutes);
