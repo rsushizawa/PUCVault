@@ -3,7 +3,7 @@ import { apiFetch, setToken, clearToken } from "./client"
 export async function login(email: string, password: string): Promise<void> {
   const { token } = await apiFetch<{ token: string }>("/auth/login", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ userEmail: email, password }),
   })
   setToken(token)
 }
@@ -14,11 +14,10 @@ export async function signIn(data: {
   email: string
   password: string
 }): Promise<void> {
-  const { token } = await apiFetch<{ token: string }>("/auth/sign-in", {
+  await apiFetch("/auth/sign-in", {
     method: "POST",
     body: JSON.stringify(data),
   })
-  setToken(token)
 }
 
 export function logout(): void {
