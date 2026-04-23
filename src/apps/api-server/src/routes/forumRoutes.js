@@ -20,12 +20,23 @@ router.patch(
   forumController.validateForum,
 );
 
-router.patch("/:forum_id/page/:page_num", forumController.files);
+router.patch('/:forum_id/page/:page_num',
+  forumController.files
+);
 
-router.patch("/:forum_id/follow", authMiddleware, forumController.follow);
+router.patch('/:forum_id/follow',
+  authMiddleware,
+  forumController.follow
+);
 
-router.get("/:forum_id/list", forumController.listForumFollowers);
+router.get('/:forum_id/list',
+  forumController.listForumFollowers
+);
 
-router.patch("/:forum_id/files/page/:page_num", forumController.files);
+router.patch('/:forum_id/files/page/:page_num',
+  forumController.files
+);
+
+
 
 module.exports = router;
