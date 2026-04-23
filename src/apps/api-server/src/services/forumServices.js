@@ -47,7 +47,22 @@ module.exports = {
       console.log('conexão sucedida printForums');
       const res = await pool.query('SELECT * FROM publico.listar_foruns()');
 
-      console.table(res.rows);
+      return res;
+    } catch (error) {
+      errorMsg(error);
+    } finally {
+      client.release();
+    }
+  },
+
+  async listForumFiles(forum_id, page_num) {
+    let client;
+    try {
+      client = await pool.connect();
+      console.log('conexão sucedida listForumFiles');
+      const res = await pool.query('SELECT * FROM publico.listar_arquivos_forum( $1, $2 )', [forum_id, page_num]);
+
+      return res;
     } catch (error) {
       errorMsg(error);
     } finally {
@@ -157,6 +172,7 @@ module.exports = {
       client.release();
     }
 
-  }
+  },
+
 
 };
