@@ -9,7 +9,21 @@ const forumSchema = z.object({
 
 exports.print = async (req, res) => {
   try {
-    await forumService.printForums();
+    const res = await forumService.printForums();
+
+    console.table(res.rows);
+  } catch (error) {
+    console.log('internal server error: ', error.message);
+  }
+};
+
+exports.files = async (req, res) => {
+
+  const { forum_id, page_num } = req.params;
+  try {
+    const res = await forumService.listForumFiles(forum_id, page_num);
+
+    console.table(res.rows);
   } catch (error) {
     console.log("internal server error: ", error.message);
   }
