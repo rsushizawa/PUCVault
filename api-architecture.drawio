@@ -1,0 +1,255 @@
+<mxfile host="app.diagrams.net" compressed="false" version="24.0.0">
+  <diagram name="PUCVault API Architecture" id="pucvault-arch">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!--  MONOREPO OUTER BOX                                 -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <mxCell id="mono" value="pucvault  (monorepo)"
+          style="text;html=1;strokeColor=#9E9E9E;fillColor=#F5F5F5;fontColor=#333333;
+                 align=center;verticalAlign=top;spacingTop=10;
+                 whiteSpace=wrap;rounded=1;dashed=1;strokeWidth=2;
+                 fontStyle=1;fontSize=15;"
+          vertex="1" parent="1">
+          <mxGeometry x="20" y="20" width="1130" height="850" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!--  FRONTEND                                           -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <mxCell id="fe-box" value="&lt;b&gt;src/apps/frontend&lt;/b&gt;&lt;br/&gt;&lt;font color='#6c8ebf'&gt;Next.js · TypeScript&lt;/font&gt;"
+          style="swimlane;startSize=55;rounded=1;
+                 fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;"
+          vertex="1" parent="1">
+          <mxGeometry x="50" y="90" width="320" height="700" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fe-pages" value="&lt;b&gt;Pages&lt;/b&gt; (Server Components)&lt;br/&gt;community/[id]/page.tsx"
+          style="rounded=1;whiteSpace=wrap;html=1;
+                 fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;"
+          vertex="1" parent="fe-box">
+          <mxGeometry x="15" y="70" width="290" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fe-components" value="&lt;b&gt;Client Components&lt;/b&gt;&lt;br/&gt;CommunityFiles · PostCard · CreatePost"
+          style="rounded=1;whiteSpace=wrap;html=1;
+                 fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;"
+          vertex="1" parent="fe-box">
+          <mxGeometry x="15" y="150" width="290" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- API layer (nested swimlane) -->
+        <mxCell id="fe-api" value="&lt;b&gt;src/lib/api/&lt;/b&gt;"
+          style="swimlane;startSize=35;rounded=1;
+                 fillColor=#cce0f5;strokeColor=#6c8ebf;fontSize=11;"
+          vertex="1" parent="fe-box">
+          <mxGeometry x="15" y="230" width="290" height="200" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fe-client" value="client.ts — base fetch + auth headers"
+          style="rounded=1;whiteSpace=wrap;html=1;
+                 fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=10;"
+          vertex="1" parent="fe-api">
+          <mxGeometry x="10" y="40" width="270" height="35" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fe-communities" value="communities.ts — getCommunity · getFiles · getPosts"
+          style="rounded=1;whiteSpace=wrap;html=1;
+                 fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=10;"
+          vertex="1" parent="fe-api">
+          <mxGeometry x="10" y="85" width="270" height="35" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fe-posts-api" value="posts.ts — getPost · createPost · votePost"
+          style="rounded=1;whiteSpace=wrap;html=1;
+                 fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=10;"
+          vertex="1" parent="fe-api">
+          <mxGeometry x="10" y="130" width="270" height="35" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fe-env" value="NEXT_PUBLIC_API_URL=http://localhost:3001"
+          style="rounded=1;whiteSpace=wrap;html=1;
+                 fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=2;"
+          vertex="1" parent="fe-box">
+          <mxGeometry x="15" y="450" width="290" height="38" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fe-note" value="✓ Compile-time safety on every API response&lt;br/&gt;✓ Type errors caught before runtime"
+          style="text;html=1;strokeColor=none;fillColor=none;
+                 fontSize=10;fontColor=#6c8ebf;align=left;spacingLeft=4;"
+          vertex="1" parent="fe-box">
+          <mxGeometry x="15" y="505" width="290" height="45" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!--  SHARED TYPES PACKAGE                               -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <mxCell id="sh-box" value="&lt;b&gt;src/packages/types&lt;/b&gt;&lt;br/&gt;&lt;font color='#9673a6'&gt;TypeScript · shared contract&lt;/font&gt;"
+          style="swimlane;startSize=55;rounded=1;
+                 fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;"
+          vertex="1" parent="1">
+          <mxGeometry x="420" y="90" width="320" height="700" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sh-pkg" value='package name: "@pucvault/types"'
+          style="rounded=1;whiteSpace=wrap;html=1;
+                 fillColor=#f9f0ff;strokeColor=#9673a6;fontSize=10;fontStyle=2;"
+          vertex="1" parent="sh-box">
+          <mxGeometry x="15" y="65" width="290" height="35" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sh-tag" value="&lt;b&gt;Tag&lt;/b&gt;  { id: string;  name: string }"
+          style="rounded=1;whiteSpace=wrap;html=1;
+                 fillColor=#ffffff;strokeColor=#9673a6;fontSize=10;fontFamily=Courier New;"
+          vertex="1" parent="sh-box">
+          <mxGeometry x="15" y="115" width="290" height="38" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sh-community" value="&lt;b&gt;Community&lt;/b&gt;  { id; name; memberCount;&lt;br/&gt;isPublic; postCount; rules: Rule[] }"
+          style="rounded=1;whiteSpace=wrap;html=1;
+                 fillColor=#ffffff;strokeColor=#9673a6;fontSize=10;fontFamily=Courier New;"
+          vertex="1" parent="sh-box">
+          <mxGeometry x="15" y="163" width="290" height="48" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sh-post" value="&lt;b&gt;Post&lt;/b&gt;  { id; title; body; author;&lt;br/&gt;tags: Tag[];  voteCount; commentCount }"
+          style="rounded=1;whiteSpace=wrap;html=1;
+                 fillColor=#ffffff;strokeColor=#9673a6;fontSize=10;fontFamily=Courier New;"
+          vertex="1" parent="sh-box">
+          <mxGeometry x="15" y="221" width="290" height="48" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sh-semester" value="&lt;b&gt;Semester&lt;/b&gt;  { id; name; courses: Course[] }"
+          style="rounded=1;whiteSpace=wrap;html=1;
+                 fillColor=#ffffff;strokeColor=#9673a6;fontSize=10;fontFamily=Courier New;"
+          vertex="1" parent="sh-box">
+          <mxGeometry x="15" y="279" width="290" height="38" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sh-course" value="&lt;b&gt;Course&lt;/b&gt;  { id; name; files: CourseFile[] }"
+          style="rounded=1;whiteSpace=wrap;html=1;
+                 fillColor=#ffffff;strokeColor=#9673a6;fontSize=10;fontFamily=Courier New;"
+          vertex="1" parent="sh-box">
+          <mxGeometry x="15" y="327" width="290" height="38" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sh-coursefile" value="&lt;b&gt;CourseFile&lt;/b&gt;  { id; name; uploadedAt;&lt;br/&gt;tags: Tag[];  postId: string }"
+          style="rounded=1;whiteSpace=wrap;html=1;
+                 fillColor=#ffffff;strokeColor=#9673a6;fontSize=10;fontFamily=Courier New;"
+          vertex="1" parent="sh-box">
+          <mxGeometry x="15" y="375" width="290" height="48" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sh-sort" value="&lt;b&gt;SortOption&lt;/b&gt;  'default' | 'date' | 'tag'"
+          style="rounded=1;whiteSpace=wrap;html=1;
+                 fillColor=#ffffff;strokeColor=#9673a6;fontSize=10;fontFamily=Courier New;"
+          vertex="1" parent="sh-box">
+          <mxGeometry x="15" y="433" width="290" height="38" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sh-how" value="&lt;b&gt;Frontend (TS):&lt;/b&gt;&lt;br/&gt;import type { Post } from '@pucvault/types'&lt;br/&gt;&lt;br/&gt;&lt;b&gt;Backend (JS):&lt;/b&gt;&lt;br/&gt;// @ts-check&lt;br/&gt;/** @type {import('@pucvault/types').Post} */"
+          style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=6;
+                 fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;fontFamily=Courier New;"
+          vertex="1" parent="sh-box">
+          <mxGeometry x="15" y="490" width="290" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!--  BACKEND                                            -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <mxCell id="be-box" value="&lt;b&gt;src/apps/backend&lt;/b&gt;&lt;br/&gt;&lt;font color='#82b366'&gt;Express.js · JavaScript&lt;/font&gt;"
+          style="swimlane;startSize=55;rounded=1;
+                 fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;"
+          vertex="1" parent="1">
+          <mxGeometry x="790" y="90" width="320" height="700" as="geometry" />
+        </mxCell>
+
+        <mxCell id="be-routes" value="&lt;b&gt;routes/&lt;/b&gt;&lt;br/&gt;GET  /communities/:id&lt;br/&gt;GET  /communities/:id/posts&lt;br/&gt;GET  /communities/:id/files?sort=&lt;br/&gt;POST /communities/:id/posts&lt;br/&gt;POST /posts/:id/vote"
+          style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=6;
+                 fillColor=#ffffff;strokeColor=#82b366;fontSize=10;fontFamily=Courier New;"
+          vertex="1" parent="be-box">
+          <mxGeometry x="15" y="70" width="290" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="be-controllers" value="&lt;b&gt;controllers/&lt;/b&gt;&lt;br/&gt;communityController.js&lt;br/&gt;postsController.js&lt;br/&gt;filesController.js"
+          style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=6;
+                 fillColor=#ffffff;strokeColor=#82b366;fontSize=10;"
+          vertex="1" parent="be-box">
+          <mxGeometry x="15" y="220" width="290" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="be-db" value="Database"
+          style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;
+                 backgroundOutline=1;size=12;
+                 fillColor=#fff2cc;strokeColor=#d6b656;
+                 fontSize=12;fontStyle=1;"
+          vertex="1" parent="be-box">
+          <mxGeometry x="85" y="335" width="150" height="85" as="geometry" />
+        </mxCell>
+
+        <mxCell id="be-jsdoc" value="// @ts-check  ← add to any JS file&lt;br/&gt;Gets type hints from @pucvault/types&lt;br/&gt;without converting to TypeScript"
+          style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=6;
+                 fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontFamily=Courier New;"
+          vertex="1" parent="be-box">
+          <mxGeometry x="15" y="445" width="290" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="be-note" value="✓ Stays in JavaScript — no migration needed&lt;br/&gt;✓ Types enforced at TS compile time in frontend"
+          style="text;html=1;strokeColor=none;fillColor=none;
+                 fontSize=10;fontColor=#82b366;align=left;spacingLeft=4;"
+          vertex="1" parent="be-box">
+          <mxGeometry x="15" y="530" width="290" height="45" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!--  ARROWS                                             -->
+        <!-- ═══════════════════════════════════════════════════ -->
+
+        <!-- Frontend  →  Shared Types  (imports) -->
+        <mxCell id="arrow-fe-sh" value="imports types"
+          style="edgeStyle=orthogonalEdgeStyle;rounded=1;
+                 exitX=1;exitY=0.5;exitDx=0;exitDy=0;
+                 entryX=0;entryY=0.5;entryDx=0;entryDy=0;
+                 strokeColor=#6c8ebf;fontColor=#6c8ebf;
+                 fontSize=10;fontStyle=1;strokeWidth=2;
+                 endArrow=block;endFill=1;"
+          edge="1" source="fe-box" target="sh-box" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Backend  →  Shared Types  (JSDoc reference, dashed) -->
+        <mxCell id="arrow-be-sh" value="JSDoc @type reference"
+          style="edgeStyle=orthogonalEdgeStyle;rounded=1;dashed=1;
+                 exitX=0;exitY=0.5;exitDx=0;exitDy=0;
+                 entryX=1;entryY=0.5;entryDx=0;entryDy=0;
+                 strokeColor=#82b366;fontColor=#82b366;
+                 fontSize=10;fontStyle=1;strokeWidth=2;
+                 endArrow=block;endFill=1;"
+          edge="1" source="be-box" target="sh-box" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- src/lib/api/  →  Express routes  (HTTP REST, routes below) -->
+        <mxCell id="arrow-http" value="HTTP / REST  —  JSON responses match shared types"
+          style="edgeStyle=orthogonalEdgeStyle;rounded=1;
+                 exitX=0.5;exitY=1;exitDx=0;exitDy=0;
+                 entryX=0.5;entryY=1;entryDx=0;entryDy=0;
+                 strokeColor=#d6b656;fontColor=#b85450;
+                 fontSize=11;fontStyle=1;strokeWidth=2;
+                 endArrow=block;endFill=1;"
+          edge="1" source="fe-api" target="be-routes" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="210" y="820" />
+              <mxPoint x="950" y="820" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -2,22 +2,33 @@ import { render, screen } from "@testing-library/react";
 import PostTag from "@/components/post-tag";
 
 describe("PostTag", () => {
-  test("renders the label text", () => {
-    render(<PostTag label="Cálculo I"></PostTag>);
+  test("renders the tag name", () => {
+    render(<PostTag tag={{ id: "calculo-i", name: "Cálculo I" }} />);
     expect(screen.getByText("Cálculo I")).toBeInTheDocument();
   });
-  test("displays the label in uppercase", () => {
-    render(<PostTag label="Cálculo I"></PostTag>);
+  test("displays the name in uppercase", () => {
+    render(<PostTag tag={{ id: "calculo-i", name: "Cálculo I" }} />);
     expect(screen.getByText("Cálculo I")).toHaveClass("uppercase");
   });
-  test("accepts any string as a label", () => {
-    render(<PostTag label="Lab Digital"></PostTag>);
+  test("accepts any string as a name", () => {
+    render(<PostTag tag={{ id: "lab-digital", name: "Lab Digital" }} />);
     expect(screen.getByText("Lab Digital")).toBeInTheDocument();
   });
-  test("applies background color from color prop", () => {
-    render(<PostTag label="Cálculo I" color="rgba(2,84,134,0.3)"></PostTag>);
-    expect(screen.getByText("Cálculo I")).toHaveStyle(
-      "background-color: rgba(2,84,134,0.3)",
+  test("derives text color from tag id", () => {
+    render(<PostTag tag={{ id: "calculo-i", name: "Cálculo I" }} />);
+    expect(screen.getByText("Cálculo I")).toHaveAttribute(
+      "style",
+      expect.stringContaining("color"),
     );
+  });
+  test("same id always produces the same color", () => {
+    const { unmount } = render(
+      <PostTag tag={{ id: "calculo-i", name: "First" }} />,
+    );
+    const color1 = screen.getByText("First").style.backgroundColor;
+    unmount();
+    render(<PostTag tag={{ id: "calculo-i", name: "Second" }} />);
+    const color2 = screen.getByText("Second").style.backgroundColor;
+    expect(color1).toBe(color2);
   });
 });

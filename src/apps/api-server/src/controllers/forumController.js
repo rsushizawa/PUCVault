@@ -10,11 +10,10 @@ const forumSchema = z.object({
 
 exports.print = async (req, res) => {
   try {
-    const res = await forumService.printForums();
-
-    console.table(res.rows);
+    const result = await forumService.printForums();
+    res.status(200).json(result.rows);
   } catch (error) {
-    console.log('internal server error: ', error.message);
+    res.status(500).json({ error: 'internal server error', details: error.message });
   }
 };
 
