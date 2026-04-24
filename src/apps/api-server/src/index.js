@@ -1,5 +1,7 @@
-const express = require("express");
-const cors = require("cors");
+require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
+
+const express = require('express');
+const cors = require('cors');
 let app = express();
 //const { add } = require("@pucvault/utils"); // import here
 

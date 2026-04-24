@@ -10,7 +10,7 @@ import PostCard from "@/components/post-card";
 import { CommunitySidebar } from "@/components/community-sidebar";
 import CommunityFiles, { Semester } from "@/components/community-files";
 import { getCommunityPosts, getCommunityFiles } from "@/lib/api/communities";
-import { votePost } from "@/lib/api/posts";
+import { votePost, createPost } from "@/lib/api/posts";
 import type { Post } from "@/types/api";
 
 function formatTimestamp(iso: string): string {
@@ -83,7 +83,10 @@ export default function CommunityPage() {
             {activeTab === "forum" && (
               <>
                 <CreatePost
-                  onPost={() => console.log("new post")}
+                  onPost={async (data) => {
+                    await createPost(communityId, { ...data, tags: [] });
+                    getCommunityPosts(communityId).then(({ posts }) => setPosts(posts));
+                  }}
                   availableTags={["question", "resource", "discussion"]}
                 />
                 {postsLoading && (
@@ -96,7 +99,7 @@ export default function CommunityPage() {
                   <PostCard
                     key={post.id}
                     postId={post.id}
-                    communityId={communityId}
+                    communitySlug={communityId}
                     title={post.title}
                     body={post.body}
                     author={`u/${post.author.username}`}

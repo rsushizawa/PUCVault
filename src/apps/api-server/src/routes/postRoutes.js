@@ -11,7 +11,7 @@ router.get("/:forum_id/page/:page_num", postController.getPosts);
 router.post(
   "/:father_id/comments/create",
   authMiddleware,
-  commentController.createPosts,
+  commentController.createComment
 );
 
 router.get("/:post_id/comments", commentController.listComments);

@@ -6,12 +6,12 @@ export function getPost(id: string): Promise<Post & { comments: Comment[] }> {
 }
 
 export function createPost(
-  communityId: string,
-  data: { title: string; content: string; tagIds: string[]; fileUrl?: string },
+  forumId: string,
+  data: { title: string; content: string; tags: number[]; filename?: string },
 ): Promise<Post> {
-  return apiFetch(`/posts/${communityId}/create`, {
-    method: "PATCH",
-    body: JSON.stringify(data),
+  return apiFetch(`/posts/${forumId}/create`, {
+    method: "POST",
+    body: JSON.stringify({ ...data, filename: data.filename ?? null }),
   })
 }
 
