@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import {
   Bold,
   Italic,
@@ -11,7 +11,6 @@ import {
   ListOrdered,
   Quote,
   Image,
-  Monitor,
 } from "lucide-react";
 import MarkdownBody from "@/components/markdown-body";
 
@@ -22,31 +21,48 @@ interface MarkdownEditorProps {
   minHeight?: string;
 }
 
-function ToolbarDivider() {
-  return <div className="w-px h-6 bg-text-secondary/40 mx-1 shrink-0" />;
+function ToolbarBtn({
+  label,
+  onClick,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      className="p-1.5 rounded text-text-muted hover:text-text-primary hover:bg-surface-overlay transition-colors duration-100 cursor-pointer"
+    >
+      {children}
+    </button>
+  );
+}
+
+function Divider() {
+  return <div className="w-px h-4 bg-surface-overlay mx-1 shrink-0" />;
 }
 
 export default function MarkdownEditor({
   value,
   onChange,
-  placeholder = "Write something...",
-  minHeight = "120px",
+  placeholder = "Escreva algo...",
+  minHeight = "180px",
 }: MarkdownEditorProps) {
-  const [tab, setTab] = useState<"write" | "preview">("write");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  function applyInlineFormat(before: string, after = before, placeholder = "") {
+  function applyInlineFormat(before: string, after = before, ph = "") {
     const el = textareaRef.current;
     if (!el) return;
-    const { selectionStart: start, selectionEnd: end, value: v } = el;
-    const selected = v.slice(start, end) || placeholder;
-    onChange(v.slice(0, start) + before + selected + after + v.slice(end));
+    const { selectionStart: s, selectionEnd: e, value: v } = el;
+    const selected = v.slice(s, e) || ph;
+    onChange(v.slice(0, s) + before + selected + after + v.slice(e));
     requestAnimationFrame(() => {
       el.focus();
-      el.setSelectionRange(
-        start + before.length,
-        start + before.length + selected.length,
-      );
+      el.setSelectionRange(s + before.length, s + before.length + selected.length);
     });
   }
 
@@ -58,150 +74,76 @@ export default function MarkdownEditor({
     onChange(v.slice(0, lineStart) + prefix + v.slice(lineStart));
     requestAnimationFrame(() => {
       el.focus();
-      el.setSelectionRange(
-        selectionStart + prefix.length,
-        selectionStart + prefix.length,
-      );
+      el.setSelectionRange(selectionStart + prefix.length, selectionStart + prefix.length);
     });
   }
 
   return (
-    <div className="bg-surface-input rounded-sm overflow-hidden">
-      {/* Tabs */}
-      <div className="flex border-b border-surface-overlay">
-        <button
-          type="button"
-          onClick={() => setTab("write")}
-          className={`px-4 py-2 text-xs font-medium transition-colors ${
-            tab === "write"
-              ? "text-accent border-b-2 border-accent -mb-px"
-              : "text-text-muted hover:text-text-secondary"
-          }`}
-        >
-          Write
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab("preview")}
-          className={`px-4 py-2 text-xs font-medium transition-colors ${
-            tab === "preview"
-              ? "text-accent border-b-2 border-accent -mb-px"
-              : "text-text-muted hover:text-text-secondary"
-          }`}
-        >
-          Preview
-        </button>
+    <div className="bg-surface-input rounded-xl overflow-hidden border border-surface-overlay focus-within:border-accent/30 transition-colors duration-200">
+      {/* Toolbar */}
+      <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-surface-overlay bg-surface-raised flex-wrap">
+        <ToolbarBtn label="Negrito" onClick={() => applyInlineFormat("**", "**", "texto")}>
+          <Bold size={14} />
+        </ToolbarBtn>
+        <ToolbarBtn label="Itálico" onClick={() => applyInlineFormat("*", "*", "texto")}>
+          <Italic size={14} />
+        </ToolbarBtn>
+        <ToolbarBtn label="Link" onClick={() => applyInlineFormat("[", "](url)", "texto")}>
+          <Link size={14} />
+        </ToolbarBtn>
+        <ToolbarBtn label="Tachado" onClick={() => applyInlineFormat("~~", "~~", "texto")}>
+          <Strikethrough size={14} />
+        </ToolbarBtn>
+        <ToolbarBtn label="Código" onClick={() => applyInlineFormat("`", "`", "código")}>
+          <Code size={14} />
+        </ToolbarBtn>
+        <Divider />
+        <ToolbarBtn label="Lista" onClick={() => applyLinePrefix("- ")}>
+          <List size={14} />
+        </ToolbarBtn>
+        <ToolbarBtn label="Lista numerada" onClick={() => applyLinePrefix("1. ")}>
+          <ListOrdered size={14} />
+        </ToolbarBtn>
+        <ToolbarBtn label="Citação" onClick={() => applyLinePrefix("> ")}>
+          <Quote size={14} />
+        </ToolbarBtn>
+        <Divider />
+        <ToolbarBtn label="Imagem" onClick={() => applyInlineFormat("![", "](url)", "alt")}>
+          <Image size={14} />
+        </ToolbarBtn>
       </div>
 
-      {tab === "write" ? (
-        <>
+      {/* Side-by-side panes */}
+      <div className="flex divide-x divide-surface-overlay">
+        {/* Editor pane */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <span className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-widest text-text-muted select-none">
+            Escrever
+          </span>
           <textarea
             ref={textareaRef}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
             style={{ minHeight }}
-            className="w-full px-4 pt-3 pb-2 text-sm text-text-secondary placeholder:text-text-muted outline-none resize-none bg-surface-input"
+            className="w-full px-3 pb-3 text-sm text-text-secondary placeholder:text-text-muted outline-none resize-none bg-transparent"
           />
-          <div className="bg-surface-raised flex items-center gap-0.5 px-2 py-1.5 flex-wrap">
-            <button
-              type="button"
-              aria-label="Bold"
-              className="p-2 rounded text-text-secondary hover:text-text-primary"
-              onClick={() => applyInlineFormat("**", "**", "bold text")}
-            >
-              <Bold size={15} aria-hidden />
-            </button>
-            <button
-              type="button"
-              aria-label="Italic"
-              className="p-2 rounded text-text-secondary hover:text-text-primary"
-              onClick={() => applyInlineFormat("*", "*", "italic text")}
-            >
-              <Italic size={15} aria-hidden />
-            </button>
-            <button
-              type="button"
-              aria-label="Link"
-              className="p-2 rounded text-text-secondary hover:text-text-primary"
-              onClick={() => applyInlineFormat("[", "](url)", "link text")}
-            >
-              <Link size={15} aria-hidden />
-            </button>
-            <button
-              type="button"
-              aria-label="Strikethrough"
-              className="p-2 rounded text-text-secondary hover:text-text-primary"
-              onClick={() =>
-                applyInlineFormat("~~", "~~", "strikethrough text")
-              }
-            >
-              <Strikethrough size={15} aria-hidden />
-            </button>
-            <button
-              type="button"
-              aria-label="Code"
-              className="p-2 rounded text-text-secondary hover:text-text-primary"
-              onClick={() => applyInlineFormat("`", "`", "code")}
-            >
-              <Code size={15} aria-hidden />
-            </button>
-            <ToolbarDivider />
-            <button
-              type="button"
-              aria-label="Bulleted list"
-              className="p-2 rounded text-text-secondary hover:text-text-primary"
-              onClick={() => applyLinePrefix("- ")}
-            >
-              <List size={15} aria-hidden />
-            </button>
-            <button
-              type="button"
-              aria-label="Numbered list"
-              className="p-2 rounded text-text-secondary hover:text-text-primary"
-              onClick={() => applyLinePrefix("1. ")}
-            >
-              <ListOrdered size={15} aria-hidden />
-            </button>
-            <button
-              type="button"
-              aria-label="Quote"
-              className="p-2 rounded text-text-secondary hover:text-text-primary"
-              onClick={() => applyLinePrefix("> ")}
-            >
-              <Quote size={15} aria-hidden />
-            </button>
-            <ToolbarDivider />
-            <div className="flex-1" />
-            <button
-              type="button"
-              aria-label="Insert image"
-              className="p-2 rounded text-text-secondary hover:text-text-primary"
-              onClick={() => applyInlineFormat("![", "](url)", "alt text")}
-            >
-              <Image size={15} aria-hidden />
-            </button>
-            <button
-              type="button"
-              aria-label="Embed"
-              className="p-2 rounded text-text-secondary hover:text-text-primary"
-              onClick={() => applyInlineFormat("[embed](", ")", "url")}
-            >
-              <Monitor size={15} aria-hidden />
-            </button>
-          </div>
-        </>
-      ) : (
-        <div className="px-4 py-3" style={{ minHeight }}>
-          {value.trim() ? (
-            <MarkdownBody>{value}</MarkdownBody>
-          ) : (
-            <p className="text-text-muted text-sm italic">
-              Nothing to preview.
-            </p>
-          )}
         </div>
-      )}
+
+        {/* Preview pane */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <span className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-widest text-text-muted select-none">
+            Visualizar
+          </span>
+          <div className="flex-1 px-3 pb-3 overflow-auto" style={{ minHeight }}>
+            {value.trim() ? (
+              <MarkdownBody>{value}</MarkdownBody>
+            ) : (
+              <p className="text-text-muted text-sm italic">Nada para visualizar.</p>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
