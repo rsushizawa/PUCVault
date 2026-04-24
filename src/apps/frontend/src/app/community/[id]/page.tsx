@@ -10,6 +10,7 @@ import PostCard from "@/components/post-card";
 import { CommunitySidebar } from "@/components/community-sidebar";
 import CommunityFiles, { Semester } from "@/components/community-files";
 import { getCommunityPosts, getCommunityFiles } from "@/lib/api/communities";
+import { votePost } from "@/lib/api/posts";
 import type { Post } from "@/types/api";
 
 function formatTimestamp(iso: string): string {
@@ -103,8 +104,8 @@ export default function CommunityPage() {
                     tags={post.tags}
                     voteCount={post.voteCount}
                     commentCount={post.commentCount}
-                    onUpvote={() => {}}
-                    onDownvote={() => {}}
+                    onUpvote={() => votePost(post.id, 1).catch(() => {})}
+                    onDownvote={() => votePost(post.id, -1).catch(() => {})}
                   />
                 ))}
               </>
