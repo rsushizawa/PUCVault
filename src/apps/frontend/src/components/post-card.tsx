@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import type { Tag } from "@/types/tag";
 import PostTag from "@/components/post-tag";
@@ -32,24 +33,52 @@ export default function PostCard({
   onUpvote,
   onDownvote,
 }: PostCardProps) {
+  const [userVote, setUserVote] = useState<0 | 1 | -1>(0);
+
+  function handleUpvote() {
+    if (userVote === 1) {
+      setUserVote(0);
+    } else {
+      setUserVote(1);
+      onUpvote();
+    }
+  }
+
+  function handleDownvote() {
+    if (userVote === -1) {
+      setUserVote(0);
+    } else {
+      setUserVote(-1);
+      onDownvote();
+    }
+  }
+
+  const displayCount = voteCount + userVote;
+  const countColor =
+    userVote === 1 ? "text-accent" : userVote === -1 ? "text-red-400" : "text-text-secondary";
+
   return (
     <article className="bg-surface-raised flex gap-5 p-5 items-start rounded-sm w-full">
       {/* Vote column — outside the Link to avoid nested interactive elements */}
       <div className="w-[30px] bg-[#0e0e0e] flex flex-col items-center p-1 rounded-sm shrink-0">
         <button
-          className="p-1 flex items-center justify-center"
+          className={`p-1 flex items-center justify-center transition-colors ${
+            userVote === 1 ? "text-accent" : "text-text-muted hover:text-text-secondary"
+          }`}
           aria-label="upvote"
-          onClick={onUpvote}
+          onClick={handleUpvote}
         >
           <ChevronUp size={10} />
         </button>
-        <span className="font-bold text-xs text-text-secondary text-center w-full">
-          {voteCount}
+        <span className={`font-bold text-xs text-center w-full transition-colors ${countColor}`}>
+          {displayCount}
         </span>
         <button
-          className="p-1 flex items-center justify-center"
+          className={`p-1 flex items-center justify-center transition-colors ${
+            userVote === -1 ? "text-red-400" : "text-text-muted hover:text-text-secondary"
+          }`}
           aria-label="downvote"
-          onClick={onDownvote}
+          onClick={handleDownvote}
         >
           <ChevronDown size={10} />
         </button>
