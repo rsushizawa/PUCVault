@@ -8,7 +8,7 @@ const envPath = path.resolve(__dirname, '../../src/.env');
 
 require('dotenv').config({ path: envPath });
 
-const passAccess = process.env.DB_PASS;
+const passAccess = process.env.JWT_SECRET;
 
 //deleteUser(user_id)
 
@@ -67,30 +67,26 @@ const login = async (req, res) => {
   const { userEmail, password } = req.body;
 
   try {
-    let isAuthenticated = await authService.validateLoginCredentials(userEmail, password);
-    const token = jwt.sign(
-      { id: isAuthenticated.user.id },
-      passAccess,
-      { expiresIn: '1d' }
-    );
+    const isAuthenticated = await authService.validateLoginCredentials(userEmail, password);
 
     if (isAuthenticated.authenticated) {
-
-      //entrou
+      const token = jwt.sign(
+        { id: isAuthenticated.user.id },
+        passAccess,
+        { expiresIn: '1d' }
+      );
       res.status(200).json({
         message: "login success",
         user: isAuthenticated.user,
-        token: token
+        token,
       });
-    }
-    else {
-      //fica na tela de login pq nao entrou
-      console.log('login failed', isAuthenticated.message);
+    } else {
       res.status(401).json({ error: isAuthenticated.message });
     }
 
   } catch (error) {
-    console.log('internal server error', error.message);
+    console.error('internal server error', error.message);
+    res.status(500).json({ error: 'internal server error' });
   }
 };
 

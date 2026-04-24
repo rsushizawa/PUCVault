@@ -55,7 +55,7 @@ export default function SignInPage() {
               required
               minLength={3}
               autoComplete="name"
-              className="bg-surface-input text-text-primary text-sm px-3 py-2 rounded-sm outline-none focus:ring-1 focus:ring-accent placeholder:text-text-muted"
+              className="bg-surface-input text-text-primary text-sm px-3 py-2 rounded-sm outline-none placeholder:text-text-muted"
               placeholder="Seu Nome"
             />
           </div>
@@ -70,7 +70,7 @@ export default function SignInPage() {
               minLength={3}
               maxLength={20}
               autoComplete="username"
-              className="bg-surface-input text-text-primary text-sm px-3 py-2 rounded-sm outline-none focus:ring-1 focus:ring-accent placeholder:text-text-muted"
+              className="bg-surface-input text-text-primary text-sm px-3 py-2 rounded-sm outline-none placeholder:text-text-muted"
               placeholder="seunome"
             />
           </div>
@@ -83,7 +83,7 @@ export default function SignInPage() {
               onChange={set("email")}
               required
               autoComplete="email"
-              className="bg-surface-input text-text-primary text-sm px-3 py-2 rounded-sm outline-none focus:ring-1 focus:ring-accent placeholder:text-text-muted"
+              className="bg-surface-input text-text-primary text-sm px-3 py-2 rounded-sm outline-none placeholder:text-text-muted"
               placeholder="seu@email.com"
             />
           </div>
@@ -97,7 +97,7 @@ export default function SignInPage() {
               required
               minLength={8}
               autoComplete="new-password"
-              className="bg-surface-input text-text-primary text-sm px-3 py-2 rounded-sm outline-none focus:ring-1 focus:ring-accent"
+              className="bg-surface-input text-text-primary text-sm px-3 py-2 rounded-sm outline-none"
               placeholder="••••••••"
             />
           </div>
