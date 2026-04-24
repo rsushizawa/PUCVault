@@ -4,7 +4,7 @@ import PostCard from "@/components/post-card";
 
 const defaultProps = {
   postId: "post-1",
-  communityId: "community-1",
+  communitySlug: "community-1",
   title: "Resumo de Derivadas",
   body: "Pessoal, montei um guia rápido...",
   author: "u/rodrigo",
@@ -54,6 +54,6 @@ describe("PostCard", () => {
   test("content links to the post detail page", () => {
     render(<PostCard {...defaultProps} />);
     const link = screen.getByRole("link");
-    expect(link).toHaveAttribute("href", `/community/${defaultProps.communityId}/post/${defaultProps.postId}`);
+    expect(link).toHaveAttribute("href", `/v/${defaultProps.communitySlug}/post/${defaultProps.postId}`);
   });
 });
