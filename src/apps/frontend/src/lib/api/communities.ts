@@ -1,6 +1,8 @@
 import { apiFetch } from "./client"
 import type { Community, Post } from "@/types/api"
-import type { Semester, SortOption } from "@/lib/file-grouping"
+
+export type FileTag   = { id: number; name: string; count: number }
+export type FileEntry = { post_id: number; title: string; file_url: string; uploaded_at: string }
 
 export type ForumSummary = {
   id: number
@@ -38,8 +40,16 @@ export function getCommunityPosts(
   return apiFetch(`/posts/${id}/page/${page}`)
 }
 
-export function getCommunityFiles(id: string, sort: SortOption): Promise<Semester[]> {
-  return apiFetch(`/forums/${id}/files?sort=${sort}`)
+export function getFileYears(forumId: string): Promise<number[]> {
+  return apiFetch(`/forums/${forumId}/files/years`)
+}
+
+export function getFileTagsByYear(forumId: string, year: number): Promise<FileTag[]> {
+  return apiFetch(`/forums/${forumId}/files/years/${year}/tags`)
+}
+
+export function getFilesByYearAndTag(forumId: string, year: number, tagId: number): Promise<FileEntry[]> {
+  return apiFetch(`/forums/${forumId}/files/years/${year}/tags/${tagId}`)
 }
 
 export function followCommunity(id: string): Promise<void> {

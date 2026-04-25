@@ -1,293 +1,256 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import {
-  ChevronRight,
-  Folder,
-  FolderOpen,
-  SlidersHorizontal,
-  X,
-} from "lucide-react";
+import { Folder, FolderOpen, FileText, ChevronRight } from "lucide-react";
 import { getTagColor } from "@/lib/tag-colors";
 import {
-  getGroups,
-  rainbowColor,
-  type CourseFile,
-  type Course,
-  type FileGroup,
-  type Semester,
-  type SortOption,
-} from "@/lib/file-grouping";
+  getFileYears,
+  getFileTagsByYear,
+  getFilesByYearAndTag,
+  type FileTag,
+  type FileEntry,
+} from "@/lib/api/communities";
 
-export type { CourseFile, Course, FileGroup, Semester, SortOption };
+// Module-level caches — survive tab switches since the component remounts
+const yearsCache = new Map<string, number[]>();
+const tagsCache  = new Map<string, FileTag[]>();
+const filesCache = new Map<string, FileEntry[]>();
 
-function FileRow({ file }: { file: CourseFile }) {
-  const { id: communityId } = useParams<{ id: string }>();
+// ── FileRow ───────────────────────────────────────────────────────────────────
+
+function FileRow({ file, communitySlug }: { file: FileEntry; communitySlug: string }) {
+  const date = new Date(file.uploaded_at).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
   return (
-    <li className="flex items-center justify-between px-3 py-1.5 hover:bg-surface-overlay transition-colors">
-      <Link
-        href={`/v/${communityId}/post/${file.postId}`}
-        className="text-text-secondary text-sm hover:text-text-primary transition-colors"
-      >
-        {file.name}
-      </Link>
-      <div className="flex items-center gap-2 shrink-0 ml-4">
-        {file.tags.map((tag) => (
-          <span
-            key={tag.id}
-            className="text-xs bg-surface-overlay px-2 py-0.5 rounded"
-            style={{ color: getTagColor(tag.id) }}
-          >
-            {tag.name}
-          </span>
-        ))}
-        <span className="text-xs text-text-muted">
-          {new Date(file.uploadedAt).toLocaleDateString("pt-BR")}
-        </span>
-      </div>
-    </li>
+    <Link
+      href={`/v/${communitySlug}/post/${file.post_id}`}
+      className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-overlay transition-colors duration-100 rounded-lg group"
+    >
+      <FileText size={14} className="text-text-muted shrink-0" />
+      <span className="text-sm text-text-primary flex-1 group-hover:text-accent transition-colors">
+        {file.title}
+      </span>
+      <span className="text-xs text-text-muted shrink-0">{date}</span>
+    </Link>
   );
 }
 
-interface CourseAccordionProps {
-  course: Course;
-  sortBy: SortOption;
-  accentColor?: string;
-}
+// ── TagRow ────────────────────────────────────────────────────────────────────
 
-function CourseAccordion({ course, sortBy, accentColor }: CourseAccordionProps) {
-  const [isOpen, setIsOpen] = useState(false);
+function TagRow({
+  tag,
+  forumId,
+  year,
+  communitySlug,
+}: {
+  tag: FileTag;
+  forumId: string;
+  year: number;
+  communitySlug: string;
+}) {
+  const [open, setOpen]       = useState(false);
+  const [files, setFiles]     = useState<FileEntry[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const groups = getGroups(course.files, sortBy);
-  const flatFiles =
-    sortBy === "default"
-      ? [...course.files].sort((a, b) => a.name.localeCompare(b.name))
-      : [];
+  const cacheKey = `${forumId}-${year}-${tag.id}`;
+  const color    = getTagColor(String(tag.id));
 
-  const iconColor = accentColor ?? "var(--color-accent)";
-
-  return (
-    <div className="w-full">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        aria-expanded={isOpen}
-        className="flex items-center justify-between w-full px-3 py-2 rounded-lg hover:bg-surface-overlay transition-colors text-left"
-      >
-        <div className="flex items-center gap-3">
-          <Folder aria-hidden size={16} style={{ color: iconColor }} />
-          <span className="text-text-muted text-sm">{course.name}</span>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-text-primary text-xs">
-            {course.files.length} files
-          </span>
-          <ChevronRight
-            aria-hidden
-            size={12}
-            className={`text-text-muted transition-transform ${isOpen ? "rotate-90" : ""}`}
-          />
-        </div>
-      </button>
-
-      {isOpen && (
-        <div className="pl-8 pb-2 pt-1 flex flex-col gap-2">
-          {groups ? (
-            groups.map((group) => (
-              <div
-                key={group.label}
-                className="rounded-lg overflow-hidden border-l-4"
-                style={{ borderColor: group.color }}
-              >
-                <div className="relative px-3 py-1.5">
-                  <div
-                    className="absolute inset-0 opacity-15"
-                    style={{ backgroundColor: group.color }}
-                  />
-                  <span
-                    className="relative text-xs font-medium capitalize"
-                    style={{ color: group.color }}
-                  >
-                    {group.label}
-                  </span>
-                </div>
-                <ul className="flex flex-col">
-                  {group.files.map((file) => (
-                    <FileRow key={file.id} file={file} />
-                  ))}
-                </ul>
-              </div>
-            ))
-          ) : (
-            <ul className="flex flex-col">
-              {flatFiles.map((file) => (
-                <FileRow key={file.id} file={file} />
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-interface SemesterAccordionProps {
-  semester: Semester;
-  sortBy: SortOption;
-  accentColor: string;
-}
-
-function SemesterAccordion({ semester, sortBy, accentColor }: SemesterAccordionProps) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const totalFiles = semester.courses.reduce(
-    (sum, course) => sum + course.files.length,
-    0,
-  );
-
-  const isDefault = sortBy === "default";
-
-  return (
-    <div className="w-full bg-surface-raised rounded-sm shadow-sm overflow-hidden">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        aria-expanded={isOpen}
-        className="flex items-center justify-between w-full p-4 text-left"
-      >
-        <div className="flex items-center gap-4">
-          <div className="relative rounded-lg w-10 h-10 flex items-center justify-center shrink-0">
-            {isDefault ? (
-              <div
-                className="absolute inset-0 rounded-lg opacity-20"
-                style={{ backgroundColor: accentColor }}
-              />
-            ) : (
-              <div className="absolute inset-0 rounded-lg bg-[#ffedd5]" />
-            )}
-            <FolderOpen
-              aria-hidden
-              size={20}
-              className="relative"
-              style={{ color: isDefault ? accentColor : "#f97316" }}
-            />
-          </div>
-
-          <div className="flex flex-col items-start">
-            <span className="text-text-primary text-base font-normal">
-              {semester.name}
-            </span>
-            <span className="text-text-muted text-sm font-medium">
-              {semester.courses.length} Courses • {totalFiles} Files
-            </span>
-          </div>
-        </div>
-
-        <ChevronRight
-          aria-hidden
-          size={14}
-          className={`text-text-muted transition-transform ${isOpen ? "rotate-90" : ""}`}
-        />
-      </button>
-
-      {isOpen && (
-        <div className="flex flex-col gap-1 px-4 pb-4 pt-2">
-          {semester.courses.map((course, i) => (
-            <CourseAccordion
-              key={course.id}
-              course={course}
-              sortBy={sortBy}
-              accentColor={
-                isDefault ? rainbowColor(i, semester.courses.length) : undefined
-              }
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: "default", label: "Default" },
-  { value: "date", label: "By Date" },
-  { value: "tag", label: "By Tag" },
-];
-
-interface CommunityFilesProps {
-  semesters: Semester[];
-}
-
-export default function CommunityFiles({ semesters }: CommunityFilesProps) {
-  const [sortBy, setSortBy] = useState<SortOption>("default");
-  const [filterOpen, setFilterOpen] = useState(false);
-
-  function selectSort(option: SortOption) {
-    setSortBy(option);
-    setFilterOpen(false);
+  async function toggle() {
+    if (!open && files.length === 0) {
+      const cached = filesCache.get(cacheKey);
+      if (cached) {
+        setFiles(cached);
+      } else {
+        setLoading(true);
+        try {
+          const data = await getFilesByYearAndTag(forumId, year, tag.id);
+          filesCache.set(cacheKey, data);
+          setFiles(data);
+        } catch {
+          setFiles([]);
+        } finally {
+          setLoading(false);
+        }
+      }
+    }
+    setOpen((o) => !o);
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full">
-      <div className="flex items-center justify-between">
-        <h2 className="text-text-primary text-2xl font-bold">
-          Community Files
-        </h2>
+    <div>
+      <button
+        type="button"
+        onClick={toggle}
+        className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-surface-overlay transition-colors duration-100 rounded-lg cursor-pointer"
+      >
+        <ChevronRight
+          size={12}
+          className="text-text-muted shrink-0 transition-transform duration-150"
+          style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
+        />
+        {open ? (
+          <FolderOpen size={15} className="shrink-0" style={{ color }} />
+        ) : (
+          <Folder size={15} className="shrink-0" style={{ color }} />
+        )}
+        <span className="text-sm font-medium flex-1 text-left" style={{ color }}>
+          {tag.name}
+        </span>
+        <span className="text-xs text-text-muted">{tag.count}</span>
+      </button>
 
-        <div className="relative">
-          <button
-            onClick={() => setFilterOpen(!filterOpen)}
-            className="flex items-center gap-2 bg-[#5d87b0] text-text-primary px-4 py-2 rounded-lg"
-          >
-            <SlidersHorizontal aria-hidden size={16} />
-            <span className="text-base font-medium">Filter</span>
-          </button>
-
-          {filterOpen && (
-            <div className="absolute right-0 top-full mt-2 bg-surface-raised border border-surface-overlay rounded-lg shadow-lg z-10 min-w-[140px] overflow-hidden">
-              <div className="flex items-center justify-between px-3 py-2 border-b border-surface-overlay">
-                <span className="text-text-secondary text-xs font-medium">
-                  Sort by
-                </span>
-                <button
-                  onClick={() => setFilterOpen(false)}
-                  aria-label="Close sort menu"
-                >
-                  <X aria-hidden size={12} className="text-text-muted" />
-                </button>
-              </div>
-              {SORT_OPTIONS.map(({ value, label }) => (
-                <button
-                  key={value}
-                  onClick={() => selectSort(value)}
-                  className={`w-full text-left px-3 py-2 text-sm hover:bg-surface-overlay transition-colors ${
-                    sortBy === value
-                      ? "text-accent font-medium"
-                      : "text-text-secondary"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+      {open && (
+        <div className="ml-8 border-l border-surface-overlay pl-2 flex flex-col">
+          {loading ? (
+            <p className="text-xs text-text-muted px-3 py-2">Carregando...</p>
+          ) : files.length === 0 ? (
+            <p className="text-xs text-text-muted px-3 py-2">Nenhum arquivo.</p>
+          ) : (
+            files.map((f) => (
+              <FileRow key={f.post_id} file={f} communitySlug={communitySlug} />
+            ))
           )}
         </div>
-      </div>
+      )}
+    </div>
+  );
+}
 
-      <div className="flex flex-col gap-px">
-        {semesters.map((semester, i) => (
-          <SemesterAccordion
-            key={semester.id}
-            semester={semester}
-            sortBy={sortBy}
-            accentColor={
-              sortBy === "default"
-                ? rainbowColor(i, semesters.length)
-                : "#f97316"
-            }
-          />
-        ))}
-      </div>
+// ── YearRow ───────────────────────────────────────────────────────────────────
+
+function YearRow({
+  year,
+  forumId,
+  communitySlug,
+}: {
+  year: number;
+  forumId: string;
+  communitySlug: string;
+}) {
+  const [open, setOpen]       = useState(false);
+  const [tags, setTags]       = useState<FileTag[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const cacheKey = `${forumId}-${year}`;
+
+  async function toggle() {
+    if (!open && tags.length === 0) {
+      const cached = tagsCache.get(cacheKey);
+      if (cached) {
+        setTags(cached);
+      } else {
+        setLoading(true);
+        try {
+          const data = await getFileTagsByYear(forumId, year);
+          tagsCache.set(cacheKey, data);
+          setTags(data);
+        } catch {
+          setTags([]);
+        } finally {
+          setLoading(false);
+        }
+      }
+    }
+    setOpen((o) => !o);
+  }
+
+  return (
+    <div className="bg-surface-raised rounded-xl border border-surface-overlay overflow-hidden">
+      <button
+        type="button"
+        onClick={toggle}
+        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-overlay transition-colors duration-100 cursor-pointer"
+      >
+        <ChevronRight
+          size={14}
+          className="text-text-muted shrink-0 transition-transform duration-150"
+          style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
+        />
+        {open ? (
+          <FolderOpen size={18} className="text-accent shrink-0" />
+        ) : (
+          <Folder size={18} className="text-accent shrink-0" />
+        )}
+        <span className="text-base font-semibold text-text-primary flex-1 text-left">
+          {year}
+        </span>
+      </button>
+
+      {open && (
+        <div className="border-t border-surface-overlay px-2 py-2 flex flex-col gap-0.5">
+          {loading ? (
+            <p className="text-xs text-text-muted px-3 py-2">Carregando...</p>
+          ) : tags.length === 0 ? (
+            <p className="text-xs text-text-muted px-3 py-2">Nenhuma tag encontrada.</p>
+          ) : (
+            tags.map((tag) => (
+              <TagRow
+                key={tag.id}
+                tag={tag}
+                forumId={forumId}
+                year={year}
+                communitySlug={communitySlug}
+              />
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── CommunityFiles ────────────────────────────────────────────────────────────
+
+interface CommunityFilesProps {
+  forumId: string;
+}
+
+export default function CommunityFiles({ forumId }: CommunityFilesProps) {
+  const { name } = useParams<{ name: string }>();
+  const communitySlug = decodeURIComponent(name);
+
+  const [years, setYears]     = useState<number[]>(() => yearsCache.get(forumId) ?? []);
+  const [loading, setLoading] = useState(!yearsCache.has(forumId));
+  const [error, setError]     = useState(false);
+
+  useEffect(() => {
+    if (yearsCache.has(forumId)) return;
+    getFileYears(forumId)
+      .then((data) => {
+        yearsCache.set(forumId, data);
+        setYears(data);
+      })
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+  }, [forumId]);
+
+  if (loading) {
+    return <p className="text-text-muted text-sm py-6">Carregando anos...</p>;
+  }
+  if (error) {
+    return <p className="text-sm text-red-400 py-6">Erro ao carregar arquivos.</p>;
+  }
+  if (years.length === 0) {
+    return (
+      <p className="text-text-muted text-sm py-6">Nenhum arquivo disponível ainda.</p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {years.map((year) => (
+        <YearRow
+          key={year}
+          year={year}
+          forumId={forumId}
+          communitySlug={communitySlug}
+        />
+      ))}
     </div>
   );
 }

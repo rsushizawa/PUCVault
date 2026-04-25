@@ -75,7 +75,7 @@ module.exports = {
 
       const res = await pool.query('SELECT * FROM publico.listar_postagens_forum($1::int, $2::int)', [forum_id, page_num]);
 
-      return res;
+      return res.rows;
 
     } catch (error) {
       console.error("Erro no Banco:", error.message);

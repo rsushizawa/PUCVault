@@ -26,7 +26,7 @@ export function createComment(
   postId: string,
   data: { content: string; parentId?: string },
 ): Promise<Comment> {
-  return apiFetch(`/posts/${postId}/comments`, {
+  return apiFetch(`/posts/${postId}/comments/create`, {
     method: "POST",
     body: JSON.stringify(data),
   })
