@@ -15,4 +15,9 @@ router.get('/:user_id/print',
   tagController.printUserTags
 );
 
+router.get('/search', tagController.searchTags);
+
+router.post
+
+
 module.exports = router;

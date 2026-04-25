@@ -17,6 +17,24 @@ exports.printUserTags = async (req, res) => {
   }
 };
 
+exports.printAllTags = async (req, res) => {
+  try {
+    await tagService.listTags();
+  } catch (error) {
+    console.log('internal server error: ', error.message);
+  }
+};
+
+exports.searchTags = async (req, res) => {
+  try {
+    const searchTerm = req.query.q;
+    const res = await tagService.findTags(searchTerm);
+    res.json([res]);
+  } catch (error) {
+    console.log('internal server error: ', error.message);
+  }
+};
+
 exports.createTags = async (req, res) => {
   try {
     const user_id = req.user.id;

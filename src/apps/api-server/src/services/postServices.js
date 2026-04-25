@@ -54,6 +54,21 @@ module.exports = {
     }
   },
 
+  async getSinglePost(forum_id) {
+    let connect;
+
+    try {
+      connect = await pool.connect();
+      console.log('conexão sucedida getSinglePost');
+
+      const res = await pool.query('SELECT * FROM publico.buscar_postagem( $1 )', [forum_id]);
+    } catch (error) {
+      errorMsg(error);
+    } finally {
+      connect.release();
+    }
+  },
+
   async getPost(forum_id, page_num) {
     let connect;
     try {

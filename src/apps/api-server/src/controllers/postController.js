@@ -16,19 +16,25 @@ exports.getPosts = async (req, res) => {
   try {
     const result = await postService.getPost(forum_id, page_num);
     const rows = result.rows;
-    const total = rows.length > 0 ? Number(rows[0].total) : 0;
-    const posts = rows.map(row => ({
-      id: row.id,
-      title: row.title,
-      body: row.body,
-      author: { id: row.author_id, username: row.author_username },
-      createdAt: row.created_at,
-      tags: row.tags || [],
-      voteCount: Number(row.vote_count) || 0,
-      commentCount: Number(row.comment_count) || 0,
-      fileUrl: row.file_url ?? undefined,
-    }));
-    res.status(200).json({ posts, total });
+
+    const total = rows.length;
+
+    res.status(200).json({ rows, total });
+    console.table(rows);
+  } catch (error) {
+    console.error("Error in getPosts:", error);
+    res.status(500).json({ error: "internal server error" });
+  }
+};
+
+exports.getSinglePost = async (req, res) => {
+  const { forum_id } = req.params;
+
+  try {
+    const result = await postService.getSinglePost(forum_id);
+    const rows = result.rows;
+
+    res.status(200).json({ rows });
   } catch (error) {
     console.error("Error in getPosts:", error);
     res.status(500).json({ error: "internal server error" });
@@ -46,32 +52,24 @@ exports.createPosts = async (req, res) => {
   const { forum_id } = req.params;
 
   try {
-    console.time('DB_Tags_Query');
-
-    const createdTags = await tagService.getUserTags(user_id);
-
-    console.timeEnd('DB_Tags_Query');
-
-    const tag_id_array = createdTags?.rows ? createdTags.rows.map(row => row.id) : [];
 
 
-    const combinedTags = tags.filter(tagId => tag_id_array.includes(tagId));
-    if (tags.length > 0 && combinedTags.length === 0) {
-      console.log("warning: user tried to used tags that are not his");
-    }
+
+    const tag_id_array = tags?.rows ? tags.rows.map(row => row.id) : [];
+
+
 
     const file_id = filename ? `${user_id}/${filename}` : null;
 
-    await postService.createPost(title, content, user_id, forum_id, file_id, combinedTags);
+    await postService.createPost(title, content, user_id, forum_id, file_id, tag_id_array);
 
     res.status(200).json({
       message: "success",
       file_id,
-      tagsUsed: combinedTags
+      tagsUsed: tag_id_array
     });
 
   } catch (error) {
-    if (console.timeEnd) console.timeEnd('DB_Tags_Query');
 
     console.error("ERRO CRÍTICO NO createPosts:", error);
     res.status(500).json({ error: "internal server error" });
