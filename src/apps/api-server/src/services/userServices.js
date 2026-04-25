@@ -111,6 +111,8 @@ module.exports = {
       await pool.query('SELECT * FROM publico.deletar_usuario( $1 )', [user_id]);
     } catch (error) {
       errorMsg(error);
+    } finally {
+      client.release();
     }
   },
 

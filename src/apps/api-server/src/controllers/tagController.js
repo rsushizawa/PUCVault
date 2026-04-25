@@ -9,9 +9,9 @@ const tagSchema = z.object({
 exports.printUserTags = async (req, res) => {
   const { user_id } = req.params;
   try {
-    const res = await tagService.getUserTags(user_id);
+    const tagsResult = await tagService.getUserTags(user_id);
 
-    console.table(res.rows);
+    console.table(tagsResult.rows);
   } catch (error) {
     console.log('internal server error: ', error.message);
   }
@@ -19,7 +19,8 @@ exports.printUserTags = async (req, res) => {
 
 exports.printAllTags = async (req, res) => {
   try {
-    await tagService.listTags();
+    const tags = await tagService.listTags();
+    console.table(tags.rows);
   } catch (error) {
     console.log('internal server error: ', error.message);
   }
@@ -30,10 +31,16 @@ exports.printAllTags = async (req, res) => {
 exports.searchTags = async (req, res) => {
   try {
     const searchTerm = req.query.q;
-    const res = await tagService.findTags(searchTerm);
-    res.json([res]);
+    const tagsResult = await tagService.findTags(searchTerm);
+    res.json([tagsResult.rows]);
   } catch (error) {
     console.log('internal server error: ', error.message);
+    console.error('--- DETALHES DO ERRO ---');
+    console.error('Mensagem:', error.message);
+    console.error('Código Postgre:', error.code); // Ex: 23505 (duplicado), 42P01 (tabela não existe)
+    console.error('Detalhe:', error.detail);
+    console.error('Onde:', error.where);
+    console.error('------------------------');
   }
 };
 

@@ -38,7 +38,7 @@ module.exports = {
     let connect;
 
     try {
-      connect = await pool.connect();
+      connect = pool.connect();
       console.log('conexão sucedida printTags');
 
       const res = await pool.query('SELECT * FROM publico.buscar_tags_por_criador( $1 )', [creator_id]);
@@ -55,23 +55,12 @@ module.exports = {
   },
 
 
-  async listTagsFilesYear(forum_id, year) {
-    let client;
-    try {
-      client = await pool.connect();
-      console.log('conexão sucedida listTagsFilesYear');
-      const res = await pool.query('SELECT * FROM publico.listar_tags_arquivo_por_ano( $1, $2 )', [forum_id, year]);
-      return res.rows;
-    } catch (error) {
-      errorMsg(error);
-    } finally {
-      client.release();
-    }
-  },
+
 
   async listTags() {
     let connect;
     try {
+      connect = await pool.connect();
       console.log('conexão sucedida listTags');
 
       const res = await pool.query('SELECT * FROM pulbico.listar_tags()');
@@ -87,9 +76,10 @@ module.exports = {
   async findTags(find) {
     let connect;
     try {
-      connect = pool.connect();
+      connect = await pool.connect();
       console.log('conexão sucedida findTags');
-      await pool.query('SELECT * FROM publico.buscar_tags_relevantes($1)', [find]);
+      const res = await pool.query('SELECT * FROM publico.buscar_tags_relevantes($1)', [find]);
+      return res;
     } catch (error) {
       errorMsg(error);
     } finally {
@@ -101,7 +91,7 @@ module.exports = {
     let connect;
 
     try {
-      connect = pool.connect();
+      connect = await pool.connect();
       console.log('conexão sucedida createTag');
 
       await pool.query('CALL publico.inserir_tag($1,$2)', [tagName, creator_id]);
@@ -117,7 +107,7 @@ module.exports = {
     let connect;
 
     try {
-      connect = pool.connect();
+      connect = await pool.connect();
       console.log('conexão sucedida validateTag');
 
       await pool.query('CALL publico.validar_tag($1,$2,$3)', [tag_id, validator_id, tagState]);
