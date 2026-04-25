@@ -28,6 +28,7 @@ export type Post = {
   voteCount: number
   commentCount: number
   fileUrl?: string
+  forumSlug?: string
 }
 
 // Recursive — API must return pre-nested tree (not flat array)
