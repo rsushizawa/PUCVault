@@ -88,9 +88,8 @@ export default function Home() {
 
       {!isLoggedIn && (
         <section className="relative overflow-hidden border-b border-surface-overlay py-12 px-6 text-center">
-          <div className="absolute inset-0 bg-gradient-to-br from-accent/5 via-accent-purple/5 to-surface-base pointer-events-none" />
           <div className="relative">
-            <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-accent to-accent-purple bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold mb-2 text-accent">
               PUCVault
             </h1>
             <p className="text-text-secondary mb-6 max-w-sm mx-auto text-sm">
@@ -176,7 +175,7 @@ export default function Home() {
                       href={`/v/${forum.nome}`}
                       className="flex items-center gap-2 text-text-secondary hover:text-accent text-sm py-1.5 px-2 rounded-lg hover:bg-surface-overlay transition-all duration-150 cursor-pointer group"
                     >
-                      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-accent/20 to-accent-purple/20 flex items-center justify-center shrink-0 text-[9px] font-bold text-accent group-hover:from-accent/30 group-hover:to-accent-purple/30 transition-all">
+                      <div className="w-5 h-5 rounded-full bg-accent/15 flex items-center justify-center shrink-0 text-[9px] font-bold text-accent group-hover:bg-accent/25 transition-all">
                         {forum.nome.slice(0, 2).toUpperCase()}
                       </div>
                       <span className="truncate">{forum.nome}</span>
@@ -199,7 +198,7 @@ function FeedCard({ forum, topPost }: { forum: ForumSummary; topPost: Post | nul
         href={`/v/${forum.nome}`}
         className="flex items-center gap-3 px-4 py-3 border-b border-surface-overlay hover:bg-surface-overlay transition-colors duration-150 cursor-pointer group"
       >
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent/20 to-accent-purple/20 flex items-center justify-center shrink-0 text-xs font-bold text-accent group-hover:from-accent/30 group-hover:to-accent-purple/30 transition-all duration-200">
+        <div className="w-8 h-8 rounded-full bg-accent/15 flex items-center justify-center shrink-0 text-xs font-bold text-accent group-hover:bg-accent/25 transition-all duration-200">
           {forum.nome.slice(0, 2).toUpperCase()}
         </div>
         <div className="min-w-0">

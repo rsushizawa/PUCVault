@@ -3,8 +3,8 @@ import userEvent from "@testing-library/user-event";
 import CreatePost from "@/components/create-post";
 
 const defaultProps = {
+  forumId: "test-forum",
   onPost: vi.fn(),
-  availableTags: ["question", "resource", "discussion"],
 };
 
 describe("CreatePost", () => {

@@ -124,7 +124,7 @@ export default function ConfigPage() {
           {/* Avatar */}
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-accent/20 to-accent-purple/20 flex items-center justify-center overflow-hidden shrink-0 border border-accent/20">
+              <div className="w-16 h-16 rounded-full bg-accent/15 flex items-center justify-center overflow-hidden shrink-0 border border-accent/20">
                 {avatarUrl ? (
                   <img
                     src={avatarUrl}
