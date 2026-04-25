@@ -1,19 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Users } from "lucide-react";
 import NavBar from "@/components/navbar";
 import PostCard from "@/components/post-card";
-import { getForums, getFollowedForums, getCommunityPosts } from "@/lib/api/communities";
+import { getForums } from "@/lib/api/communities";
 import type { ForumSummary } from "@/lib/api/communities";
+import { getFeed, votePost } from "@/lib/api/posts";
 import type { Post } from "@/types/api";
-
-type FeedEntry = {
-  forum: ForumSummary;
-  topPost: Post | null;
-  isFollowed: boolean;
-};
 
 function formatTimestamp(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -24,63 +19,78 @@ function formatTimestamp(iso: string): string {
   return new Date(iso).toLocaleDateString("pt-BR");
 }
 
-async function buildEntries(
-  forums: ForumSummary[],
-  isFollowed: boolean,
-): Promise<FeedEntry[]> {
-  return Promise.all(
-    forums.map(async (forum) => {
-      try {
-        const { posts } = await getCommunityPosts(String(forum.id), 1);
-        return { forum, topPost: posts[0] ?? null, isFollowed };
-      } catch {
-        return { forum, topPost: null, isFollowed };
-      }
-    }),
-  );
-}
-
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [feed, setFeed] = useState<FeedEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [forums, setForums] = useState<ForumSummary[]>([]);
+
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [total, setTotal] = useState(0);
+  const [feedLoading, setFeedLoading] = useState(true);
+  const [feedError, setFeedError] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const pageRef = useRef(0);
+  const loadingMoreRef = useRef(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const loadMoreFnRef = useRef<() => Promise<void>>(async () => {});
 
   useEffect(() => {
-    async function load() {
-      const loggedIn = !!localStorage.getItem("auth_token");
-      setIsLoggedIn(loggedIn);
+    const loggedIn = !!localStorage.getItem("auth_token");
+    setIsLoggedIn(loggedIn);
 
-      try {
-        const allForums = await getForums();
-        const active = allForums.filter((f) => f.status === "ATIVO");
+    getForums()
+      .then((f) => setForums(f.filter((x) => x.status === "ATIVO")))
+      .catch(() => {});
 
-        if (loggedIn) {
-          const followed = await getFollowedForums().catch(() => [] as ForumSummary[]);
-          const followedActive = followed.filter((f) => f.status === "ATIVO");
-          const followedIds = new Set(followedActive.map((f) => f.id));
-          const others = active.filter((f) => !followedIds.has(f.id));
-
-          const [followedEntries, otherEntries] = await Promise.all([
-            buildEntries(followedActive, true),
-            buildEntries(others, false),
-          ]);
-
-          setFeed([...followedEntries, ...otherEntries]);
-        } else {
-          const entries = await buildEntries(active, false);
-          setFeed(entries);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
+    if (!loggedIn) {
+      setFeedLoading(false);
+      return;
     }
-    load();
+
+    getFeed(1)
+      .then(({ posts: p, total: t }) => {
+        setPosts(p);
+        setTotal(t);
+        pageRef.current = 1;
+      })
+      .catch(() => setFeedError("Erro ao carregar feed."))
+      .finally(() => setFeedLoading(false));
   }, []);
 
-  const followedFeed = feed.filter((e) => e.isFollowed);
-  const otherFeed = feed.filter((e) => !e.isFollowed);
+  useEffect(() => {
+    loadMoreFnRef.current = async () => {
+      if (!isLoggedIn || loadingMoreRef.current || posts.length >= total) return;
+      loadingMoreRef.current = true;
+      setLoadingMore(true);
+      const nextPage = pageRef.current + 1;
+      try {
+        const { posts: newPosts, total: t } = await getFeed(nextPage);
+        setPosts((prev) => [...prev, ...newPosts]);
+        setTotal(t);
+        pageRef.current = nextPage;
+      } catch {
+        // silently ignore load-more errors
+      } finally {
+        loadingMoreRef.current = false;
+        setLoadingMore(false);
+      }
+    };
+  }, [isLoggedIn, posts.length, total]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) loadMoreFnRef.current();
+      },
+      { threshold: 0.1 },
+    );
+    obs.observe(sentinel);
+    return () => obs.disconnect();
+  }, []);
+
+  const hasMore = posts.length < total;
 
   return (
     <div className="bg-surface-base min-h-screen flex flex-col">
@@ -89,9 +99,7 @@ export default function Home() {
       {!isLoggedIn && (
         <section className="relative overflow-hidden border-b border-surface-overlay py-12 px-6 text-center">
           <div className="relative">
-            <h1 className="text-3xl font-bold mb-2 text-accent">
-              PUCVault
-            </h1>
+            <h1 className="text-3xl font-bold mb-2 text-accent">PUCVault</h1>
             <p className="text-text-secondary mb-6 max-w-sm mx-auto text-sm">
               Repositório colaborativo de matérias da PUC Campinas. Encontre
               resumos, provas e discussões sobre qualquer disciplina.
@@ -115,61 +123,69 @@ export default function Home() {
       )}
 
       <div className="max-w-5xl mx-auto w-full px-4 py-6 flex gap-6">
-        {/* Feed */}
         <main className="flex-1 min-w-0 flex flex-col gap-4">
-          {loading ? (
-            <p className="text-text-muted text-center py-16 text-sm animate-fade-in">
-              Carregando vaults...
-            </p>
-          ) : feed.length === 0 ? (
+          {!isLoggedIn ? (
             <p className="text-text-muted text-center py-16 text-sm">
-              Nenhum vault disponível.
+              Faça login para ver seu feed personalizado.
+            </p>
+          ) : feedLoading ? (
+            <p className="text-text-muted text-center py-16 text-sm animate-fade-in">
+              Carregando feed...
+            </p>
+          ) : feedError ? (
+            <p className="text-sm text-red-400 text-center py-8">{feedError}</p>
+          ) : posts.length === 0 ? (
+            <p className="text-text-muted text-center py-16 text-sm">
+              Nenhuma postagem no feed. Siga um vault para começar.
             </p>
           ) : (
             <>
-              {/* Followed section */}
-              {followedFeed.length > 0 && (
-                <>
-                  <p className="text-text-muted text-xs font-semibold uppercase tracking-widest px-1">
-                    Seus vaults
-                  </p>
-                  {followedFeed.map(({ forum, topPost }) => (
-                    <FeedCard key={forum.id} forum={forum} topPost={topPost} />
-                  ))}
-                </>
-              )}
+              <div className="divide-y divide-surface-overlay rounded-xl overflow-hidden border border-surface-overlay">
+                {posts.map((post) => (
+                  <PostCard
+                    key={post.id}
+                    postId={post.id}
+                    communitySlug={post.forumSlug ?? ""}
+                    title={post.title}
+                    body={post.body}
+                    author={`u/${post.author?.username ?? "[deletado]"}`}
+                    timestamp={formatTimestamp(post.createdAt)}
+                    tags={post.tags}
+                    voteCount={post.voteCount}
+                    commentCount={post.commentCount}
+                    onUpvote={() => votePost(post.id, 1).catch(() => {})}
+                    onDownvote={() => votePost(post.id, -1).catch(() => {})}
+                  />
+                ))}
+              </div>
 
-              {/* Separator when both sections present */}
-              {followedFeed.length > 0 && otherFeed.length > 0 && (
-                <div className="flex items-center gap-3 my-2">
-                  <div className="flex-1 border-t border-surface-overlay" />
-                  <span className="text-text-muted text-xs font-semibold uppercase tracking-widest">
-                    Descubra mais
+              <div ref={sentinelRef} className="py-2 flex justify-center">
+                {loadingMore && (
+                  <span className="text-text-muted text-xs animate-fade-in">
+                    Carregando mais...
                   </span>
-                  <div className="flex-1 border-t border-surface-overlay" />
-                </div>
-              )}
-
-              {/* Other / all vaults */}
-              {otherFeed.map(({ forum, topPost }) => (
-                <FeedCard key={forum.id} forum={forum} topPost={topPost} />
-              ))}
+                )}
+                {!hasMore && !feedLoading && posts.length > 0 && (
+                  <span className="text-text-muted text-xs">
+                    Você viu todos os posts.
+                  </span>
+                )}
+              </div>
             </>
           )}
         </main>
 
-        {/* Sidebar */}
         <aside className="w-60 shrink-0 hidden lg:block">
           <div className="bg-surface-raised rounded-xl p-4 sticky top-20 border border-surface-overlay">
             <h2 className="text-text-primary font-semibold text-sm mb-3 flex items-center gap-2">
               <Users className="w-4 h-4 text-accent" />
               Vaults
             </h2>
-            {loading ? (
+            {forums.length === 0 ? (
               <p className="text-text-muted text-xs">Carregando...</p>
             ) : (
               <ul className="flex flex-col gap-0.5">
-                {feed.map(({ forum }) => (
+                {forums.map((forum) => (
                   <li key={forum.id}>
                     <Link
                       href={`/v/${forum.nome}`}
@@ -187,47 +203,6 @@ export default function Home() {
           </div>
         </aside>
       </div>
-    </div>
-  );
-}
-
-function FeedCard({ forum, topPost }: { forum: ForumSummary; topPost: Post | null }) {
-  return (
-    <div className="bg-surface-raised rounded-xl overflow-hidden border border-surface-overlay hover:border-accent/15 transition-all duration-200 animate-fade-in">
-      <Link
-        href={`/v/${forum.nome}`}
-        className="flex items-center gap-3 px-4 py-3 border-b border-surface-overlay hover:bg-surface-overlay transition-colors duration-150 cursor-pointer group"
-      >
-        <div className="w-8 h-8 rounded-full bg-accent/15 flex items-center justify-center shrink-0 text-xs font-bold text-accent group-hover:bg-accent/25 transition-all duration-200">
-          {forum.nome.slice(0, 2).toUpperCase()}
-        </div>
-        <div className="min-w-0">
-          <p className="text-text-primary font-semibold text-sm group-hover:text-accent transition-colors duration-150">
-            {forum.nome}
-          </p>
-          <p className="text-text-muted text-xs truncate">{forum.descricao}</p>
-        </div>
-      </Link>
-
-      {topPost ? (
-        <div className="divide-y divide-surface-overlay border-t border-surface-overlay">
-          <PostCard
-            postId={topPost.id}
-            communitySlug={forum.nome}
-            title={topPost.title}
-            body={topPost.body}
-            author={topPost.author?.username ?? "[deletado]"}
-            timestamp={formatTimestamp(topPost.createdAt)}
-            tags={topPost.tags}
-            voteCount={topPost.voteCount}
-            commentCount={topPost.commentCount}
-            onUpvote={() => {}}
-            onDownvote={() => {}}
-          />
-        </div>
-      ) : (
-        <p className="text-text-muted text-sm px-4 py-5">Nenhuma postagem ainda.</p>
-      )}
     </div>
   );
 }

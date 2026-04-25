@@ -33,11 +33,50 @@ export function getCommunity(id: string): Promise<Community> {
   return apiFetch(`/forums/${id}`)
 }
 
-export function getCommunityPosts(
+const PAGE_SIZE = 20
+
+type RawPostRow = {
+  id: number
+  titulo: string
+  conteudo: string
+  nome_usuario: string
+  img_perfil: string | null
+  criado_em: string
+  tags: Post["tags"]
+  engajamento: number | string
+  comentarios: number | string
+  arquivo: string | null
+}
+
+function mapPostRow(row: RawPostRow): Post {
+  return {
+    id: String(row.id),
+    title: row.titulo,
+    body: row.conteudo,
+    author: {
+      id: String(row.id),
+      username: row.nome_usuario,
+      avatarUrl: row.img_perfil || undefined,
+    },
+    createdAt: row.criado_em,
+    tags: row.tags ?? [],
+    voteCount: Number(row.engajamento),
+    commentCount: Number(row.comentarios),
+    fileUrl: row.arquivo ?? undefined,
+  }
+}
+
+export async function getCommunityPosts(
   id: string,
   page = 1,
 ): Promise<{ posts: Post[]; total: number }> {
-  return apiFetch(`/posts/${id}/page/${page}`)
+  const { rows } = await apiFetch<{ rows: RawPostRow[] }>(`/posts/${id}/page/${page}`)
+  const posts = rows.map(mapPostRow)
+  const total =
+    rows.length === PAGE_SIZE
+      ? page * PAGE_SIZE + 1
+      : (page - 1) * PAGE_SIZE + rows.length
+  return { posts, total }
 }
 
 export function getFileYears(forumId: string): Promise<number[]> {
