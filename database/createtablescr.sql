@@ -200,3 +200,14 @@ CREATE TABLE privado.seguir_usuario (
 
 	PRIMARY KEY (seguido, seguidor)
 );
+
+-- incluir uma tag a um fórum
+CREATE TABLE privado.incluir_tag (
+	tag INT NOT NULL,
+	forum INT NOT NULL,
+
+	FOREIGN KEY (tag) REFERENCES privado.tag(id) ON DELETE CASCADE,
+	FOREIGN KEY (forum) REFERENCES privado.forum(id) ON DELETE CASCADE,
+
+	PRIMARY KEY (tag, forum)
+);

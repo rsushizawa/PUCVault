@@ -274,6 +274,32 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 
 ---
 
+### 22. `incluir_tag_forum`
+**Descrição:** Relaciona uma tag a um fórum (apenas o criador do fórum pode fazer isso).
+**Parâmetros:**
+| Parâmetro | Tipo | Descrição |
+|-----------|------|-----------|
+| p_usuario_id | INT | ID do usuário (deve ser o criador do fórum) |
+| p_forum_id | INT | ID do fórum |
+| p_tag_id | INT | ID da tag |
+
+**Retorno:** Nenhum
+
+---
+
+### 23. `remover_tag_forum`
+**Descrição:** Remove a relação entre uma tag e um fórum (apenas o criador do fórum pode fazer isso).
+**Parâmetros:**
+| Parâmetro | Tipo | Descrição |
+|-----------|------|-----------|
+| p_usuario_id | INT | ID do usuário (deve ser o criador do fórum) |
+| p_forum_id | INT | ID do fórum |
+| p_tag_id | INT | ID da tag |
+
+**Retorno:** Nenhum
+
+---
+
 ## FUNCTIONS (Operações de Leitura)
 
 ### 1. `dados_login_usuario`
@@ -328,19 +354,7 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 
 **Retorno:** SETOF `privado.perfil_usuario`
 
-**Colunas retornadas (na ordem):**
-| Ordem | Coluna | Tipo | Descrição |
-|-------|--------|------|-----------|
-| 1 | id | INT | ID do usuário |
-| 2 | nome | VARCHAR | Nome completo do usuário |
-| 3 | nome_usuario | VARCHAR | Nome de usuário |
-| 4 | status | VARCHAR | Status do usuário (ATIVO/SILENCIADO) |
-| 5 | criado_em | TIMESTAMPTZ | Data de criação da conta |
-| 6 | img_perfil | TEXT | ID da imagem de perfil (Cloudflare) |
-| 7 | img_banner | TEXT | ID da imagem de banner (Cloudflare) |
-| 8 | seguidores | BIGINT | Número de seguidores do usuário |
-| 9 | segue | BIGINT | Número de usuários que este usuário segue |
-| 10 | karma | BIGINT | Pontuação total do usuário (soma das avaliações recebidas) |
+**Colunas retornadas:** As mesmas de `privado.perfil_usuario`
 
 ---
 
@@ -353,19 +367,7 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 
 **Retorno:** SETOF `privado.perfil_usuario`
 
-**Colunas retornadas (na ordem):**
-| Ordem | Coluna | Tipo | Descrição |
-|-------|--------|------|-----------|
-| 1 | id | INT | ID do usuário |
-| 2 | nome | VARCHAR | Nome completo do usuário |
-| 3 | nome_usuario | VARCHAR | Nome de usuário |
-| 4 | status | VARCHAR | Status do usuário (ATIVO/SILENCIADO) |
-| 5 | criado_em | TIMESTAMPTZ | Data de criação da conta |
-| 6 | img_perfil | TEXT | ID da imagem de perfil (Cloudflare) |
-| 7 | img_banner | TEXT | ID da imagem de banner (Cloudflare) |
-| 8 | seguidores | BIGINT | Número de seguidores do usuário |
-| 9 | segue | BIGINT | Número de usuários que este usuário segue |
-| 10 | karma | BIGINT | Pontuação total do usuário (soma das avaliações recebidas) |
+**Colunas retornadas:** As mesmas de `privado.perfil_usuario`
 
 ---
 
@@ -378,19 +380,7 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 
 **Retorno:** SETOF `privado.perfil_usuario`
 
-**Colunas retornadas (na ordem):**
-| Ordem | Coluna | Tipo | Descrição |
-|-------|--------|------|-----------|
-| 1 | id | INT | ID do usuário |
-| 2 | nome | VARCHAR | Nome completo do usuário |
-| 3 | nome_usuario | VARCHAR | Nome de usuário |
-| 4 | status | VARCHAR | Status do usuário (ATIVO/SILENCIADO) |
-| 5 | criado_em | TIMESTAMPTZ | Data de criação da conta |
-| 6 | img_perfil | TEXT | ID da imagem de perfil (Cloudflare) |
-| 7 | img_banner | TEXT | ID da imagem de banner (Cloudflare) |
-| 8 | seguidores | BIGINT | Número de seguidores do usuário |
-| 9 | segue | BIGINT | Número de usuários que este usuário segue |
-| 10 | karma | BIGINT | Pontuação total do usuário (soma das avaliações recebidas) |
+**Colunas retornadas:** As mesmas de `privado.perfil_usuario`
 
 ---
 
@@ -410,7 +400,7 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | 2 | nome | VARCHAR | Nome do fórum |
 | 3 | descricao | VARCHAR | Descrição do fórum |
 | 4 | criado_em | TIMESTAMPTZ | Data de criação do fórum |
-| 5 | status | VARCHAR | Status do fórum (ATIVO/ESPERA/RECUSADO) |
+| 5 | status | VARCHAR | Status do fórum (ATIVO) |
 | 6 | nome_usuario | VARCHAR | Nome de usuário do criador |
 | 7 | img_perfil | TEXT | ID da imagem de perfil do fórum |
 | 8 | img_banner | TEXT | ID da imagem de banner do fórum |
@@ -424,18 +414,7 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 
 **Retorno:** SETOF `privado.visualizar_forum`
 
-**Colunas retornadas (na ordem):**
-| Ordem | Coluna | Tipo | Descrição |
-|-------|--------|------|-----------|
-| 1 | id | INT | ID do fórum |
-| 2 | nome | VARCHAR | Nome do fórum |
-| 3 | descricao | VARCHAR | Descrição do fórum |
-| 4 | criado_em | TIMESTAMPTZ | Data de criação do fórum |
-| 5 | status | VARCHAR | Status do fórum (ATIVO) |
-| 6 | nome_usuario | VARCHAR | Nome de usuário do criador |
-| 7 | img_perfil | TEXT | ID da imagem de perfil do fórum |
-| 8 | img_banner | TEXT | ID da imagem de banner do fórum |
-| 9 | seguidores | BIGINT | Número total de seguidores do fórum |
+**Colunas retornadas:** As mesmas de `privado.visualizar_forum`
 
 ---
 
@@ -448,19 +427,7 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 
 **Retorno:** SETOF `privado.perfil_usuario`
 
-**Colunas retornadas (na ordem):**
-| Ordem | Coluna | Tipo | Descrição |
-|-------|--------|------|-----------|
-| 1 | id | INT | ID do usuário seguidor |
-| 2 | nome | VARCHAR | Nome completo do seguidor |
-| 3 | nome_usuario | VARCHAR | Nome de usuário do seguidor |
-| 4 | status | VARCHAR | Status do seguidor (ATIVO/SILENCIADO) |
-| 5 | criado_em | TIMESTAMPTZ | Data de criação da conta do seguidor |
-| 6 | img_perfil | TEXT | ID da imagem de perfil do seguidor |
-| 7 | img_banner | TEXT | ID da imagem de banner do seguidor |
-| 8 | seguidores | BIGINT | Número de seguidores do seguidor |
-| 9 | segue | BIGINT | Número de usuários que o seguidor segue |
-| 10 | karma | BIGINT | Pontuação total do seguidor |
+**Colunas retornadas:** As mesmas de `privado.perfil_usuario`
 
 ---
 
@@ -528,23 +495,7 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 **Retorno:** SETOF `privado.visualizar_postagem`
 **Paginação:** 20 resultados por página
 
-**Colunas retornadas (na ordem):**
-| Ordem | Coluna | Tipo | Descrição |
-|-------|--------|------|-----------|
-| 1 | id | INT | ID da postagem |
-| 2 | titulo | VARCHAR | Título da postagem |
-| 3 | arquivo | TEXT | ID do arquivo anexado (Cloudflare) - sempre não nulo |
-| 4 | forum | INT | ID do fórum |
-| 5 | conteudo | TEXT | Conteúdo da postagem |
-| 6 | status | VARCHAR | Status do conteúdo |
-| 7 | criado_em | TIMESTAMPTZ | Data de criação da postagem |
-| 8 | tempo_de_vida | INTERVAL | Tempo desde a criação (NOW() - criado_em) |
-| 9 | nome_usuario | VARCHAR | Nome de usuário do criador |
-| 10 | cargo | VARCHAR | Cargo do criador |
-| 11 | img_perfil | TEXT | ID da imagem de perfil do criador |
-| 12 | tags | TEXT[] | Array de nomes das tags associadas |
-| 13 | engajamento | BIGINT | Soma das avaliações (likes - dislikes) |
-| 14 | comentarios | BIGINT | Número total de comentários na postagem |
+**Colunas retornadas:** As mesmas de `privado.visualizar_postagem` (apenas com `arquivo IS NOT NULL`)
 
 ---
 
@@ -572,6 +523,61 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | 10 | cargo | VARCHAR | Cargo do criador |
 | 11 | img_perfil | TEXT | ID da imagem de perfil do criador |
 | 12 | engajamento | BIGINT | Soma das avaliações (likes - dislikes) do comentário |
+
+---
+
+### 13. `listar_tags`
+**Descrição:** Lista todas as tags do sistema.
+**Parâmetros:** Nenhum
+
+**Retorno:** SETOF `privado.tag`
+
+**Colunas retornadas:** As mesmas de `privado.tag`
+
+---
+
+### 14. `buscar_postagem`
+**Descrição:** Busca uma postagem pelo ID.
+**Parâmetros:**
+| Parâmetro | Tipo | Descrição |
+|-----------|------|-----------|
+| p_id | INT | ID da postagem |
+
+**Retorno:** SETOF `privado.visualizar_postagem`
+
+**Colunas retornadas:** As mesmas de `privado.visualizar_postagem`
+
+---
+
+### 15. `buscar_tags_relevantes`
+**Descrição:** Busca tags relevantes baseado em um termo de busca, ordenadas por relevância (status, correspondência, usos).
+**Parâmetros:**
+| Parâmetro | Tipo | Descrição |
+|-----------|------|-----------|
+| p_busca | VARCHAR | Termo de busca |
+| p_limite | INT | Número máximo de resultados (padrão: 5) |
+
+**Retorno:** TABLE
+| Ordem | Coluna | Tipo | Descrição |
+|-------|--------|------|-----------|
+| 1 | id | INT | ID da tag |
+| 2 | tag | VARCHAR | Nome da tag |
+| 3 | status | VARCHAR | Status da tag |
+| 4 | total_usos | BIGINT | Número de usos da tag em postagens |
+| 5 | relevancia | INT | Pontuação de relevância calculada |
+
+---
+
+### 16. `listar_tags_relacionadas_forum`
+**Descrição:** Lista todas as tags relacionadas a um fórum (através da tabela `incluir_tag`).
+**Parâmetros:**
+| Parâmetro | Tipo | Descrição |
+|-----------|------|-----------|
+| p_forum | INT | ID do fórum |
+
+**Retorno:** SETOF `privado.tag`
+
+**Colunas retornadas:** As mesmas de `privado.tag`
 
 ---
 
@@ -664,3 +670,30 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | 10 | cargo | VARCHAR | Cargo do criador |
 | 11 | img_perfil | TEXT | ID da imagem de perfil do criador |
 | 12 | engajamento | BIGINT | Soma das avaliações (likes - dislikes) do comentário |
+
+---
+
+### 6. `privado.tag`
+**Descrição:** Tabela base de tags disponível para consulta direta (não é uma view, mas uma tabela).
+
+**Colunas:**
+| Ordem | Coluna | Tipo | Descrição |
+|-------|--------|------|-----------|
+| 1 | id | INT | ID da tag |
+| 2 | tag | VARCHAR | Nome da tag |
+| 3 | status | VARCHAR | Status da tag (ATIVO/ESPERA/RECUSADO) |
+| 4 | criado_em | TIMESTAMPTZ | Data de criação da tag |
+| 5 | status_modificado_em | TIMESTAMPTZ | Data da última modificação de status |
+| 6 | criador | INT | ID do usuário criador |
+| 7 | validador | INT | ID do usuário que validou/recusou |
+
+---
+
+### 7. `privado.incluir_tag`
+**Descrição:** Tabela de relacionamento entre tags e fóruns (quais tags estão disponíveis em cada fórum).
+
+**Colunas:**
+| Ordem | Coluna | Tipo | Descrição |
+|-------|--------|------|-----------|
+| 1 | tag | INT | ID da tag |
+| 2 | forum | INT | ID do fórum |

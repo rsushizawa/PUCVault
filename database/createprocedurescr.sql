@@ -19,6 +19,8 @@
 -- CALL publico.resolver_denuncia(<id da denúncia>, <id do executor>, <'RESOLVIDA' | 'IGNORADA'>);
 -- CALL publico.alternar_seguir_forum(<id do usuário>, <id do fórum>);
 -- CALL publico.alternar_seguir_usuario(<id do seguidor>, <id do seguido>);
+-- uso: CALL publico.incluir_tag_forum(<id do usuário>, <id do fórum>, <id da tag>);
+-- uso: CALL publico.remover_tag_forum(<id do usuário>, <id do fórum>, <id da tag>);
 
 -- procedure para inserção de usuário
 -- uso: CALL publico.inserir_usuario(<nome>, <nome de usuário>, <email>, <senha hash>);
@@ -865,5 +867,108 @@ BEGIN
 		INSERT INTO privado.seguir_usuario (seguidor, seguido)
 		VALUES (p_seguidor_id, p_seguido_id);
 	END IF;
+END;
+$$;
+
+-- procedure para relacionar uma tag a um fórum
+-- uso: CALL publico.incluir_tag_forum(<id do usuário>, <id do fórum>, <id da tag>);
+CREATE PROCEDURE publico.incluir_tag_forum (
+	p_usuario_id INT,
+	p_forum_id INT,
+	p_tag_id INT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+	v_criador_forum INT;
+	v_status_forum VARCHAR(20);
+	v_status_tag VARCHAR(20);
+	v_ja_incluida BOOLEAN;
+BEGIN
+	SELECT forum.criador, forum.status, tag.status
+	INTO v_criador_forum, v_status_forum, v_status_tag
+	FROM privado.forum AS forum
+	JOIN privado.tag AS tag ON tag.id = p_tag_id
+	WHERE forum.id = p_forum_id;
+
+	IF v_criador_forum != p_usuario_id THEN
+		RAISE EXCEPTION 'Apenas o criador do fórum pode incluir tags.';
+	END IF;
+
+	IF v_status_forum != 'ATIVO' THEN
+		RAISE EXCEPTION 'Fórum não está ativo.';
+	END IF;
+
+	IF v_status_tag != 'ATIVO' THEN
+		RAISE EXCEPTION 'Tag não está ativa.';
+	END IF;
+
+	SELECT EXISTS (
+		SELECT 1
+		FROM privado.incluir_tag AS incluir_tag
+		WHERE incluir_tag.tag = p_tag_id
+		AND incluir_tag.forum = p_forum_id
+	) INTO v_ja_incluida;
+
+	IF v_ja_incluida THEN
+		RAISE EXCEPTION 'Tag já está relacionada ao fórum.';
+	END IF;
+
+	INSERT INTO privado.incluir_tag (tag, forum)
+	VALUES (p_tag_id, p_forum_id);
+END;
+$$;
+
+-- procedure para remover a relação entre uma tag e um fórum
+-- uso: CALL publico.remover_tag_forum(<id do usuário>, <id do fórum>, <id da tag>);
+CREATE PROCEDURE publico.remover_tag_forum (
+	p_usuario_id INT,
+	p_forum_id INT,
+	p_tag_id INT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+	v_criador_forum INT;
+	v_status_forum VARCHAR(20);
+	v_status_tag VARCHAR(20);
+	v_existe BOOLEAN;
+BEGIN
+	SELECT forum.criador, forum.status, tag.status
+	INTO v_criador_forum, v_status_forum, v_status_tag
+	FROM privado.forum AS forum
+	JOIN privado.tag AS tag ON tag.id = p_tag_id
+	WHERE forum.id = p_forum_id;
+
+	IF v_criador_forum != p_usuario_id THEN
+		RAISE EXCEPTION 'Apenas o criador do fórum pode remover tags.';
+	END IF;
+
+	IF v_status_forum != 'ATIVO' THEN
+		RAISE EXCEPTION 'Fórum não está ativo.';
+	END IF;
+
+	IF v_status_tag != 'ATIVO' THEN
+		RAISE EXCEPTION 'Tag não está ativa.';
+	END IF;
+
+	SELECT EXISTS (
+		SELECT 1
+		FROM privado.incluir_tag AS incluir_tag
+		WHERE incluir_tag.tag = p_tag_id
+		AND incluir_tag.forum = p_forum_id
+	) INTO v_existe;
+
+	IF NOT v_existe THEN
+		RAISE EXCEPTION 'Tag não está relacionada ao fórum.';
+	END IF;
+
+	DELETE FROM privado.incluir_tag
+	WHERE tag = p_tag_id
+	AND forum = p_forum_id;
 END;
 $$;
