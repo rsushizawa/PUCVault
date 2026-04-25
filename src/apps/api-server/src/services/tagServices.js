@@ -57,6 +57,34 @@ module.exports = {
 
   },
 
+  async listTags() {
+    let connect;
+    try {
+      console.log('conexão sucedida listTags');
+
+      const res = await pool.query('SELECT * FROM pulbico.listar_tags()');
+      return res;
+
+    } catch (error) {
+      errorMsg(error);
+    } finally {
+      connect.release();
+    }
+  },
+
+  async findTags(find) {
+    let connect;
+    try {
+      connect = pool.connect();
+      console.log('conexão sucedida findTags');
+      await pool.query('SELECT * FROM publico.buscar_tags_relevantes($1)', [find]);
+    } catch (error) {
+      errorMsg(error);
+    } finally {
+      connect.release();
+    }
+  },
+
   async createTag(tagName, creator_id) {
     let connect;
 
