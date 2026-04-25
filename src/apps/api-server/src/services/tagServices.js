@@ -1,11 +1,6 @@
-const express = require('express');
-const cors = require('cors');
-const { z } = require('zod');
-const bcrypt = require('bcryptjs');
 const { Pool } = require('pg');
 const path = require('path');
 const { error, log } = require('console');
-const saltRounds = 10;
 const envPath = path.resolve(__dirname, '../../src/.env');
 
 require('dotenv').config({ path: envPath });
@@ -58,6 +53,8 @@ module.exports = {
 
 
   },
+
+
 
   async listTags() {
     let connect;
