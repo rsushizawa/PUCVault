@@ -114,7 +114,7 @@ export default function MarkdownEditor({
       </div>
 
       {/* Side-by-side panes */}
-      <div className="flex divide-x divide-surface-overlay">
+      <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-surface-overlay">
         {/* Editor pane */}
         <div className="flex-1 flex flex-col min-w-0">
           <span className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-widest text-text-muted select-none">
