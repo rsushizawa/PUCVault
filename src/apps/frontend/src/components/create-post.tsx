@@ -174,7 +174,7 @@ export default function CreatePost({ forumId, onPost }: CreatePostProps) {
                 </button>
 
                 {tagMenuOpen && (
-                  <div className="absolute left-0 top-full mt-2 w-56 bg-surface-raised border border-surface-overlay rounded-lg shadow-lg z-20 flex flex-col">
+                  <div className="absolute left-0 top-full mt-2 w-56 max-w-[calc(100vw-2rem)] bg-surface-raised border border-surface-overlay rounded-lg shadow-lg z-20 flex flex-col">
                     <div className="px-3 py-2 border-b border-surface-overlay">
                       <input
                         autoFocus

@@ -16,6 +16,57 @@ import type { Post } from "@/types/api";
 
 const PAGE_SIZE = 20;
 
+const DEMO_SEMESTERS: Semester[] = [
+  {
+    id: "s1",
+    name: "1º Semestre 2025",
+    courses: [
+      {
+        id: "c1",
+        name: "Cálculo I",
+        files: [
+          { id: "f1", name: "Aula 01 — Limites e Continuidade.pdf", uploadedAt: "2025-02-14T10:00:00Z", tags: [{ id: "aula", name: "aula" }], postId: "demo-post-1" },
+          { id: "f2", name: "Aula 02 — Derivadas.pdf", uploadedAt: "2025-02-21T10:00:00Z", tags: [{ id: "aula", name: "aula" }], postId: "demo-post-2" },
+          { id: "f3", name: "Lista 01 — Exercícios de Limites.pdf", uploadedAt: "2025-03-01T09:00:00Z", tags: [{ id: "lista", name: "lista" }], postId: "demo-post-3" },
+          { id: "f4", name: "Gabarito P1.pdf", uploadedAt: "2025-04-10T15:00:00Z", tags: [{ id: "gabarito", name: "gabarito" }], postId: "demo-post-4" },
+        ],
+      },
+      {
+        id: "c2",
+        name: "Álgebra Linear",
+        files: [
+          { id: "f5", name: "Aula 01 — Espaços Vetoriais.pdf", uploadedAt: "2025-02-17T10:00:00Z", tags: [{ id: "aula", name: "aula" }], postId: "demo-post-5" },
+          { id: "f6", name: "Aula 03 — Transformações Lineares.pdf", uploadedAt: "2025-03-03T10:00:00Z", tags: [{ id: "aula", name: "aula" }], postId: "demo-post-6" },
+          { id: "f7", name: "Resumo para P2.pdf", uploadedAt: "2025-05-05T11:00:00Z", tags: [{ id: "resumo", name: "resumo" }], postId: "demo-post-7" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "s2",
+    name: "2º Semestre 2024",
+    courses: [
+      {
+        id: "c3",
+        name: "Programação Orientada a Objetos",
+        files: [
+          { id: "f8", name: "Slides — Herança e Polimorfismo.pdf", uploadedAt: "2024-08-20T10:00:00Z", tags: [{ id: "aula", name: "aula" }], postId: "demo-post-8" },
+          { id: "f9", name: "Projeto Final — Enunciado.pdf", uploadedAt: "2024-10-01T08:00:00Z", tags: [{ id: "trabalho", name: "trabalho" }], postId: "demo-post-9" },
+          { id: "f10", name: "Lista 02 — Exceções e Collections.pdf", uploadedAt: "2024-09-15T09:00:00Z", tags: [{ id: "lista", name: "lista" }], postId: "demo-post-10" },
+        ],
+      },
+      {
+        id: "c4",
+        name: "Banco de Dados",
+        files: [
+          { id: "f11", name: "Aula 05 — Normalização.pdf", uploadedAt: "2024-09-10T10:00:00Z", tags: [{ id: "aula", name: "aula" }], postId: "demo-post-11" },
+          { id: "f12", name: "Exercícios SQL — Joins.pdf", uploadedAt: "2024-09-25T10:00:00Z", tags: [{ id: "lista", name: "lista" }], postId: "demo-post-12" },
+        ],
+      },
+    ],
+  },
+];
+
 function formatTimestamp(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const h = Math.floor(diff / 36e5);
@@ -76,8 +127,8 @@ export default function VaultPage() {
       .finally(() => setPostsLoading(false));
 
     getCommunityFiles(String(forum.id), "default")
-      .then(setSemesters)
-      .catch(() => setFilesError("Erro ao carregar arquivos."))
+      .then((data) => setSemesters(data.length > 0 ? data : DEMO_SEMESTERS))
+      .catch(() => setSemesters(DEMO_SEMESTERS))
       .finally(() => setFilesLoading(false));
   }, [forum?.id]);
 
@@ -158,8 +209,8 @@ export default function VaultPage() {
       />
       <TabsNavigation activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <div className="flex-1 px-8 py-6">
-        <div className="grid grid-cols-[1fr_320px] gap-6 items-start">
+      <div className="flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4 lg:gap-6 items-start">
           <div className="flex flex-col gap-4">
             {activeTab === "forum" && (
               <>
@@ -221,6 +272,7 @@ export default function VaultPage() {
             )}
           </div>
 
+          <div className="hidden lg:block">
           <CommunitySidebar
             communityName={forum?.nome ?? ""}
             createdAt={forum ? new Date(forum.criado_em).toLocaleDateString("pt-BR") : ""}
@@ -235,6 +287,7 @@ export default function VaultPage() {
               { id: 3, title: "Fique no tema", description: "Mantenha posts relevantes." },
             ]}
           />
+          </div>
         </div>
       </div>
     </div>

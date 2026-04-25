@@ -58,7 +58,7 @@ export default function PostCard({
     userVote === 1 ? "text-accent" : userVote === -1 ? "text-red-400" : "text-text-secondary";
 
   return (
-    <article className="flex gap-4 px-5 py-4 items-start w-full hover:bg-surface-raised transition-colors duration-150 group cursor-pointer">
+    <article className="flex gap-2 sm:gap-4 px-3 sm:px-5 py-3 sm:py-4 items-start w-full hover:bg-surface-raised transition-colors duration-150 group cursor-pointer">
       {/* Vote column */}
       <div className="flex flex-col items-center gap-0.5 shrink-0">
         <button
