@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Clock } from "lucide-react";
+import { Plus } from "lucide-react";
 import MarkdownEditor from "@/components/markdown-editor";
 import AuthModal from "@/components/auth-modal";
 import { getTagColor } from "@/lib/tag-colors";
@@ -10,7 +10,7 @@ import type { Tag } from "@/types/tag";
 
 interface CreatePostProps {
   forumId: string;
-  onPost: (data: { title: string; content: string; tags: string[] }) => void;
+  onPost: (data: { title: string; content: string; tags: Tag[] }) => void;
 }
 
 export default function CreatePost({ forumId, onPost }: CreatePostProps) {
@@ -19,7 +19,6 @@ export default function CreatePost({ forumId, onPost }: CreatePostProps) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [pendingTags, setPendingTags] = useState<string[]>([]);
   const [tagMenuOpen, setTagMenuOpen] = useState(false);
   const [tagSearch, setTagSearch] = useState("");
   const [fetchedTags, setFetchedTags] = useState<Tag[]>([]);
@@ -56,7 +55,10 @@ export default function CreatePost({ forumId, onPost }: CreatePostProps) {
 
   function handlePost() {
     if (!title.trim()) return;
-    onPost({ title: title.trim(), content, tags: selectedTags });
+    const resolvedTags = selectedTags
+      .map((name) => fetchedTags.find((t) => t.name === name))
+      .filter((t): t is Tag => t !== undefined);
+    onPost({ title: title.trim(), content, tags: resolvedTags });
     reset();
   }
 
@@ -68,7 +70,6 @@ export default function CreatePost({ forumId, onPost }: CreatePostProps) {
     setTitle("");
     setContent("");
     setSelectedTags([]);
-    setPendingTags([]);
     setTagMenuOpen(false);
     setTagSearch("");
     setFetchedTags([]);
@@ -81,24 +82,7 @@ export default function CreatePost({ forumId, onPost }: CreatePostProps) {
     );
   }
 
-  function handleAddNewTag(name: string) {
-    const trimmed = name.trim().toLowerCase();
-    const existingNames = [...fetchedTags.map((t) => t.name), ...pendingTags];
-    if (trimmed && !existingNames.includes(trimmed)) {
-      setPendingTags((prev) => [...prev, trimmed]);
-    }
-    if (trimmed && !selectedTags.includes(trimmed)) {
-      setSelectedTags((prev) => [...prev, trimmed]);
-    }
-    setTagMenuOpen(false);
-    setTagSearch("");
-  }
-
-  const allDisplayTags = [
-    ...fetchedTags.map((t) => ({ name: t.name, id: t.id, isPending: false })),
-    ...pendingTags.map((name) => ({ name, id: name, isPending: true })),
-  ];
-  const hasPendingSelected = selectedTags.some((t) => pendingTags.includes(t));
+  const allDisplayTags = fetchedTags.map((t) => ({ name: t.name, id: t.id }));
 
   return (
     <>
@@ -138,7 +122,7 @@ export default function CreatePost({ forumId, onPost }: CreatePostProps) {
           <div className="flex flex-col gap-2">
             <span className="text-text-muted text-xs font-medium uppercase tracking-wider">Tags</span>
             <div className="flex gap-2 items-center flex-wrap">
-              {allDisplayTags.map(({ name, id, isPending }) => {
+              {allDisplayTags.map(({ name, id }) => {
                 const isSelected = selectedTags.includes(name);
                 return (
                   <button
@@ -147,16 +131,12 @@ export default function CreatePost({ forumId, onPost }: CreatePostProps) {
                     aria-pressed={isSelected}
                     onClick={() => handleTagToggle(name)}
                     className={`flex items-center gap-1.5 font-semibold text-sm px-3.5 py-1.5 rounded-full transition-all duration-150 cursor-pointer ${
-                      isPending
-                        ? "border border-dashed border-text-muted/40 bg-surface-overlay"
-                        : isSelected
-                          ? "border border-current bg-surface-overlay"
-                          : "border border-transparent bg-surface-overlay hover:border-current/40"
+                      isSelected
+                        ? "border border-current bg-surface-overlay"
+                        : "border border-transparent bg-surface-overlay hover:border-current/40"
                     } ${isSelected ? "opacity-100" : "opacity-50 hover:opacity-75"}`}
                     style={{ color: getTagColor(id) }}
-                    title={isPending ? "Aguardando aprovação" : undefined}
                   >
-                    {isPending && <Clock size={11} className="shrink-0" />}
                     {name}
                   </button>
                 );
@@ -183,7 +163,6 @@ export default function CreatePost({ forumId, onPost }: CreatePostProps) {
                         onChange={(e) => setTagSearch(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === "Escape") { setTagMenuOpen(false); setTagSearch(""); }
-                          if (e.key === "Enter" && tagSearch.trim()) handleAddNewTag(tagSearch.trim());
                         }}
                         placeholder="Buscar tag..."
                         className="w-full bg-surface-input text-sm text-text-primary px-2 py-1 rounded outline-none border border-surface-overlay focus:border-accent/50 placeholder:text-text-muted"
@@ -211,28 +190,11 @@ export default function CreatePost({ forumId, onPost }: CreatePostProps) {
                       )}
                     </div>
 
-                    {tagSearch.trim() && !fetchedTags.some((t) => t.name === tagSearch.trim()) && (
-                      <div className="border-t border-surface-overlay px-3 py-2">
-                        <button
-                          type="button"
-                          onClick={() => handleAddNewTag(tagSearch.trim())}
-                          className="text-xs text-accent hover:underline cursor-pointer"
-                        >
-                          Criar tag &quot;{tagSearch.trim()}&quot;
-                        </button>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
             </div>
 
-            {hasPendingSelected && (
-              <p className="text-text-muted text-xs flex items-center gap-1.5">
-                <Clock size={11} />
-                Tags novas precisam de aprovação antes de aparecerem para todos.
-              </p>
-            )}
           </div>
 
           {/* Footer */}

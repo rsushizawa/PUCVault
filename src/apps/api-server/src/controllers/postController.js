@@ -1,40 +1,40 @@
-const postService = require('../services/postServices');
-const tagService = require('../services/tagServices');
-const { z } = require('zod');
-
-
+const postService = require("../services/postServices");
+const tagService = require("../services/tagServices");
+const { z } = require("zod");
 
 const postSchema = z.object({
   title: z.string().min(3, "Título(mínimo 3 caracteres)").max(50),
   content: z.string(),
   filename: z.string().nullable().optional().default(null),
-  tags: z.array(z.number()).max(5, "Você só pode selecionar até 5 tags")
+  tags: z.array(z.number()).max(5, "Você só pode selecionar até 5 tags"),
 });
 
 exports.getPosts = async (req, res) => {
   const { forum_id, page_num } = req.params;
+  const PAGE_SIZE = 20;
   try {
-    const result = await postService.getPost(forum_id, page_num);
-    const rows = result.rows;
-
-    const total = rows.length;
-
-    res.status(200).json({ rows, total });
-    console.table(rows);
-  } catch (error) {
-    console.error("Error in getPosts:", error);
-    res.status(500).json({ error: "internal server error" });
-  }
-};
-
-exports.getSinglePost = async (req, res) => {
-  const { forum_id } = req.params;
-
-  try {
-    const result = await postService.getSinglePost(forum_id);
-    const rows = result.rows;
-
-    res.status(200).json({ rows });
+    const rows = await postService.getPost(forum_id, page_num);
+    const posts = rows.map((row) => ({
+      id: String(row.id),
+      title: row.titulo,
+      body: row.conteudo,
+      author: {
+        id: String(row.id),
+        username: row.nome_usuario,
+        avatarUrl: row.img_perfil || undefined,
+      },
+      createdAt: row.criado_em,
+      tags: row.tags ?? [],
+      voteCount: Number(row.engajamento),
+      commentCount: Number(row.comentarios),
+      fileUrl: row.arquivo ?? undefined,
+    }));
+    const page = Number(page_num);
+    const total =
+      rows.length === PAGE_SIZE
+        ? page * PAGE_SIZE + 1
+        : (page - 1) * PAGE_SIZE + rows.length;
+    res.json({ posts, total });
   } catch (error) {
     console.error("Error in getPosts:", error);
     res.status(500).json({ error: "internal server error" });
@@ -44,7 +44,9 @@ exports.getSinglePost = async (req, res) => {
 exports.createPosts = async (req, res) => {
   const validation = postSchema.safeParse(req.body);
   if (!validation.success) {
-    return res.status(400).json({ error: "invalid data", detail: validation.error.format() });
+    return res
+      .status(400)
+      .json({ error: "invalid data", detail: validation.error.format() });
   }
 
   const { title, content, filename, tags } = validation.data;
@@ -68,7 +70,6 @@ exports.createPosts = async (req, res) => {
       file_id,
       tagsUsed: tag_id_array
     });
-
   } catch (error) {
 
     console.error("ERRO CRÍTICO NO createPosts:", error);
