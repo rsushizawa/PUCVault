@@ -17,7 +17,6 @@ router.get('/:user_id/print',
 
 router.get('/search', tagController.searchTags);
 
-router.post
 
 
 module.exports = router;

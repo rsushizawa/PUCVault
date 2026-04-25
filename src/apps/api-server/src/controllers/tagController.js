@@ -25,6 +25,8 @@ exports.printAllTags = async (req, res) => {
   }
 };
 
+
+
 exports.searchTags = async (req, res) => {
   try {
     const searchTerm = req.query.q;
