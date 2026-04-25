@@ -1,31 +1,50 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Clock } from "lucide-react";
 import MarkdownEditor from "@/components/markdown-editor";
 import AuthModal from "@/components/auth-modal";
 import { getTagColor } from "@/lib/tag-colors";
+import { getForumTags, searchTags } from "@/lib/api/tags";
+import type { Tag } from "@/types/tag";
 
 interface CreatePostProps {
+  forumId: string;
   onPost: (data: { title: string; content: string; tags: string[] }) => void;
-  availableTags?: string[];
 }
 
-export default function CreatePost({
-  onPost,
-  availableTags = ["question", "resource", "discussion"],
-}: CreatePostProps) {
+export default function CreatePost({ forumId, onPost }: CreatePostProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [notifyOnReply, setNotifyOnReply] = useState(false);
   const [pendingTags, setPendingTags] = useState<string[]>([]);
-  const [isAddingTag, setIsAddingTag] = useState(false);
-  const [newTagInput, setNewTagInput] = useState("");
+  const [tagMenuOpen, setTagMenuOpen] = useState(false);
+  const [tagSearch, setTagSearch] = useState("");
+  const [fetchedTags, setFetchedTags] = useState<Tag[]>([]);
+  const [tagMenuLoading, setTagMenuLoading] = useState(false);
 
-  const allTags = [...availableTags, ...pendingTags];
+  useEffect(() => {
+    if (!tagMenuOpen) return;
+    let cancelled = false;
+    const load = async () => {
+      setTagMenuLoading(true);
+      try {
+        const result =
+          tagSearch.length >= 2
+            ? await searchTags(tagSearch, forumId)
+            : await getForumTags(forumId);
+        if (!cancelled) setFetchedTags(result);
+      } catch {
+        if (!cancelled) setFetchedTags([]);
+      } finally {
+        if (!cancelled) setTagMenuLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [tagSearch, tagMenuOpen, forumId]);
 
   function handleExpandClick() {
     if (!localStorage.getItem("auth_token")) {
@@ -49,34 +68,36 @@ export default function CreatePost({
     setTitle("");
     setContent("");
     setSelectedTags([]);
-    setIsExpanded(false);
-    setNotifyOnReply(false);
     setPendingTags([]);
-    setIsAddingTag(false);
-    setNewTagInput("");
+    setTagMenuOpen(false);
+    setTagSearch("");
+    setFetchedTags([]);
+    setIsExpanded(false);
   }
 
-  function handleConfirmNewTag() {
-    const trimmed = newTagInput.trim().toLowerCase();
-    if (trimmed && !allTags.includes(trimmed)) {
-      setPendingTags([...pendingTags, trimmed]);
-      setSelectedTags([...selectedTags, trimmed]);
-    }
-    setNewTagInput("");
-    setIsAddingTag(false);
-  }
-
-  function handleNewTagKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter") handleConfirmNewTag();
-    if (e.key === "Escape") { setNewTagInput(""); setIsAddingTag(false); }
-  }
-
-  function handleTagToggle(tag: string) {
+  function handleTagToggle(tagName: string) {
     setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
+      prev.includes(tagName) ? prev.filter((t) => t !== tagName) : [...prev, tagName],
     );
   }
 
+  function handleAddNewTag(name: string) {
+    const trimmed = name.trim().toLowerCase();
+    const existingNames = [...fetchedTags.map((t) => t.name), ...pendingTags];
+    if (trimmed && !existingNames.includes(trimmed)) {
+      setPendingTags((prev) => [...prev, trimmed]);
+    }
+    if (trimmed && !selectedTags.includes(trimmed)) {
+      setSelectedTags((prev) => [...prev, trimmed]);
+    }
+    setTagMenuOpen(false);
+    setTagSearch("");
+  }
+
+  const allDisplayTags = [
+    ...fetchedTags.map((t) => ({ name: t.name, id: t.id, isPending: false })),
+    ...pendingTags.map((name) => ({ name, id: name, isPending: true })),
+  ];
   const hasPendingSelected = selectedTags.some((t) => pendingTags.includes(t));
 
   return (
@@ -117,15 +138,14 @@ export default function CreatePost({
           <div className="flex flex-col gap-2">
             <span className="text-text-muted text-xs font-medium uppercase tracking-wider">Tags</span>
             <div className="flex gap-2 items-center flex-wrap">
-              {allTags.map((tag) => {
-                const isPending = pendingTags.includes(tag);
-                const isSelected = selectedTags.includes(tag);
+              {allDisplayTags.map(({ name, id, isPending }) => {
+                const isSelected = selectedTags.includes(name);
                 return (
                   <button
-                    key={tag}
+                    key={id}
                     type="button"
                     aria-pressed={isSelected}
-                    onClick={() => handleTagToggle(tag)}
+                    onClick={() => handleTagToggle(name)}
                     className={`flex items-center gap-1.5 font-semibold text-sm px-3.5 py-1.5 rounded-full transition-all duration-150 cursor-pointer ${
                       isPending
                         ? "border border-dashed border-text-muted/40 bg-surface-overlay"
@@ -133,37 +153,78 @@ export default function CreatePost({
                           ? "border border-current bg-surface-overlay"
                           : "border border-transparent bg-surface-overlay hover:border-current/40"
                     } ${isSelected ? "opacity-100" : "opacity-50 hover:opacity-75"}`}
-                    style={{ color: getTagColor(tag) }}
+                    style={{ color: getTagColor(id) }}
                     title={isPending ? "Aguardando aprovação" : undefined}
                   >
                     {isPending && <Clock size={11} className="shrink-0" />}
-                    {tag}
+                    {name}
                   </button>
                 );
               })}
 
-              {isAddingTag ? (
-                <input
-                  type="text"
-                  value={newTagInput}
-                  onChange={(e) => setNewTagInput(e.target.value)}
-                  onKeyDown={handleNewTagKeyDown}
-                  onBlur={handleConfirmNewTag}
-                  placeholder="nova tag"
-                  aria-label="Nova tag"
-                  className="rounded-full border border-accent/40 bg-surface-input px-4 py-1.5 text-sm text-text-secondary placeholder:text-text-muted outline-none w-32 focus:border-accent/70 transition-colors"
-                  autoFocus
-                />
-              ) : (
+              {/* Tag picker */}
+              <div className="relative">
                 <button
                   type="button"
                   aria-label="Adicionar tag"
-                  onClick={() => setIsAddingTag(true)}
+                  onClick={() => setTagMenuOpen((o) => !o)}
                   className="flex items-center justify-center w-8 h-8 rounded-full bg-surface-overlay border border-accent/20 hover:border-accent/50 hover:bg-accent/10 text-accent transition-all duration-150 cursor-pointer"
                 >
                   <Plus size={14} />
                 </button>
-              )}
+
+                {tagMenuOpen && (
+                  <div className="absolute left-0 top-full mt-2 w-56 max-w-[calc(100vw-2rem)] bg-surface-raised border border-surface-overlay rounded-lg shadow-lg z-20 flex flex-col">
+                    <div className="px-3 py-2 border-b border-surface-overlay">
+                      <input
+                        autoFocus
+                        type="text"
+                        value={tagSearch}
+                        onChange={(e) => setTagSearch(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") { setTagMenuOpen(false); setTagSearch(""); }
+                          if (e.key === "Enter" && tagSearch.trim()) handleAddNewTag(tagSearch.trim());
+                        }}
+                        placeholder="Buscar tag..."
+                        className="w-full bg-surface-input text-sm text-text-primary px-2 py-1 rounded outline-none border border-surface-overlay focus:border-accent/50 placeholder:text-text-muted"
+                      />
+                    </div>
+
+                    <div className="max-h-40 overflow-y-auto py-1">
+                      {tagMenuLoading ? (
+                        <p className="text-xs text-text-muted px-3 py-2">Carregando...</p>
+                      ) : fetchedTags.length === 0 ? (
+                        <p className="text-xs text-text-muted px-3 py-2">Nenhuma tag encontrada</p>
+                      ) : (
+                        fetchedTags.map((tag) => (
+                          <button
+                            key={tag.id}
+                            type="button"
+                            onClick={() => { handleTagToggle(tag.name); setTagMenuOpen(false); setTagSearch(""); }}
+                            className={`w-full text-left px-3 py-1.5 text-sm hover:bg-surface-overlay transition-colors ${
+                              selectedTags.includes(tag.name) ? "text-accent font-medium" : "text-text-secondary"
+                            }`}
+                          >
+                            {tag.name}
+                          </button>
+                        ))
+                      )}
+                    </div>
+
+                    {tagSearch.trim() && !fetchedTags.some((t) => t.name === tagSearch.trim()) && (
+                      <div className="border-t border-surface-overlay px-3 py-2">
+                        <button
+                          type="button"
+                          onClick={() => handleAddNewTag(tagSearch.trim())}
+                          className="text-xs text-accent hover:underline cursor-pointer"
+                        >
+                          Criar tag &quot;{tagSearch.trim()}&quot;
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {hasPendingSelected && (
@@ -176,15 +237,6 @@ export default function CreatePost({
 
           {/* Footer */}
           <div className="flex items-center gap-3">
-            <label className="flex items-center gap-2 text-sm text-text-secondary cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={notifyOnReply}
-                onChange={(e) => setNotifyOnReply(e.target.checked)}
-                className="rounded w-4 h-4 cursor-pointer accent-accent"
-              />
-              Notificar sobre respostas
-            </label>
             <div className="flex-1" />
             <button
               type="button"

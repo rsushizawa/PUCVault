@@ -22,23 +22,23 @@ export default function CommunityHero({
           className="absolute inset-0 h-full w-full object-cover opacity-40"
         />
       ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-accent/10 via-accent-purple/5 to-surface-base" />
+        <div className="absolute inset-0 bg-surface-overlay" />
       )}
-      <div className="absolute inset-0 bg-gradient-to-t from-surface-base via-surface-base/40 to-transparent" />
+      <div className="absolute inset-0 bg-surface-base/50" />
 
-      <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between p-8">
-        <div className="flex items-center gap-6">
-          <div className="size-[80px] rounded-xl border-2 border-accent/20 bg-surface-overlay flex items-center justify-center overflow-hidden shrink-0">
+      <div className="absolute bottom-0 left-0 right-0 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between p-4 sm:p-6 md:p-8">
+        <div className="flex items-center gap-4 sm:gap-6">
+          <div className="size-[60px] sm:size-[80px] rounded-xl border-2 border-accent/20 bg-surface-overlay flex items-center justify-center overflow-hidden shrink-0">
             {iconSrc ? (
               <img src={iconSrc} alt={communityName} className="w-full h-full object-cover" />
             ) : (
-              <span className="text-2xl font-bold bg-gradient-to-br from-accent to-accent-purple bg-clip-text text-transparent">
+              <span className="text-2xl font-bold text-accent">
                 {communityName.slice(0, 2).toUpperCase()}
               </span>
             )}
           </div>
           <div className="flex flex-col gap-1">
-            <h1 className="text-[28px] font-bold leading-tight tracking-tight text-text-primary">
+            <h1 className="text-xl sm:text-2xl md:text-[28px] font-bold leading-tight tracking-tight text-text-primary">
               {communityName}
             </h1>
             <div className="flex items-center gap-2 text-sm text-text-secondary">

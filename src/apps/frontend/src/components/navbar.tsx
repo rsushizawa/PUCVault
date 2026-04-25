@@ -47,13 +47,13 @@ const NavBar = () => {
         {/* Logo */}
         <Link
           href="/"
-          className="font-bold text-xl tracking-tight shrink-0 bg-gradient-to-r from-accent to-accent-purple bg-clip-text text-transparent hover:opacity-80 transition-opacity"
+          className="font-bold text-xl tracking-tight shrink-0 text-accent hover:opacity-80 transition-opacity"
         >
           PUCVault
         </Link>
 
         {/* Centered search */}
-        <div className="flex-1 flex justify-center">
+        <div className="hidden md:flex flex-1 justify-center">
           <div className="flex items-center gap-2 bg-surface-raised px-3 py-1.5 rounded-lg w-full max-w-sm border border-accent/20 focus-within:border-accent/60 transition-all duration-200">
             <Search size={14} className="text-text-muted shrink-0" />
             <input
