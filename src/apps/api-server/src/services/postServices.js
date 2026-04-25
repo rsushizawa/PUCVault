@@ -67,19 +67,7 @@ module.exports = {
     }
   },
 
-  async listPostsFiles(forum_id, year, tag) {
-    let client;
-    try {
-      client = await pool.connect();
-      console.log('conexão sucedida listForumFilesYear');
-      const res = await pool.query('SELECT * FROM publico.listar_anos_com_arquivo( $1 )', [forum_id, year, tag]);
-      return res.rows;
-    } catch (error) {
-      errorMsg(error);
-    } finally {
-      client.release();
-    }
-  },
+
 
 
   async getPost(forum_id, page_num) {

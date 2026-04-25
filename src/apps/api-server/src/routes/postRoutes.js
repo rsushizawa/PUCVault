@@ -14,7 +14,13 @@ router.post(
   commentController.createComment
 );
 
-router.get("/:post_id/comments", commentController.listComments);
+router.get('/:post_id',
+  postController.getSinglePost,
+);
+
+router.get('/:post_id/comments',
+  commentController.listComments
+);
 
 
 
