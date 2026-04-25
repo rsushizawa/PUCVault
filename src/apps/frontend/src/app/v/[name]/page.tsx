@@ -164,8 +164,8 @@ export default function VaultPage() {
             {activeTab === "forum" && (
               <>
                 <CreatePost
+                  forumId={String(forum?.id ?? "")}
                   onPost={handlePost}
-                  availableTags={["question", "resource", "discussion"]}
                 />
 
                 {postsLoading && (

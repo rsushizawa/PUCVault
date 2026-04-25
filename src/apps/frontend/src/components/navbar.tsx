@@ -47,7 +47,7 @@ const NavBar = () => {
         {/* Logo */}
         <Link
           href="/"
-          className="font-bold text-xl tracking-tight shrink-0 bg-gradient-to-r from-accent to-accent-purple bg-clip-text text-transparent hover:opacity-80 transition-opacity"
+          className="font-bold text-xl tracking-tight shrink-0 text-accent hover:opacity-80 transition-opacity"
         >
           PUCVault
         </Link>

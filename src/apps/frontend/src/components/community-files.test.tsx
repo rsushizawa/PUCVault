@@ -181,7 +181,7 @@ describe("CommunityFiles", () => {
       );
       expect(
         screen.getByRole("link", { name: "Aula 01 - Intro.pdf" }),
-      ).toHaveAttribute("href", "/community/test-community/post/post-1");
+      ).toHaveAttribute("href", "/v/test-community/post/post-1");
     });
 
     it("collapses course when clicked again", () => {

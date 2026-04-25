@@ -28,7 +28,7 @@ function FileRow({ file }: { file: CourseFile }) {
   return (
     <li className="flex items-center justify-between px-3 py-1.5 hover:bg-surface-overlay transition-colors">
       <Link
-        href={`/community/${communityId}/post/${file.postId}`}
+        href={`/v/${communityId}/post/${file.postId}`}
         className="text-text-secondary text-sm hover:text-text-primary transition-colors"
       >
         {file.name}

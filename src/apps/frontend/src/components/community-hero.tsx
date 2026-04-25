@@ -22,9 +22,9 @@ export default function CommunityHero({
           className="absolute inset-0 h-full w-full object-cover opacity-40"
         />
       ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-accent/10 via-accent-purple/5 to-surface-base" />
+        <div className="absolute inset-0 bg-surface-overlay" />
       )}
-      <div className="absolute inset-0 bg-gradient-to-t from-surface-base via-surface-base/40 to-transparent" />
+      <div className="absolute inset-0 bg-surface-base/50" />
 
       <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between p-8">
         <div className="flex items-center gap-6">
@@ -32,7 +32,7 @@ export default function CommunityHero({
             {iconSrc ? (
               <img src={iconSrc} alt={communityName} className="w-full h-full object-cover" />
             ) : (
-              <span className="text-2xl font-bold bg-gradient-to-br from-accent to-accent-purple bg-clip-text text-transparent">
+              <span className="text-2xl font-bold text-accent">
                 {communityName.slice(0, 2).toUpperCase()}
               </span>
             )}
