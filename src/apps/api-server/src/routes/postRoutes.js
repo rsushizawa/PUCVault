@@ -16,4 +16,6 @@ router.post(
 
 router.get("/:post_id/comments", commentController.listComments);
 
+
+
 module.exports = router;

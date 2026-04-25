@@ -53,6 +53,19 @@ module.exports = {
   },
 
 
+  async listTagsFilesYear(forum_id, year) {
+    let client;
+    try {
+      client = await pool.connect();
+      console.log('conexão sucedida listTagsFilesYear');
+      const res = await pool.query('SELECT * FROM publico.listar_tags_arquivo_por_ano( $1, $2 )', [forum_id, year]);
+      return res.rows;
+    } catch (error) {
+      errorMsg(error);
+    } finally {
+      client.release();
+    }
+  },
 
   async listTags() {
     let connect;

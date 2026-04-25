@@ -59,6 +59,43 @@ exports.getForumId = async (req, res) => {
   }
 };
 
+exports.listForumFilesYear = async (req, res) => {
+  const { forum_id } = req.params;
+  try {
+    res = await forumService.listForumFilesYear(forum_id);
+    const results = res.rows;
+    console.table(results);
+    res.status(200).json({ message: "success", results });
+  } catch (error) {
+    res.status(500).json({ error: "internal server error: ", error });
+  }
+};
+
+exports.listPostFilesYear = async (req, res) => {
+  const { forum_id, year, tag } = req.params;
+  try {
+    res = await forumService.listPostFilesYear(forum_id, year, tag);
+    const results = res.rows;
+    console.table(results);
+    res.status(200).json({ message: "success", results });
+  } catch (error) {
+    res.status(500).json({ error: "internal server error: ", error });
+  }
+};
+
+exports.listTagsFilesYear = async (req, res) => {
+  const { forum_id, year } = req.params;
+  try {
+    res = await forumService.listTagsFilesYear(forum_id, year);
+    const results = res.rows;
+    console.table(results);
+    res.status(200).json({ message: "success", results });
+  } catch (error) {
+    res.status(500).json({ error: "internal server error: ", error });
+  }
+};
+
+
 exports.createForum = async (req, res) => {
   const validation = forumSchema.safeParse(req.body);
   if (!validation.success) {

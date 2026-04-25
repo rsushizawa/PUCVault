@@ -37,6 +37,17 @@ router.patch('/:forum_id/files/page/:page_num',
   forumController.files
 );
 
+router.get('/:forum_id/files/year',
+  forumController.listForumFilesYear
+);
+
+router.get('/:forum_id/files/year/:year',
+  forumController.listTagsFilesYear
+);
+
+router.get('/:forum_id/files/year/:year/tag/:tag',
+  forumController.listPostFilesYear
+);
 
 
 module.exports = router;
