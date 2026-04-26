@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import NavBar from "@/components/navbar";
 import CommunityHero from "@/components/community-hero";
 import TabsNavigation, { Tab } from "@/components/tabs-navigation";
@@ -27,6 +27,8 @@ function formatTimestamp(iso: string): string {
 export default function VaultPage() {
   const { name } = useParams<{ name: string }>();
   const decodedName = decodeURIComponent(name);
+  const searchParams = useSearchParams();
+  const idParam = searchParams.get("id");
 
   const [forum, setForum] = useState<ForumSummary | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -43,8 +45,13 @@ export default function VaultPage() {
   const loadingMoreRef = useRef(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  // Resolve forum name → data
+  // Resolve forum: use ?id= directly if available, otherwise fetch all and filter by name
   useEffect(() => {
+    const numId = idParam ? Number(idParam) : NaN;
+    if (!isNaN(numId)) {
+      setForum({ id: numId, nome: decodedName, descricao: "", status: "", criado_em: "", excluido_em: null, status_modificado_em: null, criador: 0, validador: null, identidade_visual: 0 });
+      return;
+    }
     getForums()
       .then((forums) => {
         const match = forums.find(
@@ -57,7 +64,7 @@ export default function VaultPage() {
         setForum(match);
       })
       .catch(() => setNotFound(true));
-  }, [decodedName]);
+  }, [decodedName, idParam]);
 
   // Initial post load
   useEffect(() => {
