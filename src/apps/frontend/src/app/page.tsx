@@ -163,7 +163,7 @@ export default function Home() {
                 {forums.map((forum) => (
                   <li key={forum.id}>
                     <Link
-                      href={`/v/${forum.nome}`}
+                      href={`/v/${forum.nome}?id=${forum.id}`}
                       className="flex items-center gap-2 text-text-secondary hover:text-accent text-sm py-1.5 px-2 rounded-lg hover:bg-surface-overlay transition-all duration-150 cursor-pointer group"
                     >
                       <div className="w-5 h-5 rounded-full bg-accent/15 flex items-center justify-center shrink-0 text-[9px] font-bold text-accent group-hover:bg-accent/25 transition-all">
