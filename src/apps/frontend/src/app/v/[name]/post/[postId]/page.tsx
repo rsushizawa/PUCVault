@@ -21,9 +21,8 @@ export default function PostPage() {
 
   useEffect(() => {
     getPost(postId)
-      .then(({ comments: c, ...p }) => {
+      .then((p) => {
         setPost(p);
-        setComments(c);
       })
       .catch(() => setError("Falha ao carregar post."))
       .finally(() => setLoading(false));
@@ -53,7 +52,7 @@ export default function PostPage() {
               communityId={decodedName}
               onVote={(v) => votePost(postId, v).catch(() => {})}
             />
-            <CommentSection comments={comments} postId={post.id} />
+            <CommentSection comments={comments} postId={String(post.id)} />
           </div>
         )}
       </main>

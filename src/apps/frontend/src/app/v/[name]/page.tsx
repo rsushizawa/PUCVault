@@ -123,7 +123,7 @@ export default function VaultPage() {
       await createPost(String(forum.id), {
         title: data.title,
         content: data.content,
-        tags: data.tags.map((t) => Number(t.id)),
+        tags: data.tags.map((t) => t.id),
       });
       // Refetch page 1 so the new post appears with a proper id from the DB
       const { posts: p, total: t } = await getCommunityPosts(
@@ -185,17 +185,17 @@ export default function VaultPage() {
                     {posts.map((post) => (
                       <PostCard
                         key={post.id}
-                        postId={post.id}
+                        postId={String(post.id)}
                         communitySlug={decodedName}
-                        title={post.title}
-                        body={post.body}
-                        author={`u/${post.author?.username ?? "[deletado]"}`}
-                        timestamp={formatTimestamp(post.createdAt)}
+                        title={post.titulo}
+                        body={post.conteudo}
+                        author={`u/${post.nome_usuario}`}
+                        timestamp={formatTimestamp(post.criado_em)}
                         tags={post.tags}
-                        voteCount={post.voteCount}
-                        commentCount={post.commentCount}
-                        onUpvote={() => votePost(post.id, 1).catch(() => {})}
-                        onDownvote={() => votePost(post.id, -1).catch(() => {})}
+                        voteCount={Number(post.engajamento)}
+                        commentCount={Number(post.comentarios)}
+                        onUpvote={() => votePost(String(post.id), 1).catch(() => {})}
+                        onDownvote={() => votePost(String(post.id), -1).catch(() => {})}
                       />
                     ))}
                   </div>

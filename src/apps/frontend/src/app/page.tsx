@@ -119,17 +119,17 @@ export default function Home() {
                 {posts.map((post) => (
                   <PostCard
                     key={post.id}
-                    postId={post.id}
-                    communitySlug={post.forumSlug ?? ""}
-                    title={post.title}
-                    body={post.body}
-                    author={`u/${post.author?.username ?? "[deletado]"}`}
-                    timestamp={formatTimestamp(post.createdAt)}
+                    postId={String(post.id)}
+                    communitySlug={post.nome ?? post.forum_nome ?? ""}
+                    title={post.titulo}
+                    body={post.conteudo}
+                    author={`u/${post.nome_usuario}`}
+                    timestamp={formatTimestamp(post.criado_em)}
                     tags={post.tags}
-                    voteCount={post.voteCount}
-                    commentCount={post.commentCount}
-                    onUpvote={() => votePost(post.id, 1).catch(() => {})}
-                    onDownvote={() => votePost(post.id, -1).catch(() => {})}
+                    voteCount={Number(post.engajamento)}
+                    commentCount={Number(post.comentarios)}
+                    onUpvote={() => votePost(String(post.id), 1).catch(() => {})}
+                    onDownvote={() => votePost(String(post.id), -1).catch(() => {})}
                   />
                 ))}
               </div>

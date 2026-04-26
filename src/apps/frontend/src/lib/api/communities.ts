@@ -1,5 +1,5 @@
 import { apiFetch } from "./client"
-import type { Community, Post } from "@/types/api"
+import type { Post } from "@/types/api"
 
 export type FileTag   = { id: number; name: string; count: number }
 export type FileEntry = { post_id: number; title: string; file_url: string; uploaded_at: string }
@@ -11,6 +11,7 @@ export type ForumSummary = {
   status: string
   criado_em: string
   excluido_em: string | null
+  status_modificado_em: string | null
   criador: number
   validador: number | null
   identidade_visual: number
@@ -20,16 +21,16 @@ export function getForumByName(name: string): Promise<ForumSummary> {
   return apiFetch(`/forums/by-name/${encodeURIComponent(name)}`)
 }
 
-export function getForums(): Promise<ForumSummary[]> {
-  return apiFetch("/forums/print/forums")
+export async function getForums(): Promise<ForumSummary[]> {
+  const { rows } = await apiFetch<{ rows: ForumSummary[] }>("/forums/print/forums")
+  return rows
 }
 
 export function getFollowedForums(): Promise<ForumSummary[]> {
   return apiFetch("/forums/following")
 }
 
-// Backend uses /forums — maps to "community" in the frontend
-export function getCommunity(id: string): Promise<Community> {
+export function getCommunity(id: string): Promise<ForumSummary> {
   return apiFetch(`/forums/${id}`)
 }
 
@@ -42,29 +43,35 @@ type RawPostRow = {
   nome_usuario: string
   img_perfil: string | null
   criado_em: string
-  tags: Post["tags"]
+  tags: any[]
   engajamento: number | string
   comentarios: number | string
   arquivo: string | null
+  forum?: number
+  criador?: number
+  cargo?: string
+  status?: string
 }
 
 function mapPostRow(row: RawPostRow): Post {
   return {
-    id: String(row.id),
-    title: row.titulo,
-    body: row.conteudo,
-    author: {
-      id: String(row.id),
-      username: row.nome_usuario,
-      avatarUrl: row.img_perfil || undefined,
-    },
-    createdAt: row.criado_em,
+    id: row.id,
+    titulo: row.titulo,
+    arquivo: row.arquivo ?? null,
+    forum: row.forum ?? 0,
+    conteudo: row.conteudo,
+    status: row.status ?? "",
+    criado_em: row.criado_em,
+    criador: row.criador ?? 0,
+    nome_usuario: row.nome_usuario,
+    cargo: row.cargo ?? "",
+    img_perfil: row.img_perfil ?? null,
     tags: (row.tags ?? [])
-      .filter((t: any) => t?.id != null)
-      .map((t: any) => ({ id: String(t.id), name: t.name ?? t.nome ?? t.tag ?? "" })),
-    voteCount: Number(row.engajamento),
-    commentCount: Number(row.comentarios),
-    fileUrl: row.arquivo ?? undefined,
+      .filter((t: any) => t != null)
+      .map((t: any) => (typeof t === "string" ? t : (t.tag ?? t.name ?? t.nome ?? "")))
+      .filter((s: string) => s !== ""),
+    engajamento: String(row.engajamento),
+    comentarios: String(row.comentarios),
   }
 }
 

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import type { Tag } from "@/types/tag";
 import PostTag from "@/components/post-tag";
 import { ChevronDown, ChevronUp, MessageSquare } from "lucide-react";
 
@@ -13,7 +12,7 @@ interface PostCardProps {
   body: string;
   author: string;
   timestamp: string;
-  tags: Tag[];
+  tags: string[];
   voteCount: number;
   commentCount: number;
   onUpvote: () => void;
@@ -95,7 +94,7 @@ export default function PostCard({
       >
         <div className="flex gap-2 items-center flex-wrap">
           {tags.map((tag) => (
-            <PostTag key={tag.id} tag={tag} />
+            <PostTag key={tag} tag={tag} />
           ))}
           <span className="text-xs text-text-muted">
             por <span className="text-text-secondary hover:text-accent transition-colors">{author}</span>{" "}

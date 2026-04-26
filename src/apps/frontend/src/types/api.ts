@@ -1,43 +1,36 @@
-import type { Tag } from "./tag"
-
-export type UserSummary = {
-  id: string
-  username: string
-  avatarUrl?: string
-}
-
-export type Community = {
-  id: string
-  name: string
-  description: string
-  bannerUrl?: string
-  iconUrl?: string
-  memberCount: number
-  postCount: number
-  isPublic: boolean
-  createdAt: string
-}
-
 export type Post = {
-  id: string
-  title: string
-  body: string
-  author: UserSummary
-  createdAt: string
-  tags: Tag[]
-  voteCount: number
-  commentCount: number
-  fileUrl?: string
-  forumSlug?: string
+  id: number
+  titulo: string
+  arquivo: string | null
+  forum: number
+  conteudo: string
+  status: string
+  criado_em: string
+  tempo_de_vida?: {
+    days: number
+    hours: number
+    minutes: number
+    seconds: number
+    milliseconds: number
+  }
+  criador: number
+  nome_usuario: string
+  cargo: string
+  img_perfil: string | null
+  tags: string[]
+  engajamento: string
+  comentarios: string
+  nome?: string
+  forum_nome?: string
 }
 
 // Recursive — API must return pre-nested tree (not flat array)
 export type Comment = {
   id: string
   body: string
-  author: UserSummary
+  author: { id: string; username: string; avatarUrl?: string }
   createdAt: string
   voteCount: number
-  level: number  // 1–5, mirrors DB constraint
+  level: number
   children: Comment[]
 }

@@ -4,15 +4,20 @@ import PostDetail from "@/components/post-detail";
 import type { Post } from "@/types/api";
 
 const mockPost: Post = {
-  id: "post-1",
-  title: "Test Post Title",
-  body: "This is the post body.",
-  author: { id: "u1", username: "testuser" },
-  createdAt: new Date(Date.now() - 2 * 36e5).toISOString(),
-  tags: [{ id: "tag-math", name: "Math" }],
-  voteCount: 10,
-  commentCount: 3,
-  fileUrl: undefined,
+  id: 1,
+  titulo: "Test Post Title",
+  conteudo: "This is the post body.",
+  arquivo: null,
+  forum: 1,
+  status: "PUBLICADO",
+  criado_em: new Date(Date.now() - 2 * 36e5).toISOString(),
+  criador: 1,
+  nome_usuario: "testuser",
+  cargo: "USUARIO",
+  img_perfil: null,
+  tags: ["Math"],
+  engajamento: "10",
+  comentarios: "3",
 };
 
 const defaultProps = {
@@ -98,13 +103,13 @@ describe("PostDetail", () => {
     expect(screen.getByText("10")).toBeInTheDocument();
   });
 
-  test("does not render file attachment when fileUrl is absent", () => {
+  test("does not render file attachment when arquivo is absent", () => {
     render(<PostDetail {...defaultProps} />);
     expect(screen.queryByText(/download attachment/i)).not.toBeInTheDocument();
   });
 
-  test("renders file attachment link when fileUrl is set", () => {
-    const post = { ...mockPost, fileUrl: "https://example.com/file.pdf" };
+  test("renders file attachment link when arquivo is set", () => {
+    const post = { ...mockPost, arquivo: "https://example.com/file.pdf" };
     render(<PostDetail post={post} communityId="comm-1" onVote={vi.fn()} />);
     const link = screen.getByRole("link", { name: /download attachment/i });
     expect(link).toHaveAttribute("href", "https://example.com/file.pdf");

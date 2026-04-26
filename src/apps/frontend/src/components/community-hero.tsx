@@ -30,7 +30,11 @@ export default function CommunityHero({
         <div className="flex items-center gap-4 sm:gap-6">
           <div className="size-[60px] sm:size-[80px] rounded-xl border-2 border-accent/20 bg-surface-overlay flex items-center justify-center overflow-hidden shrink-0">
             {iconSrc ? (
-              <img src={iconSrc} alt={communityName} className="w-full h-full object-cover" />
+              <img
+                src={iconSrc}
+                alt={communityName}
+                className="w-full h-full object-cover"
+              />
             ) : (
               <span className="text-2xl font-bold text-accent">
                 {communityName.slice(0, 2).toUpperCase()}
