@@ -59,7 +59,8 @@ export default function Home() {
 
   useEffect(() => {
     loadMoreFnRef.current = async () => {
-      if (!isLoggedIn || loadingMoreRef.current || posts.length >= total) return;
+      if (!isLoggedIn || loadingMoreRef.current || posts.length >= total)
+        return;
       loadingMoreRef.current = true;
       setLoadingMore(true);
       const nextPage = pageRef.current + 1;
@@ -95,32 +96,6 @@ export default function Home() {
   return (
     <div className="bg-surface-base min-h-screen flex flex-col">
       <NavBar />
-
-      {!isLoggedIn && (
-        <section className="relative overflow-hidden border-b border-surface-overlay py-12 px-6 text-center">
-          <div className="relative">
-            <h1 className="text-3xl font-bold mb-2 text-accent">PUCVault</h1>
-            <p className="text-text-secondary mb-6 max-w-sm mx-auto text-sm">
-              Repositório colaborativo de matérias da PUC Campinas. Encontre
-              resumos, provas e discussões sobre qualquer disciplina.
-            </p>
-            <div className="flex gap-3 justify-center">
-              <Link
-                href="/sign-in"
-                className="bg-accent text-surface-base font-semibold px-5 py-2 rounded-full text-sm hover:opacity-90 transition-all duration-200 cursor-pointer"
-              >
-                Criar conta
-              </Link>
-              <Link
-                href="/login"
-                className="border border-accent/50 text-accent font-semibold px-5 py-2 rounded-full text-sm hover:bg-accent/10 hover:border-accent transition-all duration-200 cursor-pointer"
-              >
-                Entrar
-              </Link>
-            </div>
-          </div>
-        </section>
-      )}
 
       <div className="max-w-5xl mx-auto w-full px-4 py-6 flex gap-6">
         <main className="flex-1 min-w-0 flex flex-col gap-4">

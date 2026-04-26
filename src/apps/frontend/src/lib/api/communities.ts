@@ -59,7 +59,9 @@ function mapPostRow(row: RawPostRow): Post {
       avatarUrl: row.img_perfil || undefined,
     },
     createdAt: row.criado_em,
-    tags: row.tags ?? [],
+    tags: (row.tags ?? [])
+      .filter((t: any) => t?.id != null)
+      .map((t: any) => ({ id: String(t.id), name: t.name ?? t.nome ?? t.tag ?? "" })),
     voteCount: Number(row.engajamento),
     commentCount: Number(row.comentarios),
     fileUrl: row.arquivo ?? undefined,
