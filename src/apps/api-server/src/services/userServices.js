@@ -140,8 +140,7 @@ module.exports = {
       client = await pool.connect();
       console.log('conexão bem sucedida printLogins');
       const res = await pool.query('SELECT * FROM publico.listar_usuarios()');
-
-      console.table(res.rows);
+      return res;
     } catch (error) {
       errorMsg(error);
     } finally {
