@@ -21,7 +21,12 @@ const signinSchema = z.object({
 
 const print = async (req, res) => {
   try {
-    await authService.printLogins();
+    const loginResult = await authService.printLogins();
+
+    const rows = loginResult.rows;
+    console.table(rows);
+    res.status(200).json({ rows });
+
   } catch (error) {
     console.log("internal server error", error.message);
   }

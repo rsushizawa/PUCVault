@@ -27,8 +27,11 @@ exports.createComment = async (req, res) => {
 exports.listComments = async (req, res) => {
   const { post_id } = req.params;
   try {
-    await commentService.listComments(post_id);
-    res.status(200).json({ message: "success" });
+    const commentResults = await commentService.listComments(post_id);
+    const rows = commentResults.rows;
+    console.table(rows);
+
+    res.status(200).json({ rows });
 
   } catch (error) {
     res.status(500).json({ error: "internal server error" });

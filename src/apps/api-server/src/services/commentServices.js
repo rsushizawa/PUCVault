@@ -59,8 +59,9 @@ module.exports = {
       connect = await pool.connect();
       console.log('conexão sucedida listComments');
 
-      await pool.query('SELECT * FROM publico.listar_comentarios_postagem( $1 )', [post_id]);
+      const res = await pool.query('SELECT * FROM publico.listar_comentarios_postagem( $1 )', [post_id]);
 
+      return res;
     } catch (error) {
       errorMsg(error);
     } finally {

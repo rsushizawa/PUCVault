@@ -10,7 +10,10 @@ const forumSchema = z.object({
 exports.print = async (req, res) => {
   try {
     const result = await forumService.printForums();
-    res.status(200).json(result.rows);
+    const rows = result.rows;
+    console.table(rows);
+
+    res.status(200).json({ rows });
   } catch (error) {
     res
       .status(500)
@@ -63,9 +66,10 @@ exports.listForumFilesYear = async (req, res) => {
   const { forum_id } = req.params;
   try {
     const forumResults = await forumService.listForumFilesYear(forum_id);
-    const results = forumResults.rows;
-    console.table(results);
-    res.status(200).json({ message: "success", results });
+    const rows = forumResults.rows;
+    console.table(rows);
+
+    res.status(200).json({ rows });
   } catch (error) {
     res.status(500).json({ error: "internal server error: ", error });
   }
@@ -87,9 +91,10 @@ exports.listTagsFilesYear = async (req, res) => {
   const { forum_id, year } = req.params;
   try {
     const forumResults = await forumService.listTagsFilesYear(forum_id, year);
-    const results = forumResults.rows;
-    console.table(results);
-    res.status(200).json({ message: "success", results });
+    const rows = forumResults.rows;
+    console.table(rows);
+
+    res.status(200).json({ rows });
   } catch (error) {
     res.status(500).json({ error: "internal server error: ", error });
   }
