@@ -12,7 +12,7 @@ exports.createComment = async (req, res) => {
   }
   const { content } = validation.data;
   const user_id = req.user.id;
-  const father_id = req.params;
+  const father_id = Number(req.params.father_id);
 
   try {
     await commentService.createComment(content, user_id, father_id);
