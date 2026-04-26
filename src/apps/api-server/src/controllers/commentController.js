@@ -2,7 +2,8 @@ const commentService = require('../services/commentServices');
 const { z } = require('zod');
 
 const commentSchema = z.object({
-  content: z.string()
+  content: z.string(),
+  parentId: z.string().optional(),
 });
 
 exports.createComment = async (req, res) => {
@@ -10,9 +11,9 @@ exports.createComment = async (req, res) => {
   if (!validation.success) {
     return res.status(400).json({ error: "invalid data", detail: validation.error.format() });
   }
-  const { content } = validation.data;
+  const { content, parentId } = validation.data;
   const user_id = req.user.id;
-  const father_id = Number(req.params.father_id);
+  const father_id = parentId ? Number(parentId) : Number(req.params.father_id);
 
   try {
     await commentService.createComment(content, user_id, father_id);
