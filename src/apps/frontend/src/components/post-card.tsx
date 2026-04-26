@@ -8,6 +8,7 @@ import { ChevronDown, ChevronUp, MessageSquare } from "lucide-react";
 interface PostCardProps {
   postId: string;
   communitySlug: string;
+  forumId?: string;
   title: string;
   body: string;
   author: string;
@@ -22,6 +23,7 @@ interface PostCardProps {
 export default function PostCard({
   postId,
   communitySlug,
+  forumId,
   title,
   body,
   author,
@@ -89,7 +91,7 @@ export default function PostCard({
 
       {/* Content */}
       <Link
-        href={`/v/${communitySlug}/post/${postId}`}
+        href={`/v/${communitySlug}/post/${postId}${forumId ? `?id=${forumId}` : ""}`}
         className="flex flex-col gap-1.5 flex-1 min-w-0 cursor-pointer"
       >
         <div className="flex gap-2 items-center flex-wrap">

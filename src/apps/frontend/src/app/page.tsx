@@ -120,7 +120,8 @@ export default function Home() {
                   <PostCard
                     key={post.id}
                     postId={String(post.id)}
-                    communitySlug={post.nome ?? post.forum_nome ?? ""}
+                    communitySlug={post.forum_nome ?? post.nome ?? String(post.forum)}
+                    forumId={String(post.forum)}
                     title={post.titulo}
                     body={post.conteudo}
                     author={`u/${post.nome_usuario}`}

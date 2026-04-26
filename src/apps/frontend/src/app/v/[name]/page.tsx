@@ -45,18 +45,20 @@ export default function VaultPage() {
   const loadingMoreRef = useRef(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  // Resolve forum: use ?id= directly if available, otherwise fetch all and filter by name
+  // Resolve forum: use ?id= fast-path when name is reliable, otherwise fetch list
   useEffect(() => {
     const numId = idParam ? Number(idParam) : NaN;
-    if (!isNaN(numId)) {
+    if (!isNaN(numId) && isNaN(Number(decodedName))) {
+      // ID known + name is a real string (not numeric) → use stub immediately
       setForum({ id: numId, nome: decodedName, descricao: "", status: "", criado_em: "", excluido_em: null, status_modificado_em: null, criador: 0, validador: null, identidade_visual: 0 });
       return;
     }
+    // No ID param, or slug is numeric → fetch list and match
     getForums()
       .then((forums) => {
-        const match = forums.find(
-          (f) => f.nome.toLowerCase() === decodedName.toLowerCase(),
-        );
+        const match = !isNaN(numId)
+          ? forums.find((f) => f.id === numId)
+          : forums.find((f) => f.nome.toLowerCase() === decodedName.toLowerCase());
         if (!match) {
           setNotFound(true);
           return;
@@ -194,6 +196,7 @@ export default function VaultPage() {
                         key={post.id}
                         postId={String(post.id)}
                         communitySlug={decodedName}
+                        forumId={forum ? String(forum.id) : undefined}
                         title={post.titulo}
                         body={post.conteudo}
                         author={`u/${post.nome_usuario}`}
