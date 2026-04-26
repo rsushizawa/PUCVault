@@ -60,6 +60,8 @@ module.exports = {
       console.log('conexão sucedida getSinglePost');
 
       const res = await pool.query('SELECT * FROM publico.buscar_postagem( $1 )', [forum_id]);
+
+      return res.rows
     } catch (error) {
       errorMsg(error);
     } finally {

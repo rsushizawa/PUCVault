@@ -56,7 +56,7 @@ export default function CreatePost({ forumId, onPost }: CreatePostProps) {
   function handlePost() {
     if (!title.trim()) return;
     const resolvedTags = selectedTags
-      .map((name) => fetchedTags.find((t) => t.name === name))
+      .map((name) => fetchedTags.find((t) => t.tag === name))
       .filter((t): t is Tag => t !== undefined);
     onPost({ title: title.trim(), content, tags: resolvedTags });
     reset();
@@ -81,8 +81,6 @@ export default function CreatePost({ forumId, onPost }: CreatePostProps) {
       prev.includes(tagName) ? prev.filter((t) => t !== tagName) : [...prev, tagName],
     );
   }
-
-  const allDisplayTags = fetchedTags.map((t) => ({ name: t.name, id: t.id }));
 
   return (
     <>
@@ -122,22 +120,22 @@ export default function CreatePost({ forumId, onPost }: CreatePostProps) {
           <div className="flex flex-col gap-2">
             <span className="text-text-muted text-xs font-medium uppercase tracking-wider">Tags</span>
             <div className="flex gap-2 items-center flex-wrap">
-              {allDisplayTags.map(({ name, id }) => {
-                const isSelected = selectedTags.includes(name);
+              {fetchedTags.map((t) => {
+                const isSelected = selectedTags.includes(t.tag);
                 return (
                   <button
-                    key={id}
+                    key={t.id}
                     type="button"
                     aria-pressed={isSelected}
-                    onClick={() => handleTagToggle(name)}
+                    onClick={() => handleTagToggle(t.tag)}
                     className={`flex items-center gap-1.5 font-semibold text-sm px-3.5 py-1.5 rounded-full transition-all duration-150 cursor-pointer ${
                       isSelected
                         ? "border border-current bg-surface-overlay"
                         : "border border-transparent bg-surface-overlay hover:border-current/40"
                     } ${isSelected ? "opacity-100" : "opacity-50 hover:opacity-75"}`}
-                    style={{ color: getTagColor(id) }}
+                    style={{ color: getTagColor(t.tag) }}
                   >
-                    {name}
+                    {t.tag}
                   </button>
                 );
               })}
@@ -179,12 +177,12 @@ export default function CreatePost({ forumId, onPost }: CreatePostProps) {
                           <button
                             key={tag.id}
                             type="button"
-                            onClick={() => { handleTagToggle(tag.name); setTagMenuOpen(false); setTagSearch(""); }}
+                            onClick={() => { handleTagToggle(tag.tag); setTagMenuOpen(false); setTagSearch(""); }}
                             className={`w-full text-left px-3 py-1.5 text-sm hover:bg-surface-overlay transition-colors ${
-                              selectedTags.includes(tag.name) ? "text-accent font-medium" : "text-text-secondary"
+                              selectedTags.includes(tag.tag) ? "text-accent font-medium" : "text-text-secondary"
                             }`}
                           >
-                            {tag.name}
+                            {tag.tag}
                           </button>
                         ))
                       )}

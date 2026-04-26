@@ -9,7 +9,7 @@ const defaultProps = {
   body: "Pessoal, montei um guia rápido...",
   author: "u/rodrigo",
   timestamp: "4h ago",
-  tags: [{ id: "calculo-i", name: "Cálculo I" }],
+  tags: ["Cálculo I"],
   voteCount: 142,
   commentCount: 24,
   onUpvote: vi.fn(),
@@ -33,7 +33,7 @@ describe("PostCard", () => {
   test("renders all tags", () => {
     const tagsProps = {
       ...defaultProps,
-      tags: [...defaultProps.tags, { id: "prova", name: "PROVA" }],
+      tags: [...defaultProps.tags, "PROVA"],
     };
     render(<PostCard {...tagsProps} />);
     expect(screen.getByText(/cálculo i/i)).toBeInTheDocument();

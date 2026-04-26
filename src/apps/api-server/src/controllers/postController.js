@@ -12,9 +12,7 @@ const postSchema = z.object({
 exports.getPosts = async (req, res) => {
   const { forum_id, page_num } = req.params;
   try {
-    const result = await postService.getPost(forum_id, page_num);
-    const rows = result.rows;
-
+    const rows = await postService.getPost(forum_id, page_num);
     const total = rows.length;
 
     res.status(200).json({ rows, total });
@@ -27,13 +25,12 @@ exports.getPosts = async (req, res) => {
 
 
 exports.getSinglePost = async (req, res) => {
-  const { forum_id } = req.params;
+  const { post_id } = req.params;
 
   try {
-    const result = await postService.getSinglePost(forum_id);
-    const rows = result.rows;
+    const result = await postService.getSinglePost(post_id);
 
-    res.status(200).json({ rows });
+    res.status(200).json(result[0]);
   } catch (error) {
     console.error("Error in getPosts:", error);
     res.status(500).json({ error: "internal server error" });

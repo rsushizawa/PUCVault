@@ -50,7 +50,7 @@ export default function PostDetail({
           />
         </button>
         <span className="font-bold text-xs text-text-secondary text-center w-full">
-          {post.voteCount + (vote ?? 0)}
+          {Number(post.engajamento) + (vote ?? 0)}
         </span>
         <button
           className="p-1 flex items-center justify-center"
@@ -68,33 +68,33 @@ export default function PostDetail({
       <div className="flex flex-col gap-3 flex-1 min-w-0">
         {/* Meta row */}
         <div className="flex gap-2 items-center flex-wrap">
-          {post.tags.map((tag) => (
-            <PostTag key={tag.id} tag={tag} />
+          {(post.tags ?? []).map((tag) => (
+            <PostTag key={tag} tag={tag} />
           ))}
           <span className="text-xs text-text-muted">
             Posted by{" "}
             <Link
-              href={`/user/${post.author.username}`}
+              href={`/user/${post.nome_usuario}`}
               className="hover:text-text-secondary"
             >
-              u/{post.author.username}
+              u/{post.nome_usuario}
             </Link>{" "}
-            · {formatDate(post.createdAt)}
+            · {formatDate(post.criado_em)}
           </span>
         </div>
 
         {/* Title */}
         <h1 className="font-semibold text-2xl text-text-primary leading-tight">
-          {post.title}
+          {post.titulo}
         </h1>
 
         {/* Body — rendered as markdown */}
-        <MarkdownBody>{post.body}</MarkdownBody>
+        <MarkdownBody>{post.conteudo}</MarkdownBody>
 
         {/* File attachment */}
-        {post.fileUrl && (
+        {post.arquivo && (
           <a
-            href={post.fileUrl}
+            href={post.arquivo}
             download
             className="flex items-center gap-2 text-accent text-sm hover:underline w-fit"
           >
@@ -106,7 +106,7 @@ export default function PostDetail({
         {/* Footer */}
         <div className="flex items-center gap-2 text-xs text-text-muted pt-3 border-t border-surface-overlay">
           <MessageSquare size={13} aria-hidden />
-          <span>{post.commentCount} comments</span>
+          <span>{Number(post.comentarios)} comments</span>
         </div>
       </div>
     </article>

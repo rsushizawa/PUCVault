@@ -3,6 +3,13 @@ import type { Post, Comment } from "@/types/api"
 
 const PAGE_SIZE = 20
 
+function normalizeTags(raw: unknown[]): string[] {
+  return raw
+    .filter((t) => t != null)
+    .map((t: any) => (typeof t === "string" ? t : (t.tag ?? t.name ?? t.nome ?? "")))
+    .filter((s) => s !== "")
+}
+
 type RawFeedRow = {
   id: number
   titulo: string
@@ -10,33 +17,37 @@ type RawFeedRow = {
   nome_usuario: string
   img_perfil: string | null
   criado_em: string
-  tags: Post["tags"]
+  tags: any[]
   engajamento: number | string
   comentarios: number | string
   arquivo: string | null
   nome?: string
   forum_nome?: string
+  forum?: number
+  criador?: number
+  cargo?: string
+  status?: string
 }
 
 export async function getFeed(page = 1): Promise<{ posts: Post[]; total: number }> {
   const { rows } = await apiFetch<{ rows: RawFeedRow[] }>(`/feed/page/${page}`)
-  const posts = rows.map((row) => ({
-    id: String(row.id),
-    title: row.titulo,
-    body: row.conteudo,
-    author: {
-      id: String(row.id),
-      username: row.nome_usuario,
-      avatarUrl: row.img_perfil || undefined,
-    },
-    createdAt: row.criado_em,
-    tags: (row.tags ?? [])
-      .filter((t: any) => t?.id != null)
-      .map((t: any) => ({ id: String(t.id), name: t.name ?? t.nome ?? t.tag ?? "" })),
-    voteCount: Number(row.engajamento),
-    commentCount: Number(row.comentarios),
-    fileUrl: row.arquivo ?? undefined,
-    forumSlug: row.nome ?? row.forum_nome ?? undefined,
+  const posts: Post[] = rows.map((row) => ({
+    id: row.id,
+    titulo: row.titulo,
+    arquivo: row.arquivo ?? null,
+    forum: row.forum ?? 0,
+    conteudo: row.conteudo,
+    status: row.status ?? "",
+    criado_em: row.criado_em,
+    criador: row.criador ?? 0,
+    nome_usuario: row.nome_usuario,
+    cargo: row.cargo ?? "",
+    img_perfil: row.img_perfil ?? null,
+    tags: normalizeTags(row.tags ?? []),
+    engajamento: String(row.engajamento),
+    comentarios: String(row.comentarios),
+    nome: row.nome ?? row.forum_nome,
+    forum_nome: row.forum_nome,
   }))
   const total =
     rows.length === PAGE_SIZE
@@ -45,7 +56,7 @@ export async function getFeed(page = 1): Promise<{ posts: Post[]; total: number 
   return { posts, total }
 }
 
-export function getPost(id: string): Promise<Post & { comments: Comment[] }> {
+export function getPost(id: string): Promise<Post> {
   return apiFetch(`/posts/${id}`)
 }
 
