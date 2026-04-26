@@ -6,7 +6,7 @@ import MarkdownBody from "@/components/markdown-body";
 import MarkdownEditor from "@/components/markdown-editor";
 import type { Comment } from "@/types/api";
 
-const INDENT_COLORS = ["#6c8ebf", "#9673a6", "#82b366", "#d6b656", "#b85450"];
+const INDENT_COLOR = "#6c8ebf";
 
 function formatDate(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -39,7 +39,7 @@ export default function CommentNode({
   const [replyContent, setReplyContent] = useState("");
   const [vote, setVote] = useState<1 | -1 | null>(null);
 
-  const color = INDENT_COLORS[depth % INDENT_COLORS.length];
+  const color = INDENT_COLOR;
   const maxDepth = 4;
 
   function handleVote(value: 1 | -1) {

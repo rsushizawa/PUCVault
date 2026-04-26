@@ -4,13 +4,6 @@ import { vi } from "vitest";
 import CommentSection from "@/components/comment-section";
 import type { Comment } from "@/types/api";
 
-vi.mock("@/lib/api/posts", () => ({
-  createComment: vi.fn().mockResolvedValue({}),
-  voteComment: vi.fn().mockResolvedValue({}),
-}));
-
-import { createComment, voteComment } from "@/lib/api/posts";
-
 const mockComment: Comment = {
   id: "c1",
   body: "A top-level comment.",
@@ -21,81 +14,89 @@ const mockComment: Comment = {
   children: [],
 };
 
+vi.mock("@/lib/api/posts", () => ({
+  getComments: vi.fn().mockResolvedValue([]),
+  createComment: vi.fn().mockResolvedValue({}),
+  voteComment: vi.fn().mockResolvedValue({}),
+}));
+
+import { getComments, createComment, voteComment } from "@/lib/api/posts";
+
 describe("CommentSection", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    (getComments as ReturnType<typeof vi.fn>).mockResolvedValue([]);
   });
 
-  test("renders the comment composer", () => {
-    render(<CommentSection comments={[]} postId="post-1" />);
-    expect(screen.getByPlaceholderText(/add a comment/i)).toBeInTheDocument();
+  test("renders the comment composer trigger", async () => {
+    render(<CommentSection postId="post-1" />);
+    expect(screen.getByText(/adicionar um comentário/i)).toBeInTheDocument();
   });
 
-  test("renders a Comment button", () => {
-    render(<CommentSection comments={[]} postId="post-1" />);
-    expect(screen.getByRole("button", { name: /^comment$/i })).toBeInTheDocument();
+  test("shows empty state when no comments are returned", async () => {
+    render(<CommentSection postId="post-1" />);
+    await waitFor(() =>
+      expect(screen.getByText(/nenhum comentário ainda/i)).toBeInTheDocument(),
+    );
   });
 
-  test("shows empty state when no comments are provided", () => {
-    render(<CommentSection comments={[]} postId="post-1" />);
-    expect(screen.getByText(/no comments yet/i)).toBeInTheDocument();
+  test("renders comments returned by getComments", async () => {
+    (getComments as ReturnType<typeof vi.fn>).mockResolvedValue([mockComment]);
+    render(<CommentSection postId="post-1" />);
+    await waitFor(() =>
+      expect(screen.getByText("A top-level comment.")).toBeInTheDocument(),
+    );
   });
 
-  test("renders provided comments", () => {
-    render(<CommentSection comments={[mockComment]} postId="post-1" />);
-    expect(screen.getByText("A top-level comment.")).toBeInTheDocument();
-  });
-
-  test("renders multiple comments", () => {
+  test("renders multiple comments", async () => {
     const second: Comment = {
       ...mockComment,
       id: "c2",
       body: "Second comment.",
       author: { id: "u2", username: "bob" },
     };
-    render(<CommentSection comments={[mockComment, second]} postId="post-1" />);
-    expect(screen.getByText("A top-level comment.")).toBeInTheDocument();
-    expect(screen.getByText("Second comment.")).toBeInTheDocument();
+    (getComments as ReturnType<typeof vi.fn>).mockResolvedValue([mockComment, second]);
+    render(<CommentSection postId="post-1" />);
+    await waitFor(() => {
+      expect(screen.getByText("A top-level comment.")).toBeInTheDocument();
+      expect(screen.getByText("Second comment.")).toBeInTheDocument();
+    });
   });
 
-  test("calls createComment with postId and content when Comment is clicked", async () => {
+  test("calls createComment and refreshes on submit", async () => {
     const user = userEvent.setup();
-    render(<CommentSection comments={[]} postId="post-1" />);
-    await user.type(screen.getByPlaceholderText(/add a comment/i), "hello there");
-    await user.click(screen.getByRole("button", { name: /^comment$/i }));
+    render(<CommentSection postId="post-1" />);
+    await user.click(screen.getByText(/adicionar um comentário/i));
+    await user.type(screen.getByPlaceholderText(/escreva um comentário/i), "hello there");
+    await user.click(screen.getByRole("button", { name: /comentar/i }));
     await waitFor(() =>
       expect(createComment).toHaveBeenCalledWith("post-1", { content: "hello there" }),
     );
-  });
-
-  test("clears the composer after submitting a comment", async () => {
-    const user = userEvent.setup();
-    render(<CommentSection comments={[]} postId="post-1" />);
-    const textarea = screen.getByPlaceholderText(/add a comment/i);
-    await user.type(textarea, "hello there");
-    await user.click(screen.getByRole("button", { name: /^comment$/i }));
-    await waitFor(() => expect(textarea).toHaveValue(""));
+    expect(getComments).toHaveBeenCalledTimes(2);
   });
 
   test("does not call createComment when comment is empty", async () => {
     const user = userEvent.setup();
-    render(<CommentSection comments={[]} postId="post-1" />);
-    await user.click(screen.getByRole("button", { name: /^comment$/i }));
+    render(<CommentSection postId="post-1" />);
+    await user.click(screen.getByText(/adicionar um comentário/i));
+    await user.click(screen.getByRole("button", { name: /comentar/i }));
     expect(createComment).not.toHaveBeenCalled();
   });
 
   test("calls voteComment when a comment is upvoted", async () => {
+    (getComments as ReturnType<typeof vi.fn>).mockResolvedValue([mockComment]);
     const user = userEvent.setup();
-    render(<CommentSection comments={[mockComment]} postId="post-1" />);
+    render(<CommentSection postId="post-1" />);
+    await waitFor(() => screen.getByRole("button", { name: /upvote comment/i }));
     await user.click(screen.getByRole("button", { name: /upvote comment/i }));
-    await waitFor(() =>
-      expect(voteComment).toHaveBeenCalledWith("c1", 1),
-    );
+    await waitFor(() => expect(voteComment).toHaveBeenCalledWith("c1", 1));
   });
 
-  test("calls createComment with parentId when replying to a comment", async () => {
+  test("calls createComment with parentId and refreshes when replying", async () => {
+    (getComments as ReturnType<typeof vi.fn>).mockResolvedValue([mockComment]);
     const user = userEvent.setup();
-    render(<CommentSection comments={[mockComment]} postId="post-1" />);
+    render(<CommentSection postId="post-1" />);
+    await waitFor(() => screen.getByRole("button", { name: /^reply$/i }));
     await user.click(screen.getByRole("button", { name: /^reply$/i }));
     await user.type(screen.getByPlaceholderText(/write a reply/i), "my reply");
     const replyButtons = screen.getAllByRole("button", { name: /^reply$/i });
@@ -106,5 +107,6 @@ describe("CommentSection", () => {
         parentId: "c1",
       }),
     );
+    expect(getComments).toHaveBeenCalledTimes(2);
   });
 });

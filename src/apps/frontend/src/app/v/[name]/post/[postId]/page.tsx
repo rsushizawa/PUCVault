@@ -8,22 +8,19 @@ import NavBar from "@/components/navbar";
 import PostDetail from "@/components/post-detail";
 import CommentSection from "@/components/comment-section";
 import { getPost, votePost } from "@/lib/api/posts";
-import type { Post, Comment } from "@/types/api";
+import type { Post } from "@/types/api";
 
 export default function PostPage() {
   const { name, postId } = useParams<{ name: string; postId: string }>();
   const decodedName = decodeURIComponent(name);
 
   const [post, setPost] = useState<Post | null>(null);
-  const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     getPost(postId)
-      .then((p) => {
-        setPost(p);
-      })
+      .then(setPost)
       .catch(() => setError("Falha ao carregar post."))
       .finally(() => setLoading(false));
   }, [postId]);
@@ -52,7 +49,7 @@ export default function PostPage() {
               communityId={decodedName}
               onVote={(v) => votePost(postId, v).catch(() => {})}
             />
-            <CommentSection comments={comments} postId={String(post.id)} />
+            <CommentSection postId={String(post.id)} />
           </div>
         )}
       </main>
