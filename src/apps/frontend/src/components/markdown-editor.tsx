@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import {
   Bold,
   Italic,
@@ -53,6 +53,13 @@ export default function MarkdownEditor({
   minHeight = "180px",
 }: MarkdownEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [value]);
 
   function applyInlineFormat(before: string, after = before, ph = "") {
     const el = textareaRef.current;
