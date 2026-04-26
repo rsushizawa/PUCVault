@@ -9,17 +9,11 @@ import CreatePost from "@/components/create-post";
 import PostCard from "@/components/post-card";
 import { CommunitySidebar } from "@/components/community-sidebar";
 import CommunityFiles from "@/components/community-files";
-import {
-  getForums,
-  getCommunityPosts,
-} from "@/lib/api/communities";
+import { getForums, getCommunityPosts } from "@/lib/api/communities";
 import type { ForumSummary } from "@/lib/api/communities";
 import { createPost, votePost } from "@/lib/api/posts";
 import type { Post } from "@/types/api";
 import type { Tag } from "@/types/tag";
-
-const PAGE_SIZE = 20;
-
 
 function formatTimestamp(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -77,7 +71,6 @@ export default function VaultPage() {
       })
       .catch(() => setPostsError("Erro ao carregar posts."))
       .finally(() => setPostsLoading(false));
-
   }, [forum?.id]);
 
   // Keep a stable ref to the load-more logic so the observer never goes stale
