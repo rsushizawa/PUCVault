@@ -1,24 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import CommentNode from "@/components/comment-node";
-import MarkdownEditor from "@/components/markdown-editor";
-import { createComment, voteComment } from "@/lib/api/posts";
+import CreatePost from "@/components/create-post";
+import { getComments, createComment, voteComment } from "@/lib/api/posts";
 import type { Comment } from "@/types/api";
 
 interface CommentSectionProps {
-  comments: Comment[];
   postId: string;
 }
 
-export default function CommentSection({ comments, postId }: CommentSectionProps) {
-  const [newComment, setNewComment] = useState("");
+export default function CommentSection({ postId }: CommentSectionProps) {
+  const [comments, setComments] = useState<Comment[]>([]);
 
-  async function handleTopLevelComment() {
-    const trimmed = newComment.trim();
-    if (!trimmed) return;
-    await createComment(postId, { content: trimmed });
-    setNewComment("");
+  const fetchComments = useCallback(() => {
+    getComments(postId).then(setComments).catch(() => {});
+  }, [postId]);
+
+  useEffect(() => {
+    fetchComments();
+  }, [fetchComments]);
+
+  async function handleTopLevelComment(content: string) {
+    await createComment(postId, { content });
+    fetchComments();
   }
 
   async function handleVote(commentId: string, value: 1 | -1) {
@@ -27,33 +32,17 @@ export default function CommentSection({ comments, postId }: CommentSectionProps
 
   async function handleReply(parentId: string, content: string) {
     await createComment(postId, { content, parentId });
+    fetchComments();
   }
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Top-level comment composer */}
-      <div className="bg-surface-raised p-4 rounded-sm flex flex-col gap-2">
-        <MarkdownEditor
-          value={newComment}
-          onChange={setNewComment}
-          placeholder="Add a comment..."
-          minHeight="100px"
-        />
-        <div className="flex justify-end">
-          <button
-            onClick={handleTopLevelComment}
-            className="px-4 py-2 text-sm bg-accent text-surface-base font-semibold rounded-sm"
-          >
-            Comment
-          </button>
-        </div>
-      </div>
+      <CreatePost mode="comment" onComment={handleTopLevelComment} />
 
-      {/* Comment tree */}
       <div className="bg-surface-raised px-5 pb-5 pt-3 rounded-sm">
         {comments.length === 0 ? (
           <p className="text-text-muted text-sm text-center py-6">
-            No comments yet. Be the first!
+            Nenhum comentário ainda. Seja o primeiro!
           </p>
         ) : (
           comments.map((comment) => (

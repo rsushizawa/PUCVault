@@ -9,11 +9,13 @@ import { getForumTags, searchTags } from "@/lib/api/tags";
 import type { Tag } from "@/types/tag";
 
 interface CreatePostProps {
-  forumId: string;
-  onPost: (data: { title: string; content: string; tags: Tag[] }) => void;
+  forumId?: string;
+  mode?: "post" | "comment";
+  onPost?: (data: { title: string; content: string; tags: Tag[] }) => void;
+  onComment?: (content: string) => void;
 }
 
-export default function CreatePost({ forumId, onPost }: CreatePostProps) {
+export default function CreatePost({ forumId, mode = "post", onPost, onComment }: CreatePostProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [title, setTitle] = useState("");
@@ -25,7 +27,7 @@ export default function CreatePost({ forumId, onPost }: CreatePostProps) {
   const [tagMenuLoading, setTagMenuLoading] = useState(false);
 
   useEffect(() => {
-    if (!tagMenuOpen) return;
+    if (!tagMenuOpen || !forumId) return;
     let cancelled = false;
     const load = async () => {
       setTagMenuLoading(true);
@@ -54,12 +56,18 @@ export default function CreatePost({ forumId, onPost }: CreatePostProps) {
   }
 
   function handlePost() {
-    if (!title.trim()) return;
-    const resolvedTags = selectedTags
-      .map((name) => fetchedTags.find((t) => t.tag === name))
-      .filter((t): t is Tag => t !== undefined);
-    onPost({ title: title.trim(), content, tags: resolvedTags });
-    reset();
+    if (mode === "comment") {
+      if (!content.trim()) return;
+      onComment?.(content.trim());
+      reset();
+    } else {
+      if (!title.trim()) return;
+      const resolvedTags = selectedTags
+        .map((name) => fetchedTags.find((t) => t.tag === name))
+        .filter((t): t is Tag => t !== undefined);
+      onPost?.({ title: title.trim(), content, tags: resolvedTags });
+      reset();
+    }
   }
 
   function handleCancel() {
@@ -73,7 +81,7 @@ export default function CreatePost({ forumId, onPost }: CreatePostProps) {
     setTagMenuOpen(false);
     setTagSearch("");
     setFetchedTags([]);
-    setIsExpanded(false);
+    if (mode !== "comment") setIsExpanded(false);
   }
 
   function handleTagToggle(tagName: string) {
@@ -95,29 +103,31 @@ export default function CreatePost({ forumId, onPost }: CreatePostProps) {
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleExpandClick(); }}
             className="bg-surface-input w-full px-4 py-2.5 rounded-lg text-sm text-text-muted cursor-pointer hover:bg-surface-overlay transition-colors duration-150 select-none"
           >
-            Faça uma pergunta ou compartilhe um insight...
+            {mode === "comment" ? "Adicionar um comentário..." : "Faça uma pergunta ou compartilhe um insight..."}
           </div>
         </div>
       ) : (
         <div className="bg-surface-raised p-5 rounded-xl flex flex-col gap-4 border border-accent/20 animate-expand-in">
-          {/* Title */}
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Título do post"
-            className="w-full bg-surface-input text-text-primary text-base font-medium px-4 py-2.5 rounded-lg outline-none border border-surface-overlay hover:border-accent/30 focus:border-accent/50 placeholder:text-text-muted transition-all duration-200"
-          />
+          {/* Title — post mode only */}
+          {mode === "post" && (
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Título do post"
+              className="w-full bg-surface-input text-text-primary text-base font-medium px-4 py-2.5 rounded-lg outline-none border border-surface-overlay hover:border-accent/30 focus:border-accent/50 placeholder:text-text-muted transition-all duration-200"
+            />
+          )}
 
           <MarkdownEditor
             value={content}
             onChange={setContent}
-            placeholder="Detalhe sua pergunta ou insight..."
-            minHeight="160px"
+            placeholder={mode === "comment" ? "Escreva um comentário..." : "Detalhe sua pergunta ou insight..."}
+            minHeight={mode === "comment" ? "100px" : "160px"}
           />
 
-          {/* Tags */}
-          <div className="flex flex-col gap-2">
+          {/* Tags — post mode only */}
+          {mode === "post" && <div className="flex flex-col gap-2">
             <span className="text-text-muted text-xs font-medium uppercase tracking-wider">Tags</span>
             <div className="flex gap-2 items-center flex-wrap">
               {fetchedTags.map((t) => {
@@ -193,7 +203,7 @@ export default function CreatePost({ forumId, onPost }: CreatePostProps) {
               </div>
             </div>
 
-          </div>
+          </div>}
 
           {/* Footer */}
           <div className="flex items-center gap-3">
@@ -208,10 +218,10 @@ export default function CreatePost({ forumId, onPost }: CreatePostProps) {
             <button
               type="button"
               onClick={handlePost}
-              disabled={!title.trim()}
+              disabled={mode === "comment" ? !content.trim() : !title.trim()}
               className="px-5 py-2 rounded-lg text-sm bg-accent text-surface-base font-semibold hover:opacity-90 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             >
-              Publicar
+              {mode === "comment" ? "Comentar" : "Publicar"}
             </button>
           </div>
         </div>
