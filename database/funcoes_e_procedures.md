@@ -1,7 +1,106 @@
 # Documentação do Esquema Publico
 
 ## Visão Geral
-Este documento descreve todas as **procedures** (escrita) e **functions** (leitura) disponíveis no esquema `publico` do banco de dados, bem como as **views** utilizadas para consulta.
+Este documento descreve todas as **procedures** (escrita) e **functions** (leitura) disponíveis no esquema `publico` do banco de dados, bem como as **views** e **índices** utilizados para otimização.
+
+---
+
+## ÍNDICES IMPLEMENTADOS
+
+### Tabela `usuario`
+| Índice | Tipo | Colunas | Benefício |
+|--------|------|---------|-----------|
+| `idx_usuario_email` | B-Tree | `email` | Busca por email (`dados_login_usuario`, `buscar_usuario_por_email`) |
+| `idx_usuario_nome_usuario` | B-Tree | `nome_usuario` | Busca por nome de usuário (`dados_login_usuario`, `buscar_usuario_por_nome_usuario`) |
+| `idx_usuario_status` | B-Tree | `status` | Filtro por status (`perfil_usuario`, `listar_usuarios`) |
+| `idx_usuario_excluido_em` | B-Tree | `excluido_em` | Filtro de usuários não excluídos (`login_usuario`, `perfil_usuario`) |
+| `idx_forum_criador` | B-Tree | `criador` | Verificação de fóruns criados (`deletar_usuario`) |
+
+### Tabela `forum`
+| Índice | Tipo | Colunas | Benefício |
+|--------|------|---------|-----------|
+| `idx_forum_nome` | B-Tree | `nome` | Busca por nome (`buscar_forum_por_nome`) |
+| `idx_forum_status` | B-Tree | `status` | Filtro por status (`listar_foruns`, `visualizar_forum`) |
+| `idx_forum_criador` | B-Tree | `criador` | Verificação de fóruns criados (`deletar_usuario`) |
+
+### Tabela `tag`
+| Índice | Tipo | Colunas | Benefício |
+|--------|------|---------|-----------|
+| `idx_tag_tag_trgm` | GIN (pg_trgm) | `tag` | Busca textual por similaridade (`buscar_tags_relevantes`) |
+| `idx_tag_criador` | B-Tree | `criador` | Busca tags por criador (`buscar_tags_por_criador`, `deletar_usuario`) |
+| `idx_tag_tag` | B-Tree | `tag` | Ordenação por nome (`listar_tags`) |
+
+### Tabela `conteudo`
+| Índice | Tipo | Colunas | Benefício |
+|--------|------|---------|-----------|
+| `idx_conteudo_criado_em` | B-Tree | `criado_em DESC` | Ordenação cronológica (`listar_postagens_forum`, `listar_arquivos_forum`) |
+| `idx_conteudo_criador` | B-Tree | `criador` | Busca de conteúdo por criador (`deletar_conteudo`, `listar_postagens_feed`) |
+| `idx_conteudo_status` | B-Tree | `status` | Filtro por status das views |
+
+### Tabela `postagem`
+| Índice | Tipo | Colunas | Benefício |
+|--------|------|---------|-----------|
+| `idx_postagem_forum` | B-Tree | `forum` | Filtro por fórum (`listar_postagens_forum`, `listar_arquivos_forum`) |
+| `idx_postagem_forum_criado` | B-Tree | `forum, id DESC` | Ordenação combinada com filtro de fórum |
+| `idx_postagem_arquivo` | B-Tree (parcial) | `arquivo` WHERE `arquivo IS NOT NULL` | Filtro de postagens com arquivo (`listar_arquivos_forum`) |
+| `idx_postagem_forum_arquivo` | B-Tree (parcial) | `forum, id DESC` WHERE `arquivo IS NOT NULL` | Filtro combinado de fórum + arquivo |
+
+### Tabela `comentario`
+| Índice | Tipo | Colunas | Benefício |
+|--------|------|---------|-----------|
+| `idx_comentario_conteudo_pai` | B-Tree | `conteudo_pai` | CTE recursiva (`listar_comentarios_postagem`) |
+| `idx_comentario_conteudo_pai_id` | B-Tree | `conteudo_pai, id` | Ordenação dentro da recursão |
+| `idx_comentario_nivel` | B-Tree | `nivel` | Ordenação por nível |
+
+### Tabela `classificacao`
+| Índice | Tipo | Colunas | Benefício |
+|--------|------|---------|-----------|
+| `idx_classificacao_tag` | B-Tree | `tag` | Agrupamento para contagem de usos (`buscar_tags_relevantes`) |
+| `idx_classificacao_postagem` | B-Tree | `postagem` | JOIN com postagem (`listar_tags_arquivo_por_ano`, `listar_postagens_arquivo`) |
+
+### Tabela `avaliacao`
+| Índice | Tipo | Colunas | Benefício |
+|--------|------|---------|-----------|
+| `idx_avaliacao_conteudo` | B-Tree | `conteudo` | Cálculo de engajamento e karma (`visualizar_postagem`, `perfil_usuario`) |
+
+### Tabela `seguir_forum`
+| Índice | Tipo | Colunas | Benefício |
+|--------|------|---------|-----------|
+| `idx_seguir_forum_forum` | B-Tree | `forum` | Listagem de seguidores (`listar_seguidores_forum`) |
+| `idx_seguir_forum_usuario` | B-Tree | `usuario` | Verificação se usuário segue (`alternar_seguir_forum`) |
+| `idx_seguir_forum_usuario_forum` | B-Tree | `usuario, forum` | Verificação combinada (`checar_se_usuario_segue_forum`) |
+| `idx_seguir_forum_usuario_forum_list` | B-Tree | `usuario, forum` | Subquery do feed (`listar_postagens_feed`) |
+
+### Tabela `seguir_usuario`
+| Índice | Tipo | Colunas | Benefício |
+|--------|------|---------|-----------|
+| `idx_seguir_usuario_seguidor` | B-Tree | `seguidor` | Listagem de quem o usuário segue (`listar_postagens_feed`) |
+| `idx_seguir_usuario_seguido` | B-Tree | `seguido` | Contagem de seguidores (`perfil_usuario`) |
+
+### Tabela `incluir_tag`
+| Índice | Tipo | Colunas | Benefício |
+|--------|------|---------|-----------|
+| `idx_incluir_tag_forum` | B-Tree | `forum` | Tags relacionadas a um fórum (`listar_tags_relacionadas_forum`) |
+| `idx_incluir_tag_tag` | B-Tree | `tag` | Verificação de tag em fórum |
+| `idx_incluir_tag_forum_tag` | B-Tree | `forum, tag` | Verificação combinada (`incluir_tag_forum`, `remover_tag_forum`) |
+
+### Tabela `denuncia`
+| Índice | Tipo | Colunas | Benefício |
+|--------|------|---------|-----------|
+| `idx_denuncia_denunciante` | B-Tree | `denunciante` | Verificação de denúncias feitas (`deletar_usuario`) |
+| `idx_denuncia_status` | B-Tree | `status` | Filtro por status (`resolver_denuncia`) |
+
+### Tabela `denuncia_usuario`
+| Índice | Tipo | Colunas | Benefício |
+|--------|------|---------|-----------|
+| `idx_denuncia_usuario_denunciado` | B-Tree | `usuario_denunciado` | Verificação de duplicata (`inserir_denuncia_usuario`) |
+| `idx_denuncia_usuario_denunciante_denunciado` | B-Tree | `id, usuario_denunciado` | JOIN para verificação de duplicata |
+
+### Tabela `denuncia_conteudo`
+| Índice | Tipo | Colunas | Benefício |
+|--------|------|---------|-----------|
+| `idx_denuncia_conteudo_denunciado` | B-Tree | `conteudo_denunciado` | Verificação de duplicata (`inserir_denuncia_conteudo`) |
+| `idx_denuncia_conteudo_id_conteudo` | B-Tree | `id, conteudo_denunciado` | JOIN para verificação de duplicata |
 
 ---
 
@@ -17,7 +116,7 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | p_email | VARCHAR | Email do usuário |
 | p_senha_hash | VARCHAR | Hash da senha |
 
-**Retorno:** Nenhum
+**Índices beneficiados:** Nenhum (operação de INSERT)
 
 ---
 
@@ -29,7 +128,7 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | p_usuario_id | INT | ID do usuário |
 | p_novo_nome | VARCHAR | Novo nome do usuário |
 
-**Retorno:** Nenhum
+**Índices beneficiados:** `idx_usuario_*` (indiretamente, na cláusula WHERE pela PK)
 
 ---
 
@@ -41,7 +140,7 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | p_usuario_id | INT | ID do usuário |
 | p_nova_senha_hash | VARCHAR | Nova hash da senha |
 
-**Retorno:** Nenhum
+**Índices beneficiados:** Nenhum específico
 
 ---
 
@@ -52,7 +151,10 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 |-----------|------|-----------|
 | p_usuario_id | INT | ID do usuário |
 
-**Retorno:** Nenhum
+**Índices beneficiados:**
+- `idx_forum_criador` - Verifica se criou fórum
+- `idx_tag_criador` - Verifica se criou tag
+- `idx_denuncia_denunciante` - Verifica se fez denúncia
 
 ---
 
@@ -63,7 +165,7 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 |-----------|------|-----------|
 | p_usuario_id | INT | ID do usuário |
 
-**Retorno:** Nenhum
+**Índices beneficiados:** Nenhum específico
 
 ---
 
@@ -76,7 +178,7 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | p_alvo_id | INT | ID do usuário que terá o cargo alterado |
 | p_novo_cargo | VARCHAR | Novo cargo ('USUARIO', 'VALIDADOR', 'ADMIN', 'SUPERADMIN') |
 
-**Retorno:** Nenhum
+**Índices beneficiados:** Nenhum específico
 
 ---
 
@@ -89,7 +191,7 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | p_campo | VARCHAR | Campo a atualizar ('perfil' ou 'banner') |
 | p_novo_id | TEXT | Novo ID da imagem (Cloudflare Images) |
 
-**Retorno:** Nenhum
+**Índices beneficiados:** Nenhum específico
 
 ---
 
@@ -102,7 +204,7 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | p_descricao | VARCHAR | Descrição do fórum |
 | p_criador | INT | ID do usuário criador |
 
-**Retorno:** Nenhum
+**Índices beneficiados:** Nenhum (operação de INSERT)
 
 ---
 
@@ -115,7 +217,8 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | p_validador_id | INT | ID do usuário validador |
 | p_novo_status | VARCHAR | 'ATIVO' ou 'RECUSADO' |
 
-**Retorno:** Nenhum
+**Índices beneficiados:**
+- `idx_forum_status` - Verifica status atual do fórum
 
 ---
 
@@ -128,19 +231,20 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | p_usuario_id | INT | ID do usuário (deve ser o criador) |
 | p_nova_descricao | VARCHAR | Nova descrição |
 
-**Retorno:** Nenhum
+**Índices beneficiados:** Nenhum específico
 
 ---
 
 ### 11. `inserir_tag`
-**Descrição:** Insere uma nova tag (status inicial 'ESPERA').
+**Descrição:** Insere uma nova tag.
 **Parâmetros:**
 | Parâmetro | Tipo | Descrição |
 |-----------|------|-----------|
 | p_tag | VARCHAR | Nome da tag |
 | p_criador | INT | ID do usuário criador |
 
-**Retorno:** Nenhum
+**Índices beneficiados:** Nenhum (operação de INSERT)
+**Observação:** Tags agora são ATIVAS por padrão (não requerem validação)
 
 ---
 
@@ -153,7 +257,7 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | p_validador_id | INT | ID do usuário validador |
 | p_novo_status | VARCHAR | 'ATIVO' ou 'RECUSADO' |
 
-**Retorno:** Nenhum
+**Índices beneficiados:** Nenhum (procedimento removido - tags não precisam mais validação)
 
 ---
 
@@ -169,7 +273,7 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | p_arquivo | TEXT | ID do arquivo (Cloudflare Images) |
 | p_tags | INT[] | Array de IDs das tags (opcional) |
 
-**Retorno:** Nenhum
+**Índices beneficiados:** Nenhum (operação de INSERT)
 
 ---
 
@@ -182,7 +286,7 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | p_criador | INT | ID do usuário criador |
 | p_conteudo_pai | INT | ID da postagem ou comentário pai |
 
-**Retorno:** Nenhum
+**Índices beneficiados:** Nenhum (operação de INSERT)
 
 ---
 
@@ -194,7 +298,8 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | p_conteudo_id | INT | ID do conteúdo |
 | p_executor_id | INT | ID do usuário executor (criador ou SUPERADMIN) |
 
-**Retorno:** Nenhum
+**Índices beneficiados:**
+- `idx_conteudo_criador` - Verifica se executor é o criador
 
 ---
 
@@ -207,7 +312,7 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | p_conteudo_id | INT | ID do conteúdo |
 | p_avaliacao | SMALLINT | 1 (like), -1 (dislike), 0 (remover) |
 
-**Retorno:** Nenhum
+**Índices beneficiados:** Nenhum específico
 
 ---
 
@@ -220,7 +325,9 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | p_denunciante_id | INT | ID do usuário denunciante |
 | p_denunciado_id | INT | ID do usuário denunciado |
 
-**Retorno:** Nenhum
+**Índices beneficiados:**
+- `idx_denuncia_usuario_denunciado` - Verificação de duplicata
+- `idx_denuncia_usuario_denunciante_denunciado` - JOIN para duplicata
 
 ---
 
@@ -233,7 +340,9 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | p_denunciante_id | INT | ID do usuário denunciante |
 | p_conteudo_id | INT | ID do conteúdo denunciado |
 
-**Retorno:** Nenhum
+**Índices beneficiados:**
+- `idx_denuncia_conteudo_denunciado` - Verificação de duplicata
+- `idx_denuncia_conteudo_id_conteudo` - JOIN para duplicata
 
 ---
 
@@ -246,7 +355,8 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | p_executor_id | INT | ID do usuário executor (ADMIN ou SUPERADMIN) |
 | p_novo_status | VARCHAR | 'RESOLVIDA' ou 'IGNORADA' |
 
-**Retorno:** Nenhum
+**Índices beneficiados:**
+- `idx_denuncia_status` - Verifica status atual da denúncia
 
 ---
 
@@ -258,7 +368,8 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | p_usuario_id | INT | ID do usuário |
 | p_forum_id | INT | ID do fórum |
 
-**Retorno:** Nenhum
+**Índices beneficiados:**
+- `idx_seguir_forum_usuario_forum` - Verifica se já segue
 
 ---
 
@@ -270,12 +381,12 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | p_seguidor_id | INT | ID do seguidor |
 | p_seguido_id | INT | ID do usuário a ser seguido |
 
-**Retorno:** Nenhum
+**Índices beneficiados:** Nenhum específico
 
 ---
 
 ### 22. `incluir_tag_forum`
-**Descrição:** Relaciona uma tag a um fórum (apenas o criador do fórum pode fazer isso).
+**Descrição:** Relaciona uma tag a um fórum (apenas o criador do fórum pode fazer).
 **Parâmetros:**
 | Parâmetro | Tipo | Descrição |
 |-----------|------|-----------|
@@ -283,12 +394,13 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | p_forum_id | INT | ID do fórum |
 | p_tag_id | INT | ID da tag |
 
-**Retorno:** Nenhum
+**Índices beneficiados:**
+- `idx_incluir_tag_forum_tag` - Verifica se tag já está relacionada
 
 ---
 
 ### 23. `remover_tag_forum`
-**Descrição:** Remove a relação entre uma tag e um fórum (apenas o criador do fórum pode fazer isso).
+**Descrição:** Remove a relação entre uma tag e um fórum.
 **Parâmetros:**
 | Parâmetro | Tipo | Descrição |
 |-----------|------|-----------|
@@ -296,7 +408,8 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | p_forum_id | INT | ID do fórum |
 | p_tag_id | INT | ID da tag |
 
-**Retorno:** Nenhum
+**Índices beneficiados:**
+- `idx_incluir_tag_forum_tag` - Verifica se tag está relacionada
 
 ---
 
@@ -312,7 +425,12 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 
 **Retorno:** SETOF `privado.login_usuario`
 
-**Colunas retornadas (na ordem):**
+**Índices beneficiados:**
+- `idx_usuario_email` - Busca por email
+- `idx_usuario_nome_usuario` - Busca por nome de usuário
+- `idx_usuario_excluido_em` - Filtro de usuários não excluídos
+
+**Colunas retornadas:**
 | Ordem | Coluna | Tipo | Descrição |
 |-------|--------|------|-----------|
 | 1 | id | INT | ID do usuário |
@@ -329,7 +447,12 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 
 **Retorno:** SETOF `privado.perfil_usuario`
 
-**Colunas retornadas (na ordem):**
+**Índices beneficiados:**
+- `idx_usuario_excluido_em` - Filtro de exclusão (via view)
+- `idx_usuario_status` - Filtro de status (via view)
+- `idx_avaliacao_conteudo` - Cálculo de karma (via view)
+
+**Colunas retornadas:**
 | Ordem | Coluna | Tipo | Descrição |
 |-------|--------|------|-----------|
 | 1 | id | INT | ID do usuário |
@@ -337,11 +460,11 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | 3 | nome_usuario | VARCHAR | Nome de usuário |
 | 4 | status | VARCHAR | Status do usuário (ATIVO/SILENCIADO) |
 | 5 | criado_em | TIMESTAMPTZ | Data de criação da conta |
-| 6 | img_perfil | TEXT | ID da imagem de perfil (Cloudflare) |
-| 7 | img_banner | TEXT | ID da imagem de banner (Cloudflare) |
-| 8 | seguidores | BIGINT | Número de seguidores do usuário |
-| 9 | segue | BIGINT | Número de usuários que este usuário segue |
-| 10 | karma | BIGINT | Pontuação total do usuário (soma das avaliações recebidas) |
+| 6 | img_perfil | TEXT | ID da imagem de perfil |
+| 7 | img_banner | TEXT | ID da imagem de banner |
+| 8 | seguidores | BIGINT | Número de seguidores |
+| 9 | segue | BIGINT | Número de usuários que segue |
+| 10 | karma | BIGINT | Pontuação total (soma de avaliações recebidas) |
 
 ---
 
@@ -354,7 +477,7 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 
 **Retorno:** SETOF `privado.perfil_usuario`
 
-**Colunas retornadas:** As mesmas de `privado.perfil_usuario`
+**Índices beneficiados:** PK (acesso direto)
 
 ---
 
@@ -367,7 +490,8 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 
 **Retorno:** SETOF `privado.perfil_usuario`
 
-**Colunas retornadas:** As mesmas de `privado.perfil_usuario`
+**Índices beneficiados:**
+- `idx_usuario_nome_usuario` - Busca exata pelo nome
 
 ---
 
@@ -380,7 +504,8 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 
 **Retorno:** SETOF `privado.perfil_usuario`
 
-**Colunas retornadas:** As mesmas de `privado.perfil_usuario`
+**Índices beneficiados:**
+- `idx_usuario_email` - Busca exata pelo email
 
 ---
 
@@ -393,32 +518,38 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 
 **Retorno:** SETOF `privado.visualizar_forum`
 
-**Colunas retornadas (na ordem):**
-| Ordem | Coluna | Tipo | Descrição |
-|-------|--------|------|-----------|
-| 1 | id | INT | ID do fórum |
-| 2 | nome | VARCHAR | Nome do fórum |
-| 3 | descricao | VARCHAR | Descrição do fórum |
-| 4 | criado_em | TIMESTAMPTZ | Data de criação do fórum |
-| 5 | status | VARCHAR | Status do fórum (ATIVO) |
-| 6 | nome_usuario | VARCHAR | Nome de usuário do criador |
-| 7 | img_perfil | TEXT | ID da imagem de perfil do fórum |
-| 8 | img_banner | TEXT | ID da imagem de banner do fórum |
-| 9 | seguidores | BIGINT | Número total de seguidores do fórum |
+**Índices beneficiados:**
+- `idx_forum_nome` - Busca pelo nome
+- `idx_forum_status` - Filtro por status 'ATIVO'
 
 ---
 
-### 7. `listar_foruns`
+### 7. `buscar_forum_por_id`
+**Descrição:** Busca um fórum ativo pelo ID.
+**Parâmetros:**
+| Parâmetro | Tipo | Descrição |
+|-----------|------|-----------|
+| p_id | INT | ID do fórum |
+
+**Retorno:** SETOF `privado.visualizar_forum`
+
+**Índices beneficiados:** PK (acesso direto)
+
+---
+
+### 8. `listar_foruns`
 **Descrição:** Lista todos os fóruns ativos.
 **Parâmetros:** Nenhum
 
 **Retorno:** SETOF `privado.visualizar_forum`
 
-**Colunas retornadas:** As mesmas de `privado.visualizar_forum`
+**Índices beneficiados:**
+- `idx_forum_status` - Filtro por status 'ATIVO'
+- `idx_seguir_forum_forum` - Contagem de seguidores (via view)
 
 ---
 
-### 8. `listar_seguidores_forum`
+### 9. `listar_seguidores_forum`
 **Descrição:** Lista todos os seguidores de um fórum.
 **Parâmetros:**
 | Parâmetro | Tipo | Descrição |
@@ -427,11 +558,12 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 
 **Retorno:** SETOF `privado.perfil_usuario`
 
-**Colunas retornadas:** As mesmas de `privado.perfil_usuario`
+**Índices beneficiados:**
+- `idx_seguir_forum_forum` - JOIN com seguir_forum
 
 ---
 
-### 9. `buscar_tags_por_criador`
+### 10. `buscar_tags_por_criador`
 **Descrição:** Busca todas as tags criadas por um usuário.
 **Parâmetros:**
 | Parâmetro | Tipo | Descrição |
@@ -440,20 +572,20 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 
 **Retorno:** SETOF `privado.tag`
 
-**Colunas retornadas (na ordem):**
+**Índices beneficiados:**
+- `idx_tag_criador` - Filtro pelo criador
+
+**Colunas retornadas:**
 | Ordem | Coluna | Tipo | Descrição |
 |-------|--------|------|-----------|
 | 1 | id | INT | ID da tag |
 | 2 | tag | VARCHAR | Nome da tag |
-| 3 | status | VARCHAR | Status da tag (ATIVO/ESPERA/RECUSADO) |
-| 4 | criado_em | TIMESTAMPTZ | Data de criação da tag |
-| 5 | status_modificado_em | TIMESTAMPTZ | Data da última modificação de status |
-| 6 | criador | INT | ID do usuário criador |
-| 7 | validador | INT | ID do usuário que validou/recusou |
+| 3 | criado_em | TIMESTAMPTZ | Data de criação da tag |
+| 4 | criador | INT | ID do usuário criador |
 
 ---
 
-### 10. `listar_postagens_forum`
+### 11. `listar_postagens_forum`
 **Descrição:** Lista as postagens de um fórum com paginação.
 **Parâmetros:**
 | Parâmetro | Tipo | Descrição |
@@ -461,46 +593,32 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 | p_forum_id | INT | ID do fórum |
 | p_pagina | INT | Número da página (padrão: 1) |
 
-**Retorno:** SETOF `privado.visualizar_postagem`
-**Paginação:** 20 resultados por página
+**Retorno:** SETOF `privado.visualizar_postagem` (20 por página)
 
-**Colunas retornadas (na ordem):**
-| Ordem | Coluna | Tipo | Descrição |
-|-------|--------|------|-----------|
-| 1 | id | INT | ID da postagem |
-| 2 | titulo | VARCHAR | Título da postagem |
-| 3 | arquivo | TEXT | ID do arquivo anexado (Cloudflare) |
-| 4 | forum | INT | ID do fórum |
-| 5 | conteudo | TEXT | Conteúdo da postagem |
-| 6 | status | VARCHAR | Status do conteúdo |
-| 7 | criado_em | TIMESTAMPTZ | Data de criação da postagem |
-| 8 | tempo_de_vida | INTERVAL | Tempo desde a criação (NOW() - criado_em) |
-| 9 | nome_usuario | VARCHAR | Nome de usuário do criador |
-| 10 | cargo | VARCHAR | Cargo do criador |
-| 11 | img_perfil | TEXT | ID da imagem de perfil do criador |
-| 12 | tags | TEXT[] | Array de nomes das tags associadas |
-| 13 | engajamento | BIGINT | Soma das avaliações (likes - dislikes) |
-| 14 | comentarios | BIGINT | Número total de comentários na postagem |
+**Índices beneficiados:**
+- `idx_postagem_forum_criado` - Filtro por fórum + ordenação por ID
+- `idx_conteudo_criado_em` - Ordenação cronológica
+- `idx_avaliacao_conteudo` - Cálculo de engajamento (via view)
 
 ---
 
-### 11. `listar_arquivos_forum`
-**Descrição:** Lista todas as postagens que possuem arquivo anexado em um fórum com paginação.
+### 12. `listar_arquivos_forum`
+**Descrição:** Lista postagens com arquivo anexado em um fórum.
 **Parâmetros:**
 | Parâmetro | Tipo | Descrição |
 |-----------|------|-----------|
 | p_forum_id | INT | ID do fórum |
 | p_pagina | INT | Número da página (padrão: 1) |
 
-**Retorno:** SETOF `privado.visualizar_postagem`
-**Paginação:** 20 resultados por página
+**Retorno:** SETOF `privado.visualizar_postagem` (20 por página)
 
-**Colunas retornadas:** As mesmas de `privado.visualizar_postagem` (apenas com `arquivo IS NOT NULL`)
+**Índices beneficiados:**
+- `idx_postagem_forum_arquivo` - Filtro por fórum + arquivo não nulo
 
 ---
 
-### 12. `listar_comentarios_postagem`
-**Descrição:** Lista todos os comentários de uma postagem de forma hierárquica (recursiva), ordenados por nível e data de criação.
+### 13. `listar_comentarios_postagem`
+**Descrição:** Lista comentários de uma postagem de forma hierárquica (recursiva).
 **Parâmetros:**
 | Parâmetro | Tipo | Descrição |
 |-----------|------|-----------|
@@ -508,35 +626,25 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 
 **Retorno:** SETOF `privado.exibir_comentarios`
 
-**Colunas retornadas (na ordem):**
-| Ordem | Coluna | Tipo | Descrição |
-|-------|--------|------|-----------|
-| 1 | id | INT | ID do comentário |
-| 2 | conteudo_pai | INT | ID do conteúdo pai (postagem ou comentário) |
-| 3 | nivel | SMALLINT | Nível do comentário na árvore (1 a 5) |
-| 4 | conteudo_id | INT | ID do conteúdo associado |
-| 5 | conteudo | TEXT | Conteúdo do comentário |
-| 6 | status | VARCHAR | Status do comentário |
-| 7 | criado_em | TIMESTAMPTZ | Data de criação do comentário |
-| 8 | tempo_de_vida | INTERVAL | Tempo desde a criação (NOW() - criado_em) |
-| 9 | nome_usuario | VARCHAR | Nome de usuário do criador |
-| 10 | cargo | VARCHAR | Cargo do criador |
-| 11 | img_perfil | TEXT | ID da imagem de perfil do criador |
-| 12 | engajamento | BIGINT | Soma das avaliações (likes - dislikes) do comentário |
+**Índices beneficiados:**
+- `idx_comentario_conteudo_pai` - CTE recursiva (busca por pai)
+- `idx_comentario_conteudo_pai_id` - Ordenação dentro da recursão
+- `idx_comentario_nivel` - Ordenação por nível
 
 ---
 
-### 13. `listar_tags`
+### 14. `listar_tags`
 **Descrição:** Lista todas as tags do sistema.
 **Parâmetros:** Nenhum
 
 **Retorno:** SETOF `privado.tag`
 
-**Colunas retornadas:** As mesmas de `privado.tag`
+**Índices beneficiados:**
+- `idx_tag_tag` - Ordenação por nome
 
 ---
 
-### 14. `buscar_postagem`
+### 15. `buscar_postagem`
 **Descrição:** Busca uma postagem pelo ID.
 **Parâmetros:**
 | Parâmetro | Tipo | Descrição |
@@ -545,31 +653,28 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 
 **Retorno:** SETOF `privado.visualizar_postagem`
 
-**Colunas retornadas:** As mesmas de `privado.visualizar_postagem`
+**Índices beneficiados:** PK (acesso direto)
 
 ---
 
-### 15. `buscar_tags_relevantes`
-**Descrição:** Busca tags relevantes baseado em um termo de busca, ordenadas por relevância (status, correspondência, usos).
+### 16. `buscar_tags_relevantes`
+**Descrição:** Busca tags por similaridade textual com ranking de relevância.
 **Parâmetros:**
 | Parâmetro | Tipo | Descrição |
 |-----------|------|-----------|
 | p_busca | VARCHAR | Termo de busca |
 | p_limite | INT | Número máximo de resultados (padrão: 5) |
 
-**Retorno:** TABLE
-| Ordem | Coluna | Tipo | Descrição |
-|-------|--------|------|-----------|
-| 1 | id | INT | ID da tag |
-| 2 | tag | VARCHAR | Nome da tag |
-| 3 | status | VARCHAR | Status da tag |
-| 4 | total_usos | BIGINT | Número de usos da tag em postagens |
-| 5 | relevancia | INT | Pontuação de relevância calculada |
+**Retorno:** TABLE (id INT, tag VARCHAR, total_usos BIGINT, relevancia INT)
+
+**Índices beneficiados:**
+- `idx_tag_tag_trgm` - Busca textual por similaridade (GIN trigram)
+- `idx_classificacao_tag` - Contagem de usos da tag
 
 ---
 
-### 16. `listar_tags_relacionadas_forum`
-**Descrição:** Lista todas as tags relacionadas a um fórum (através da tabela `incluir_tag`).
+### 17. `listar_tags_relacionadas_forum`
+**Descrição:** Lista todas as tags associadas a um fórum.
 **Parâmetros:**
 | Parâmetro | Tipo | Descrição |
 |-----------|------|-----------|
@@ -577,123 +682,121 @@ Este documento descreve todas as **procedures** (escrita) e **functions** (leitu
 
 **Retorno:** SETOF `privado.tag`
 
-**Colunas retornadas:** As mesmas de `privado.tag`
+**Índices beneficiados:**
+- `idx_incluir_tag_forum` - JOIN com incluir_tag por fórum
+
+---
+
+### 18. `listar_postagens_feed`
+**Descrição:** Gera feed personalizado para um usuário baseado nos fóruns e usuários que segue, ordenado por relevância (algoritmo de Reddit).
+**Parâmetros:**
+| Parâmetro | Tipo | Descrição |
+|-----------|------|-----------|
+| p_usuario_id | INT | ID do usuário |
+| p_pagina | INT | Número da página (padrão: 1) |
+
+**Retorno:** SETOF `privado.visualizar_postagem` (20 por página)
+
+**Índices beneficiados:**
+- `idx_seguir_forum_usuario_forum_list` - Subquery de fóruns seguidos
+- `idx_seguir_usuario_seguidor` - Subquery de usuários seguidos
+- `idx_conteudo_criador` - Busca por criador
+- `idx_conteudo_criado_em` - Cálculo de relevância temporal
+
+---
+
+### 19. `listar_anos_com_arquivo`
+**Descrição:** Retorna os anos que possuem postagens com arquivo em um fórum.
+**Parâmetros:**
+| Parâmetro | Tipo | Descrição |
+|-----------|------|-----------|
+| p_forum_id | INT | ID do fórum |
+
+**Retorno:** TABLE (ano INT)
+
+**Índices beneficiados:**
+- `idx_postagem_arquivo` - Filtro de arquivo não nulo
+- `idx_conteudo_criado_em` - Extração do ano
+
+---
+
+### 20. `listar_tags_arquivo_por_ano`
+**Descrição:** Retorna as tags de postagens com arquivo em um fórum e ano específicos.
+**Parâmetros:**
+| Parâmetro | Tipo | Descrição |
+|-----------|------|-----------|
+| p_forum_id | INT | ID do fórum |
+| p_ano | INT | Ano |
+
+**Retorno:** SETOF `privado.tag`
+
+**Índices beneficiados:**
+- `idx_postagem_arquivo` - Filtro de arquivo não nulo
+- `idx_postagem_forum` - Filtro por fórum
+- `idx_classificacao_postagem` - JOIN com classificacao
+- `idx_conteudo_criado_em` - Filtro por ano
+
+---
+
+### 21. `listar_postagens_arquivo`
+**Descrição:** Retorna postagens com arquivo filtradas por fórum, ano e tag.
+**Parâmetros:**
+| Parâmetro | Tipo | Descrição |
+|-----------|------|-----------|
+| p_forum_id | INT | ID do fórum |
+| p_ano | INT | Ano |
+| p_tag_id | INT | ID da tag |
+
+**Retorno:** SETOF `privado.visualizar_postagem`
+
+**Índices beneficiados:**
+- `idx_postagem_forum_arquivo` - Filtro por fórum + arquivo
+- `idx_classificacao_postagem` - Filtro por tag
+- `idx_conteudo_criado_em` - Filtro por ano
+
+---
+
+### 22. `checar_se_usuario_segue_forum`
+**Descrição:** Verifica se um usuário segue um fórum.
+**Parâmetros:**
+| Parâmetro | Tipo | Descrição |
+|-----------|------|-----------|
+| p_usuario | INT | ID do usuário |
+| p_forum | INT | ID do fórum |
+
+**Retorno:** TABLE (segue BOOLEAN)
+
+**Índices beneficiados:**
+- `idx_seguir_forum_usuario_forum` - Verificação combinada
 
 ---
 
 ## VIEWS (Estruturas de Dados)
 
 ### 1. `privado.login_usuario`
-**Descrição:** Utilizada para autenticação de usuários. Retorna apenas usuários não excluídos.
-**Colunas:**
-| Ordem | Coluna | Tipo | Descrição |
-|-------|--------|------|-----------|
-| 1 | id | INT | ID do usuário |
-| 2 | nome_usuario | VARCHAR | Nome de usuário |
-| 3 | email | VARCHAR | Email do usuário |
-| 4 | status | VARCHAR | Status do usuário (ATIVO/SILENCIADO) |
-| 5 | senha_hash | VARCHAR | Hash da senha |
+**Descrição:** Utilizada para autenticação de usuários.
+**Índices beneficiados:** `idx_usuario_excluido_em`
 
 ---
 
 ### 2. `privado.perfil_usuario`
-**Descrição:** Utilizada para exibir a página de perfil de um usuário. Inclui informações de perfil, contagem de seguidores, seguidos e karma.
-**Colunas:**
-| Ordem | Coluna | Tipo | Descrição |
-|-------|--------|------|-----------|
-| 1 | id | INT | ID do usuário |
-| 2 | nome | VARCHAR | Nome completo do usuário |
-| 3 | nome_usuario | VARCHAR | Nome de usuário |
-| 4 | status | VARCHAR | Status do usuário (ATIVO/SILENCIADO) |
-| 5 | criado_em | TIMESTAMPTZ | Data de criação da conta |
-| 6 | img_perfil | TEXT | ID da imagem de perfil (Cloudflare) |
-| 7 | img_banner | TEXT | ID da imagem de banner (Cloudflare) |
-| 8 | seguidores | BIGINT | Número de seguidores do usuário |
-| 9 | segue | BIGINT | Número de usuários que este usuário segue |
-| 10 | karma | BIGINT | Pontuação total do usuário (soma das avaliações recebidas) |
+**Descrição:** Utilizada para exibir a página de perfil de um usuário.
+**Índices beneficiados:** `idx_usuario_excluido_em`, `idx_avaliacao_conteudo`, `idx_seguir_usuario_seguido`, `idx_seguir_usuario_seguidor`
 
 ---
 
 ### 3. `privado.visualizar_forum`
-**Descrição:** Utilizada para exibir o cabeçalho/informações de um fórum.
-**Colunas:**
-| Ordem | Coluna | Tipo | Descrição |
-|-------|--------|------|-----------|
-| 1 | id | INT | ID do fórum |
-| 2 | nome | VARCHAR | Nome do fórum |
-| 3 | descricao | VARCHAR | Descrição do fórum |
-| 4 | criado_em | TIMESTAMPTZ | Data de criação do fórum |
-| 5 | status | VARCHAR | Status do fórum (ATIVO/ESPERA/RECUSADO) |
-| 6 | nome_usuario | VARCHAR | Nome de usuário do criador |
-| 7 | img_perfil | TEXT | ID da imagem de perfil do fórum |
-| 8 | img_banner | TEXT | ID da imagem de banner do fórum |
-| 9 | seguidores | BIGINT | Número total de seguidores do fórum |
+**Descrição:** Utilizada para exibir informações de um fórum.
+**Índices beneficiados:** `idx_seguir_forum_forum`
 
 ---
 
 ### 4. `privado.visualizar_postagem`
-**Descrição:** Utilizada para exibir postagens com todas as informações agregadas (tags, engajamento, comentários, etc.).
-**Colunas:**
-| Ordem | Coluna | Tipo | Descrição |
-|-------|--------|------|-----------|
-| 1 | id | INT | ID da postagem |
-| 2 | titulo | VARCHAR | Título da postagem |
-| 3 | arquivo | TEXT | ID do arquivo anexado (Cloudflare) |
-| 4 | forum | INT | ID do fórum |
-| 5 | conteudo | TEXT | Conteúdo da postagem |
-| 6 | status | VARCHAR | Status do conteúdo |
-| 7 | criado_em | TIMESTAMPTZ | Data de criação da postagem |
-| 8 | tempo_de_vida | INTERVAL | Tempo desde a criação (NOW() - criado_em) |
-| 9 | nome_usuario | VARCHAR | Nome de usuário do criador |
-| 10 | cargo | VARCHAR | Cargo do criador |
-| 11 | img_perfil | TEXT | ID da imagem de perfil do criador |
-| 12 | tags | TEXT[] | Array de nomes das tags associadas |
-| 13 | engajamento | BIGINT | Soma das avaliações (likes - dislikes) |
-| 14 | comentarios | BIGINT | Número total de comentários na postagem |
+**Descrição:** Utilizada para exibir postagens com informações agregadas.
+**Índices beneficiados:** `idx_avaliacao_conteudo`, `idx_comentario_conteudo_pai`, `idx_classificacao_postagem`
 
 ---
 
 ### 5. `privado.exibir_comentarios`
-**Descrição:** Utilizada para exibir comentários de forma hierárquica com informações do criador e engajamento.
-**Colunas:**
-| Ordem | Coluna | Tipo | Descrição |
-|-------|--------|------|-----------|
-| 1 | id | INT | ID do comentário |
-| 2 | conteudo_pai | INT | ID do conteúdo pai (postagem ou comentário) |
-| 3 | nivel | SMALLINT | Nível do comentário na árvore (1 a 5) |
-| 4 | conteudo_id | INT | ID do conteúdo associado |
-| 5 | conteudo | TEXT | Conteúdo do comentário |
-| 6 | status | VARCHAR | Status do comentário |
-| 7 | criado_em | TIMESTAMPTZ | Data de criação do comentário |
-| 8 | tempo_de_vida | INTERVAL | Tempo desde a criação (NOW() - criado_em) |
-| 9 | nome_usuario | VARCHAR | Nome de usuário do criador |
-| 10 | cargo | VARCHAR | Cargo do criador |
-| 11 | img_perfil | TEXT | ID da imagem de perfil do criador |
-| 12 | engajamento | BIGINT | Soma das avaliações (likes - dislikes) do comentário |
-
----
-
-### 6. `privado.tag`
-**Descrição:** Tabela base de tags disponível para consulta direta (não é uma view, mas uma tabela).
-
-**Colunas:**
-| Ordem | Coluna | Tipo | Descrição |
-|-------|--------|------|-----------|
-| 1 | id | INT | ID da tag |
-| 2 | tag | VARCHAR | Nome da tag |
-| 3 | status | VARCHAR | Status da tag (ATIVO/ESPERA/RECUSADO) |
-| 4 | criado_em | TIMESTAMPTZ | Data de criação da tag |
-| 5 | status_modificado_em | TIMESTAMPTZ | Data da última modificação de status |
-| 6 | criador | INT | ID do usuário criador |
-| 7 | validador | INT | ID do usuário que validou/recusou |
-
----
-
-### 7. `privado.incluir_tag`
-**Descrição:** Tabela de relacionamento entre tags e fóruns (quais tags estão disponíveis em cada fórum).
-
-**Colunas:**
-| Ordem | Coluna | Tipo | Descrição |
-|-------|--------|------|-----------|
-| 1 | tag | INT | ID da tag |
-| 2 | forum | INT | ID do fórum |
+**Descrição:** Utilizada para exibir comentários com informações do criador e engajamento.
+**Índices beneficiados:** `idx_avaliacao_conteudo`
