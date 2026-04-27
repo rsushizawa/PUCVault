@@ -59,25 +59,20 @@ CREATE TABLE privado.forum (
 	FOREIGN KEY (identidade_visual) REFERENCES privado.identidade_visual(id) ON DELETE RESTRICT
 );
 
+ALTER TABLE privado.tag DROP COLUMN status;
+ALTER TABLE privado.tag DROP COLUMN status_modificado_em;
+ALTER TABLE privado.tag DROP COLUMN validador;
+select * from privado.tag;
+
 -- tag
 CREATE TABLE privado.tag (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	tag VARCHAR(20) NOT NULL UNIQUE,
 	criado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-	status VARCHAR(20) DEFAULT 'ESPERA',
-	status_modificado_em TIMESTAMP WITH TIME ZONE,
 
 	criador INT NOT NULL,
-	validador INT,
 
-	CONSTRAINT tag_validador_diferente_de_criador
-		CHECK (validador IS NULL OR criador != validador),
-
-	CONSTRAINT tag_status
-		CHECK (status IN ('ESPERA', 'ATIVO')),
-
-	FOREIGN KEY (criador) REFERENCES privado.usuario(id) ON DELETE RESTRICT,
-	FOREIGN KEY (validador) REFERENCES privado.usuario(id) ON DELETE SET NULL
+	FOREIGN KEY (criador) REFERENCES privado.usuario(id) ON DELETE RESTRICT
 );
 
 -- conteudo

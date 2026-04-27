@@ -94,6 +94,8 @@ SELECT
 		GROUP BY seguir_forum.forum
 	) AS seguidores ON seguidores.forum = forum.id;
 
+drop view privado.visualizar_postagem cascade;
+
 CREATE OR REPLACE VIEW privado.visualizar_postagem AS
 SELECT
 	postagem.id,
@@ -109,6 +111,7 @@ SELECT
 	NOW() - conteudo.criado_em AS tempo_de_vida,
 
 	-- informações do criador
+	usuario.id AS criador,
 	usuario.nome_usuario,
 	usuario.cargo,
 

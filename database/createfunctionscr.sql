@@ -121,6 +121,23 @@ BEGIN
 END;
 $$;
 
+drop function publico.buscar_forum_por_id;
+select * from publico.buscar_forum_por_id(1);
+CREATE OR REPLACE FUNCTION publico.buscar_forum_por_id (
+	p_id INT
+)
+RETURNS SETOF privado.visualizar_forum
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+	RETURN QUERY
+	SELECT * FROM privado.visualizar_forum
+	WHERE id = p_id AND status = 'ATIVO';
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION publico.listar_foruns()
 RETURNS SETOF privado.visualizar_forum
 LANGUAGE plpgsql
@@ -270,7 +287,6 @@ CREATE OR REPLACE FUNCTION publico.buscar_tags_relevantes (
 RETURNS TABLE (
 	id INT,
 	tag VARCHAR,
-	status VARCHAR,
 	total_usos BIGINT,
 	relevancia INT
 )
@@ -283,16 +299,15 @@ BEGIN
 	SELECT
 		tag.id,
 		tag.tag,
-		tag.status,
 		COALESCE(usos.total, 0) AS total_usos,
 		(
-			CASE WHEN tag.status = 'ATIVO' THEN 1000 ELSE 0 END
-			+
-			CASE
-				WHEN tag.tag ILIKE p_busca || '%' THEN 100
-				WHEN tag.tag ILIKE '%' || p_busca || '%' THEN 50
-				ELSE 0
-			END
+			(
+				CASE
+					WHEN tag.tag ILIKE p_busca || '%' THEN 100
+					WHEN tag.tag ILIKE '%' || p_busca || '%' THEN 50
+					ELSE 0
+				END
+			)
 			+
 			COALESCE(usos.total, 0)
 		)::INT AS relevancia
@@ -321,10 +336,142 @@ SET search_path = ''
 AS $$
 BEGIN
 	RETURN QUERY
-	SELECT tag. *
+	SELECT tag.*
 	FROM privado.tag AS tag
 	JOIN privado.incluir_tag AS incluir_tag
 		ON incluir_tag.tag = tag.id
-	WHERE incluir_tag.forum = p_forum;
+	WHERE incluir_tag.forum = p_forum
+	ORDER BY tag.tag ASC;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION publico.listar_postagens_feed (
+	p_usuario_id INT,
+	p_pagina INT DEFAULT 1
+)
+RETURNS SETOF privado.visualizar_postagem
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+	RETURN QUERY
+	SELECT *
+	FROM privado.visualizar_postagem AS postagem
+	WHERE
+		postagem.forum IN (
+			SELECT seguir_forum.forum
+			FROM privado.seguir_forum AS seguir_forum
+			WHERE seguir_forum.usuario = p_usuario_id
+		)
+		OR
+		postagem.criador IN (
+			SELECT seguir_usuario.seguido
+			FROM privado.seguir_usuario AS seguir_usuario
+			WHERE seguir_usuario.seguidor = p_usuario_id
+		)
+	ORDER BY
+		(postagem.engajamento + postagem.comentarios) /
+		POWER(EXTRACT(EPOCH FROM NOW() - postagem.criado_em) / 3600 + 2, 1.5) DESC
+	LIMIT 20
+	OFFSET (p_pagina - 1) * 20;
+END;
+$$;
+
+-- retorna os anos que possuem postagens com arquivo em um fórum
+-- uso: SELECT * FROM publico.listar_anos_com_arquivo(<id do fórum>);
+CREATE OR REPLACE FUNCTION publico.listar_anos_com_arquivo (
+	p_forum_id INT
+)
+RETURNS TABLE (ano INT)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+	RETURN QUERY
+	SELECT DISTINCT EXTRACT(YEAR FROM conteudo.criado_em)::INT AS ano
+	FROM privado.postagem AS postagem
+	JOIN privado.conteudo AS conteudo
+		ON conteudo.id = postagem.id
+	WHERE postagem.forum = p_forum_id
+	AND postagem.arquivo IS NOT NULL
+	ORDER BY ano DESC;
+END;
+$$;
+
+-- retorna as tags que possuem postagens com arquivo em um fórum e ano específicos
+-- uso: SELECT * FROM publico.listar_tags_arquivo_por_ano(<id do fórum>, <ano>);
+CREATE OR REPLACE FUNCTION publico.listar_tags_arquivo_por_ano (
+	p_forum_id INT,
+	p_ano INT
+)
+RETURNS SETOF privado.tag
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+	RETURN QUERY
+	SELECT DISTINCT tag.*
+	FROM privado.tag AS tag
+	JOIN privado.classificacao AS classificacao
+		ON classificacao.tag = tag.id
+	JOIN privado.postagem AS postagem
+		ON postagem.id = classificacao.postagem
+	JOIN privado.conteudo AS conteudo
+		ON conteudo.id = postagem.id
+	WHERE postagem.forum = p_forum_id
+	AND postagem.arquivo IS NOT NULL
+	AND EXTRACT(YEAR FROM conteudo.criado_em)::INT = p_ano
+	ORDER BY tag.tag ASC;
+END;
+$$;
+
+-- retorna postagens com arquivo filtradas por fórum, ano e tag
+-- uso: SELECT * FROM publico.listar_postagens_arquivo(<id do fórum>, <ano>, <id da tag>);
+CREATE OR REPLACE FUNCTION publico.listar_postagens_arquivo (
+	p_forum_id INT,
+	p_ano INT,
+	p_tag_id INT
+)
+RETURNS SETOF privado.visualizar_postagem
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+	RETURN QUERY
+	SELECT *
+	FROM privado.visualizar_postagem AS postagem
+	WHERE postagem.forum = p_forum_id
+	AND postagem.arquivo IS NOT NULL
+	AND EXTRACT(YEAR FROM postagem.criado_em)::INT = p_ano
+	AND p_tag_id IN (
+		SELECT classificacao.tag
+		FROM privado.classificacao AS classificacao
+		WHERE classificacao.postagem = postagem.id
+	)
+	ORDER BY postagem.criado_em DESC;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION publico.checar_se_usuario_segue_forum (
+	p_usuario INT,
+	p_forum INT
+)
+RETURNS TABLE (segue BOOLEAN)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+	RETURN QUERY
+	SELECT EXISTS (
+		SELECT 1
+		FROM privado.seguir_forum
+		WHERE usuario = p_usuario
+		AND forum = p_forum
+	) AS segue;
 END;
 $$;
