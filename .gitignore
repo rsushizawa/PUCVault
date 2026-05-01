@@ -86,6 +86,7 @@ next-env.d.ts
 
 CLAUDE.md
 AGENTS.md
+<<<<<<< HEAD
 src/node_modules
 
 # password
@@ -94,3 +95,9 @@ src/node_modules
 .env.*.local
 node_modules/
 src/node_modules/
+
+# logs
+*.log
+logs/
+
+# package-lock.json

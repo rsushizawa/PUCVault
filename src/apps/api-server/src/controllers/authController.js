@@ -1,4 +1,4 @@
-const authService = require("../services/services");
+const authService = require("../services/userServices");
 const { z } = require("zod");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -68,9 +68,11 @@ const login = async (req, res) => {
       userEmail,
       password,
     );
-    const token = jwt.sign({ id: isAuthenticated.user.id }, passAccess, {
-      expiresIn: "1d",
-    });
+    const token = jwt.sign(
+      { id: isAuthenticated.user.id, role: isAuthenticated.user.cargo },
+      passAccess,
+      { expiresIn: "1d" },
+    );
 
     if (isAuthenticated.authenticated) {
       //entrou
