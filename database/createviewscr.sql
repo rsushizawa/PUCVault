@@ -19,6 +19,7 @@ SELECT
 	usuario.nome_usuario,
 	usuario.status,
 	usuario.criado_em,
+	usuario.identidade_visual,
 
 	identidade_visual.img_perfil,
 	identidade_visual.img_banner,
@@ -56,6 +57,7 @@ SELECT
 		usuario.nome_usuario,
 		usuario.status,
 		usuario.criado_em,
+		usuario.identidade_visual,
 		identidade_visual.img_perfil,
 		identidade_visual.img_banner,
 		karma.total;
@@ -93,8 +95,6 @@ SELECT
 		FROM privado.seguir_forum AS seguir_forum
 		GROUP BY seguir_forum.forum
 	) AS seguidores ON seguidores.forum = forum.id;
-
-drop view privado.visualizar_postagem cascade;
 
 CREATE OR REPLACE VIEW privado.visualizar_postagem AS
 SELECT
