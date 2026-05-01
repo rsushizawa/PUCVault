@@ -94,7 +94,7 @@ module.exports = {
       connect = await pool.connect();
       console.log('conexão sucedida resolveReport');
 
-      await pool.query('CALL publico.resovler_denuncia($1, $2, $3)', [report_id, executor_id, reportState]);
+      await pool.query('CALL publico.resolver_denuncia($1, $2, $3)', [report_id, executor_id, reportState]);
 
     } catch (error) {
       errorMsg(error);
