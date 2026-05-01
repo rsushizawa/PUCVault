@@ -121,8 +121,6 @@ BEGIN
 END;
 $$;
 
-drop function publico.buscar_forum_por_id;
-select * from publico.buscar_forum_por_id(1);
 CREATE OR REPLACE FUNCTION publico.buscar_forum_por_id (
 	p_id INT
 )

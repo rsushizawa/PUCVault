@@ -59,11 +59,6 @@ CREATE TABLE privado.forum (
 	FOREIGN KEY (identidade_visual) REFERENCES privado.identidade_visual(id) ON DELETE RESTRICT
 );
 
-ALTER TABLE privado.tag DROP COLUMN status;
-ALTER TABLE privado.tag DROP COLUMN status_modificado_em;
-ALTER TABLE privado.tag DROP COLUMN validador;
-select * from privado.tag;
-
 -- tag
 CREATE TABLE privado.tag (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
