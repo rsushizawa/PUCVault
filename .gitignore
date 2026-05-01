@@ -55,3 +55,9 @@ next-env.d.ts
 # docs / agents (da branch dev)
 CLAUDE.md
 AGENTS.md
+
+# logs
+*.log
+logs/
+
+# package-lock.json

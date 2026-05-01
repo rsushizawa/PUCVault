@@ -1,3 +1,4 @@
+
 const authService = require('../services/userServices');
 const { z } = require('zod');
 const bcrypt = require('bcryptjs');
@@ -69,7 +70,7 @@ const login = async (req, res) => {
   try {
     let isAuthenticated = await authService.validateLoginCredentials(userEmail, password);
     const token = jwt.sign(
-      { id: isAuthenticated.user.id },
+	{ id: isAuthenticated.user.id, role: isAuthenticated.user.cargo },
       passAccess,
       { expiresIn: '1d' }
     );

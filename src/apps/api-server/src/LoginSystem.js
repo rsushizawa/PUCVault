@@ -27,9 +27,7 @@ const pool = new Pool({
   database: databaseAcess,
   user: userAccess,
   password: passAccess,
-  ssl: {
-    rejectUnauthorized: false
-  }
+  ssl: false
 });
 
 function errorMsg(error) {
@@ -313,6 +311,7 @@ app.post('/forums', async (req, res) => {
 
 
 app.listen(8000, () => console.log('Rodando!'));
+
 
 
 
