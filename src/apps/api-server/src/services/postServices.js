@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const { z } = require('zod');
 const bcrypt = require('bcryptjs');
-const { Pool } = require('pg');
+const { pool } = require('../config/database');
 const path = require('path');
 const { error, log } = require('console');
 const saltRounds = 10;
@@ -15,16 +15,6 @@ const passAccess = process.env.DB_PASS;
 const portAccess = process.env.DB_PORT;
 const databaseAcess = process.env.DB_NAME;
 
-const pool = new Pool({
-  host: hostAccess,
-  port: portAccess,
-  database: databaseAcess,
-  user: userAccess,
-  password: passAccess,
-  ssl: {
-    rejectUnauthorized: false
-  }
-});
 
 function errorMsg(error) {
   console.error('--- DETALHES DO ERRO ---');
