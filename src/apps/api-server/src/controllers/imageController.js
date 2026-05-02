@@ -6,12 +6,22 @@ require('dotenv').config({ path: envPath });
 
 const cloudinary = require('cloudinary').v2;
 
+const placeholder = 'abc-123';
+
 
 exports.uploadImage = async (req, res) => {
   try {
     const { location } = req.params;
-    const visualidentity_id = req.user.identidade_visual;
+    const user = req.user;
+    const user_id = user.id;
     const imageFile = req.file;
+    const visualidentity_id = user.identidade_visual;
+
+    const result = await userService.getUserInfo(user_id);
+    const usr = result.rows && result.rows[0];
+
+
+
 
     const validLocations = ['banner', 'perfil'];
     if (!validLocations.includes(location)) {
@@ -22,13 +32,24 @@ exports.uploadImage = async (req, res) => {
       return res.status(400).json({ message: 'arquivo ausente' });
     }
 
+    const currentImageId = location === 'perfil' ? usr.img_perfil : usr.img_banner;
 
-    console.log(`Attempting to update ${location} for Visual Identity ID: ${visualidentity_id}`);
+    console.log(currentImageId);
+
+    if (currentImageId && currentImageId != placeholder) {
+      console.log(`Attempting to destroy: ${currentImageId}`);
+
+      const deletionResult = await cloudinary.uploader.destroy(currentImageId, {
+        resource_type: 'image',
+        invalidate: true
+      });
+
+      console.log('Cloudinary Deletion Result:', deletionResult);
+    }
+
 
     const newImageId = await imgService.uploadImage(visualidentity_id, location, imageFile);
 
-    // 3. Success Response
-    // We send back the ID we just got from Cloudinary/DB
     res.status(200).json({
       message: 'success',
       imageId: newImageId
@@ -50,14 +71,24 @@ exports.getImageUrl = async (req, res) => {
       return res.status(404).json({ message: 'image not found' });
     }
 
-    const url = cloudinary.url(user.img_perfil, {
+    const url_profile = cloudinary.url(user.img_perfil, {
       width: 500,
       height: 500,
       crop: "fill",
       gravity: "face",
       secure: true
     });
-    res.status(200).json({ url });
+
+    const url_banner = cloudinary.url(user.img_banner, {
+      width: 1500,
+      height: 500,
+      crop: "fill",
+      gravity: "auto",
+      secure: true
+    });
+
+
+    res.status(200).json({ img_perfil: url_profile, img_banner: url_banner });
   } catch (error) {
     return res.status(500).json({ message: 'erro interno ao processar imagem' });
   }
