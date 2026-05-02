@@ -15,5 +15,14 @@ router.patch('/:target_id/follow',
   userController.follow
 );
 
+router.get('/me',
+  authMiddleware,
+  userController.me
+);
+
+router.get(':user_id',
+  userController.userInfo
+);
+
 
 module.exports = router;

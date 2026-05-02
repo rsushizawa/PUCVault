@@ -221,3 +221,26 @@ exports.follow = async (req, res) => {
     res.status(500).json({ message: "server error" });
   }
 };
+
+exports.getSingleForum = async (req, res) => {
+  const user_id = req.user ? req.user.id : null;
+  const { forum_id } = req.params;
+  try {
+    const forum = await forumService.getSingleForum(forum_id);
+    const forum_followers = await forumService.listForumFollowers(forum_id);
+    let response = {
+      ...forum.rows[0],
+      ...forum_followers.rows
+    };
+
+
+    if (user_id) {
+      const user_follows = await forumService.checkUserForum(user_id, forum_id);
+      response.user_status = user_follows.rows[0].segue;
+    }
+    res.status(200).json(response);
+    console.log(response);
+  } catch (error) {
+    res.status(500).json({ message: "server error" });
+  }
+};

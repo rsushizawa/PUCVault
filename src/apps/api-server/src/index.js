@@ -11,6 +11,7 @@ const userRoutes = require('./routes/userRoutes.js');
 const tagRoutes = require('./routes/tagRoutes.js');
 const postRoutes = require('./routes/postRoutes.js');
 const feedRoutes = require('./routes/feedRoutes.js');
+const imgRoutes = require('./routes/imageRoutes.js');
 
 app.use(cors());
 app.use(express.json());
@@ -31,9 +32,12 @@ app.use("/posts", postRoutes);
 
 app.use("/feed", feedRoutes);
 
+app.use('/image', imgRoutes);
+
 app.get("/", (req, res) => {
   res.send("Online");
 });
+
 
 const port = 8000;
 

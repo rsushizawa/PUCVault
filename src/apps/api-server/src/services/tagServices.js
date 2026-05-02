@@ -1,4 +1,4 @@
-const { Pool } = require('pg');
+const { pool } = require('../config/database');
 const path = require('path');
 const { error, log } = require('console');
 const envPath = path.resolve(__dirname, '../../src/.env');
@@ -10,14 +10,6 @@ const passAccess = process.env.DB_PASS;
 const portAccess = process.env.DB_PORT;
 const databaseAcess = process.env.DB_NAME;
 
-const pool = new Pool({
-  host: hostAccess,
-  port: portAccess,
-  database: databaseAcess,
-  user: userAccess,
-  password: passAccess,
-  ssl: false
-});
 
 function errorMsg(error) {
   console.error('--- DETALHES DO ERRO ---');
@@ -36,7 +28,7 @@ module.exports = {
     let connect;
 
     try {
-      connect = pool.connect();
+      connect = await pool.connect();
       console.log('conexão sucedida printTags');
 
       const res = await pool.query('SELECT * FROM publico.buscar_tags_por_criador( $1 )', [creator_id]);

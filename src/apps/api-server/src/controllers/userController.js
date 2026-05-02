@@ -20,7 +20,7 @@ exports.changeRole = async (req, res) => {
 
   let newRole;
   if (roleNum === 1) newRole = 'USUARIO';
-  else if (roleNum === 2) newRole = 'MODERADOR';
+  else if (roleNum === 2) newRole = 'VALIDADOR';
   else if (roleNum === 3) newRole = 'ADMIN';
 
   try {
@@ -48,4 +48,30 @@ exports.follow = async (req, res) => {
   }
 };
 
+exports.me = async (req, res) => {
 
+  const user_id = req.user.id;
+
+  try {
+    const userInfo = await userService.getUserInfo(user_id);
+    delete userInfo.rows[0].senha_hash;
+    const info = userInfo.rows[0];
+    console.log(info);
+    res.status(200).json({ info });
+  } catch (error) {
+    res.status(500).json({ message: "server error", error });
+  }
+};
+
+exports.userInfo = async (req, res) => {
+  const user_id = req.params;
+  try {
+    const userInfo = await userService.getUserInfo(user_id);
+    delete userInfo.rows[0].senha_hash;
+    const info = userInfo.rows[0];
+    console.log(info);
+    res.status(200).json({ info });
+  } catch (error) {
+    res.status(500).json({ message: "server error", error });
+  }
+}

@@ -1,28 +1,7 @@
-const express = require('express');
-const cors = require('cors');
-const { z } = require('zod');
-const bcrypt = require('bcryptjs');
-const { Pool } = require('pg');
-const path = require('path');
+const { pool } = require('../config/database');
 const { error, log } = require('console');
-const saltRounds = 10;
-const envPath = path.resolve(__dirname, '../../src/.env');
 
-require('dotenv').config({ path: envPath });
-const hostAccess = process.env.DB_HOST;
-const userAccess = process.env.DB_USER;
-const passAccess = process.env.DB_PASS;
-const portAccess = process.env.DB_PORT;
-const databaseAcess = process.env.DB_NAME;
 
-const pool = new Pool({
-  host: hostAccess,
-  port: portAccess,
-  database: databaseAcess,
-  user: userAccess,
-  password: passAccess,
-  ssl: false
-});
 
 function errorMsg(error) {
   console.error('--- DETALHES DO ERRO ---');
@@ -131,6 +110,22 @@ module.exports = {
       client.release();
     }
 
+  },
+
+  async getUserInfo(user_id) {
+    let client;
+    try {
+      client = await pool.connect();
+      console.log('conexão sucedida getUserInfo');
+
+      const res = await pool.query('SELECT * FROM publico.buscar_usuario_por_id($1)', [user_id]);
+      return res;
+
+    } catch (error) {
+      errorMsg(error);
+    } finally {
+      client.release();
+    }
   },
 
   async printLogins() {
