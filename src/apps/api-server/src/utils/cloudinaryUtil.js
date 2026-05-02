@@ -4,15 +4,6 @@ const envPath = path.resolve(__dirname, '../../src/.env');
 
 const result = require('dotenv').config({ path: envPath });
 
-console.log('--- DOTENV DEBUG ---');
-console.log('Path searched:', envPath);
-if (result.error) {
-  console.log('Error loading .env:', result.error.message);
-} else {
-  console.log('CLOUDINARY_SECRET loaded:', process.env.CLOUDINARY_SECRET ? 'YES' : 'NO');
-}
-console.log('--------------------');
-
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_NAME,
   api_key: process.env.CLOUDINARY_KEY,
