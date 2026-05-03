@@ -9,7 +9,6 @@
 -- CALL publico.validar_forum(<id do fórum>, <id do validador>, <'ATIVO' | 'RECUSADO'>);
 -- CALL publico.atualizar_descricao_forum(<id do fórum>, <id do usuário>, <nova descrição>);
 -- CALL publico.inserir_tag(<tag>, <id do criador>);
--- CALL publico.validar_tag(<id da tag>, <id do validador>, <'ATIVO' | 'RECUSADO'>);
 -- CALL publico.inserir_postagem(<titulo>, <conteudo>, <id do criador>, <id do fórum>, <id do arquivo>, <ids das tags>);
 -- CALL publico.inserir_comentario(<conteudo>, <id do criador>, <id do conteudo pai>);
 -- CALL publico.deletar_conteudo(<id do conteudo>, <id do executor>);
@@ -19,9 +18,9 @@
 -- CALL publico.resolver_denuncia(<id da denúncia>, <id do executor>, <'RESOLVIDA' | 'IGNORADA'>);
 -- CALL publico.alternar_seguir_forum(<id do usuário>, <id do fórum>);
 -- CALL publico.alternar_seguir_usuario(<id do seguidor>, <id do seguido>);
+-- CALL publico.incluir_tag_forum(<id do usuário>, <id do fórum>, <id da tag>);
+-- CALL publico.remover_tag_forum(<id do usuário>, <id do fórum>, <id da tag>);
 
--- procedure para inserção de usuário
--- uso: CALL publico.inserir_usuario(<nome>, <nome de usuário>, <email>, <senha hash>);
 CREATE PROCEDURE publico.inserir_usuario (
 	p_nome VARCHAR,
 	p_nome_usuario VARCHAR,
@@ -35,7 +34,6 @@ AS $$
 DECLARE
 	v_identidade_visual INT;
 BEGIN
-	-- TODO: substituir placeholders pelos IDs reais ao integrar Cloudflare Images
 	INSERT INTO privado.identidade_visual (img_perfil, img_banner)
 	VALUES ('abc-123', 'def-456')
 	RETURNING id INTO v_identidade_visual;
@@ -45,8 +43,6 @@ BEGIN
 END;
 $$;
 
--- procedure para atualizar nome do usuário
--- uso: CALL publico.atualizar_nome_usuario(<id do usuário>, <novo nome>);
 CREATE PROCEDURE publico.atualizar_nome_usuario (
 	p_usuario_id INT,
 	p_novo_nome VARCHAR
@@ -62,8 +58,6 @@ BEGIN
 END;
 $$;
 
--- procedure para atualizar senha do usuário
--- uso: CALL publico.atualizar_senha_usuario(<id do usuário>, <nova senha hash>);
 CREATE PROCEDURE publico.atualizar_senha_usuario (
 	p_usuario_id INT,
 	p_nova_senha_hash VARCHAR
@@ -79,8 +73,6 @@ BEGIN
 END;
 $$;
 
--- procedure para deletar usuário
--- uso: CALL publico.deletar_usuario(<id do usuário>);
 CREATE PROCEDURE publico.deletar_usuario (
 	p_usuario_id INT
 )
@@ -94,25 +86,20 @@ DECLARE
 	v_tem_tag BOOLEAN;
 	v_tem_denuncia BOOLEAN;
 BEGIN
-	-- buscar identidade visual do usuário
 	SELECT identidade_visual INTO v_identidade_visual
 	FROM privado.usuario
 	WHERE id = p_usuario_id;
 
-	-- verificar se criou fórum, tag ou fez denúncia
 	SELECT
 		EXISTS (SELECT 1 FROM privado.forum    WHERE criador     = p_usuario_id),
 		EXISTS (SELECT 1 FROM privado.tag      WHERE criador     = p_usuario_id),
 		EXISTS (SELECT 1 FROM privado.denuncia WHERE denunciante = p_usuario_id)
 	INTO v_tem_forum, v_tem_tag, v_tem_denuncia;
 
-	-- soft delete
 	IF v_tem_forum OR v_tem_tag OR v_tem_denuncia THEN
 		UPDATE privado.usuario
 		SET excluido_em = CURRENT_TIMESTAMP
 		WHERE id = p_usuario_id;
-
-	-- hard delete
 	ELSE
 		DELETE FROM privado.usuario
 		WHERE id = p_usuario_id;
@@ -123,8 +110,6 @@ BEGIN
 END;
 $$;
 
--- procedure para silenciar/reativar usuário
--- uso: CALL publico.alternar_status_usuario(<id do usuário>);
 CREATE PROCEDURE publico.alternar_status_usuario (
 	p_usuario_id INT
 )
@@ -144,8 +129,6 @@ BEGIN
 END;
 $$;
 
--- procedure para alterar cargo de usuário
--- uso: CALL publico.alterar_cargo_usuario(<id do executor>, <id do alvo>, <novo cargo>);
 CREATE PROCEDURE publico.alterar_cargo_usuario (
 	p_executor_id INT,
 	p_alvo_id INT,
@@ -174,25 +157,20 @@ BEGIN
 		RAISE EXCEPTION 'Cargo inválido: %.', p_novo_cargo;
 	END IF;
 
-	-- regras por cargo do executor
 	IF v_cargo_executor = 'SUPERADMIN' THEN
 		IF v_cargo_alvo = 'SUPERADMIN' THEN
 			RAISE EXCEPTION 'SUPERADMIN não pode alterar o cargo de outro SUPERADMIN.';
 		END IF;
-
 		IF p_novo_cargo = 'SUPERADMIN' THEN
 			RAISE EXCEPTION 'O cargo SUPERADMIN só pode ser concedido diretamente no banco.';
 		END IF;
-
 	ELSIF v_cargo_executor = 'ADMIN' THEN
 		IF v_cargo_alvo IN ('SUPERADMIN', 'ADMIN') THEN
 			RAISE EXCEPTION 'ADMIN não pode alterar o cargo de SUPERADMIN ou ADMIN.';
 		END IF;
-
 		IF p_novo_cargo IN ('ADMIN', 'SUPERADMIN') THEN
 			RAISE EXCEPTION 'ADMIN não pode conceder o cargo de ADMIN ou SUPERADMIN.';
 		END IF;
-
 	ELSE
 		RAISE EXCEPTION 'Permissão negada: cargo insuficiente para alterar cargos.';
 	END IF;
@@ -203,10 +181,8 @@ BEGIN
 END;
 $$;
 
--- procedure para inserção de fórum
--- uso: CALL publico.inserir_forum(<titulo>, <descricao>, <id do criador>);
 CREATE PROCEDURE publico.inserir_forum (
-	p_titulo VARCHAR,
+	p_nome VARCHAR,
 	p_descricao VARCHAR,
 	p_criador INT
 )
@@ -232,18 +208,15 @@ BEGIN
 		RAISE EXCEPTION 'Usuário silenciado não pode criar fórum.';
 	END IF;
 
-	-- TODO: substituir placeholders pelos IDs reais ao integrar Cloudflare Images
 	INSERT INTO privado.identidade_visual (img_perfil, img_banner)
 	VALUES ('abc-123', 'def-456')
 	RETURNING id INTO v_identidade_visual;
 
-	INSERT INTO privado.forum (titulo, descricao, criador, identidade_visual)
-	VALUES (p_titulo, p_descricao, p_criador, v_identidade_visual);
+	INSERT INTO privado.forum (nome, descricao, criador, identidade_visual)
+	VALUES (p_nome, p_descricao, p_criador, v_identidade_visual);
 END;
 $$;
 
--- procedure para validar ou recusar fórum
--- uso: CALL publico.validar_forum(<id do fórum>, <id do validador>, <'ATIVO' | 'RECUSADO'>);
 CREATE PROCEDURE publico.validar_forum (
 	p_forum_id INT,
 	p_validador_id INT,
@@ -257,24 +230,20 @@ DECLARE
 	v_status_forum VARCHAR(20);
 	v_cargo_validador VARCHAR(15);
 BEGIN
-	-- buscar status do fórum e cargo do validador em uma única query
 	SELECT forum.status, usuario.cargo
 	INTO v_status_forum, v_cargo_validador
 	FROM privado.forum AS forum
 	JOIN privado.usuario AS usuario ON usuario.id = p_validador_id
 	WHERE forum.id = p_forum_id;
 
-	-- fórum não está em espera, não faz nada
 	IF v_status_forum != 'ESPERA' THEN
 		RETURN;
 	END IF;
 
-	-- cargo insuficiente
 	IF v_cargo_validador = 'USUARIO' THEN
 		RAISE EXCEPTION 'Permissão negada: cargo insuficiente para validar fórum.';
 	END IF;
 
-	-- status inválido
 	IF p_novo_status NOT IN ('ATIVO', 'RECUSADO') THEN
 		RAISE EXCEPTION 'Status inválido: %. Use ''ATIVO'' ou ''RECUSADO''.', p_novo_status;
 	END IF;
@@ -288,8 +257,6 @@ BEGIN
 END;
 $$;
 
--- procedure para atualizar descrição do fórum
--- uso: CALL publico.atualizar_descricao_forum(<id do fórum>, <id do usuário>, <nova descrição>);
 CREATE PROCEDURE publico.atualizar_descricao_forum (
 	p_forum_id INT,
 	p_usuario_id INT,
@@ -308,12 +275,10 @@ BEGIN
 	FROM privado.forum AS forum
 	WHERE forum.id = p_forum_id;
 
-	-- fórum não está ativo, não faz nada
 	IF v_status_forum != 'ATIVO' THEN
 		RETURN;
 	END IF;
 
-	-- usuário não é o criador, não faz nada
 	IF v_criador_forum != p_usuario_id THEN
 		RETURN;
 	END IF;
@@ -324,8 +289,6 @@ BEGIN
 END;
 $$;
 
--- procedure para atualizar identidade visual
--- uso: CALL publico.atualizar_identidade_visual(<id da identidade visual>, <campo ('perfil' | 'banner')>, <novo id da imagem>);
 CREATE PROCEDURE publico.atualizar_identidade_visual (
 	p_identidade_visual_id INT,
 	p_campo VARCHAR,
@@ -341,21 +304,19 @@ BEGIN
 		SET img_perfil = p_novo_id,
 		    perfil_modificado_em = CURRENT_TIMESTAMP
 		WHERE id = p_identidade_visual_id;
-
 	ELSIF p_campo = 'banner' THEN
 		UPDATE privado.identidade_visual
 		SET img_banner = p_novo_id,
 		    banner_modificado_em = CURRENT_TIMESTAMP
 		WHERE id = p_identidade_visual_id;
-
 	ELSE
 		RAISE EXCEPTION 'Campo inválido: %. Use ''perfil'' ou ''banner''.', p_campo;
 	END IF;
 END;
 $$;
 
--- procedure para inserção de tag
 -- uso: CALL publico.inserir_tag(<tag>, <id do criador>);
+-- somente usuários com cargo VALIDADOR ou superior podem criar tags
 CREATE PROCEDURE publico.inserir_tag (
 	p_tag VARCHAR,
 	p_criador INT
@@ -365,11 +326,12 @@ SECURITY DEFINER
 SET search_path = ''
 AS $$
 DECLARE
-	v_status_criador VARCHAR(15);
+	v_cargo_criador VARCHAR(15);
 	v_excluido_criador TIMESTAMP WITH TIME ZONE;
+	v_status_criador VARCHAR(15);
 BEGIN
-	SELECT usuario.status, usuario.excluido_em
-	INTO v_status_criador, v_excluido_criador
+	SELECT usuario.cargo, usuario.excluido_em, usuario.status
+	INTO v_cargo_criador, v_excluido_criador, v_status_criador
 	FROM privado.usuario AS usuario
 	WHERE usuario.id = p_criador;
 
@@ -381,55 +343,15 @@ BEGIN
 		RAISE EXCEPTION 'Usuário silenciado não pode criar tag.';
 	END IF;
 
+	IF v_cargo_criador NOT IN ('VALIDADOR', 'ADMIN', 'SUPERADMIN') THEN
+		RAISE EXCEPTION 'Permissão negada: cargo insuficiente para criar tags.';
+	END IF;
+
 	INSERT INTO privado.tag (tag, criador)
 	VALUES (p_tag, p_criador);
 END;
 $$;
 
--- procedure para validar ou recusar tag
--- uso: CALL publico.validar_tag(<id da tag>, <id do validador>, <'ATIVO' | 'RECUSADO'>);
-CREATE PROCEDURE publico.validar_tag (
-	p_tag_id INT,
-	p_validador_id INT,
-	p_novo_status VARCHAR
-)
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = ''
-AS $$
-DECLARE
-	v_status_tag VARCHAR(20);
-	v_cargo_validador VARCHAR(15);
-BEGIN
-	SELECT tag.status, usuario.cargo
-	INTO v_status_tag, v_cargo_validador
-	FROM privado.tag AS tag
-	JOIN privado.usuario AS usuario ON usuario.id = p_validador_id
-	WHERE tag.id = p_tag_id;
-
-	IF v_status_tag != 'ESPERA' THEN
-		RETURN;
-	END IF;
-
-	IF v_cargo_validador = 'USUARIO' THEN
-		RAISE EXCEPTION 'Permissão negada: cargo insuficiente para validar tag.';
-	END IF;
-
-	IF p_novo_status NOT IN ('ATIVO', 'RECUSADO') THEN
-		RAISE EXCEPTION 'Status inválido: %. Use ''ATIVO'' ou ''RECUSADO''.', p_novo_status;
-	END IF;
-
-	UPDATE privado.tag
-	SET
-		status = p_novo_status,
-		status_modificado_em = CURRENT_TIMESTAMP,
-		validador = p_validador_id
-	WHERE id = p_tag_id;
-END;
-$$;
-
--- procedure para inserir postagem
--- uso: CALL publico.inserir_postagem(<titulo>, <conteudo>, <id do criador>, <id do fórum>, <id do arquivo>, <ids das tags>);
 CREATE PROCEDURE publico.inserir_postagem (
 	p_titulo VARCHAR,
 	p_conteudo TEXT,
@@ -474,8 +396,6 @@ BEGIN
 END;
 $$;
 
--- procedure para inserir comentário
--- uso: CALL publico.inserir_comentario(<conteudo>, <id do criador>, <id do conteudo pai>);
 CREATE PROCEDURE publico.inserir_comentario (
 	p_conteudo TEXT,
 	p_criador INT,
@@ -505,16 +425,13 @@ BEGIN
 		RAISE EXCEPTION 'Usuário silenciado não pode comentar.';
 	END IF;
 
-	-- buscar nivel do pai se for comentário, NULL se for postagem
 	SELECT comentario.nivel
 	INTO v_nivel_pai
 	FROM privado.comentario AS comentario
 	WHERE comentario.id = p_conteudo_pai;
 
-	-- pai é postagem → nivel 1, pai é comentário → nivel pai + 1
 	v_nivel := COALESCE(v_nivel_pai + 1, 1);
 
-	-- pai está no nível máximo, não faz nada
 	IF v_nivel > 5 THEN
 		RETURN;
 	END IF;
@@ -528,8 +445,6 @@ BEGIN
 END;
 $$;
 
--- procedure para deletar conteudo
--- uso: CALL publico.deletar_conteudo(<id do conteudo>, <id do executor>);
 CREATE PROCEDURE publico.deletar_conteudo (
 	p_conteudo_id INT,
 	p_executor_id INT
@@ -548,7 +463,6 @@ BEGIN
 	JOIN privado.usuario AS usuario ON usuario.id = p_executor_id
 	WHERE conteudo.id = p_conteudo_id;
 
-	-- executor não é o criador nem superadmin, não faz nada
 	IF v_criador_conteudo != p_executor_id AND v_cargo_executor != 'SUPERADMIN' THEN
 		RETURN;
 	END IF;
@@ -558,8 +472,6 @@ BEGIN
 END;
 $$;
 
--- procedure para avaliar conteudo
--- uso: CALL publico.avaliar_conteudo(<id do usuário>, <id do conteudo>, <avaliação (1 | -1 | 0 para remover)>);
 CREATE PROCEDURE publico.avaliar_conteudo (
 	p_usuario_id INT,
 	p_conteudo_id INT,
@@ -587,14 +499,12 @@ BEGIN
 		RAISE EXCEPTION 'Usuário silenciado não pode avaliar conteúdo.';
 	END IF;
 
-	-- buscar avaliação atual
 	SELECT avaliacao.avaliacao
 	INTO v_avaliacao_atual
 	FROM privado.avaliacao AS avaliacao
 	WHERE avaliacao.usuario = p_usuario_id
 	AND avaliacao.conteudo = p_conteudo_id;
 
-	-- remover avaliação
 	IF p_avaliacao = 0 THEN
 		DELETE FROM privado.avaliacao
 		WHERE usuario = p_usuario_id
@@ -614,8 +524,6 @@ BEGIN
 END;
 $$;
 
--- procedure para inserir denúncia de usuário
--- uso: CALL publico.inserir_denuncia_usuario(<tipo>, <id do denunciante>, <id do denunciado>);
 CREATE PROCEDURE publico.inserir_denuncia_usuario (
 	p_tipo VARCHAR,
 	p_denunciante_id INT,
@@ -644,12 +552,10 @@ BEGIN
 		RAISE EXCEPTION 'Usuário silenciado não pode denunciar.';
 	END IF;
 
-	-- bloquear auto denúncia
 	IF p_denunciante_id = p_denunciado_id THEN
 		RAISE EXCEPTION 'Usuário não pode denunciar a si mesmo.';
 	END IF;
 
-	-- verificar duplicata
 	SELECT EXISTS (
 		SELECT 1
 		FROM privado.denuncia AS denuncia
@@ -671,8 +577,6 @@ BEGIN
 END;
 $$;
 
--- procedure para inserir denúncia de conteúdo
--- uso: CALL publico.inserir_denuncia_conteudo(<tipo>, <id do denunciante>, <id do conteudo denunciado>);
 CREATE PROCEDURE publico.inserir_denuncia_conteudo (
 	p_tipo VARCHAR,
 	p_denunciante_id INT,
@@ -702,7 +606,6 @@ BEGIN
 		RAISE EXCEPTION 'Usuário silenciado não pode denunciar.';
 	END IF;
 
-	-- bloquear denúncia do próprio conteúdo
 	SELECT conteudo.criador
 	INTO v_criador_conteudo
 	FROM privado.conteudo AS conteudo
@@ -712,7 +615,6 @@ BEGIN
 		RAISE EXCEPTION 'Usuário não pode denunciar o próprio conteúdo.';
 	END IF;
 
-	-- verificar duplicata
 	SELECT EXISTS (
 		SELECT 1
 		FROM privado.denuncia AS denuncia
@@ -734,8 +636,6 @@ BEGIN
 END;
 $$;
 
--- procedure para resolver ou ignorar denúncia
--- uso: CALL publico.resolver_denuncia(<id da denúncia>, <id do executor>, <'RESOLVIDA' | 'IGNORADA'>);
 CREATE PROCEDURE publico.resolver_denuncia (
 	p_denuncia_id INT,
 	p_executor_id INT,
@@ -755,17 +655,14 @@ BEGIN
 	JOIN privado.usuario AS usuario ON usuario.id = p_executor_id
 	WHERE denuncia.id = p_denuncia_id;
 
-	-- denúncia já resolvida ou ignorada, não faz nada
 	IF v_status_denuncia != 'ABERTA' THEN
 		RETURN;
 	END IF;
 
-	-- cargo insuficiente
 	IF v_cargo_executor NOT IN ('ADMIN', 'SUPERADMIN') THEN
 		RAISE EXCEPTION 'Permissão negada: cargo insuficiente para resolver denúncia.';
 	END IF;
 
-	-- status inválido
 	IF p_novo_status NOT IN ('RESOLVIDA', 'IGNORADA') THEN
 		RAISE EXCEPTION 'Status inválido: %. Use ''RESOLVIDA'' ou ''IGNORADA''.', p_novo_status;
 	END IF;
@@ -779,8 +676,6 @@ BEGIN
 END;
 $$;
 
--- procedure para seguir/deixar de seguir fórum
--- uso: CALL publico.alternar_seguir_forum(<id do usuário>, <id do fórum>);
 CREATE PROCEDURE publico.alternar_seguir_forum (
 	p_usuario_id INT,
 	p_forum_id INT
@@ -796,9 +691,9 @@ DECLARE
 BEGIN
 	SELECT usuario.excluido_em, forum.status
 	INTO v_excluido_usuario, v_status_forum
-	FROM privado.usuario AS usuario, privado.forum AS forum
-	WHERE usuario.id = p_usuario_id
-	AND forum.id = p_forum_id;
+	FROM privado.usuario AS usuario
+	JOIN privado.forum AS forum ON forum.id = p_forum_id
+	WHERE usuario.id = p_usuario_id;
 
 	IF v_excluido_usuario IS NOT NULL THEN
 		RAISE EXCEPTION 'Usuário excluído não pode seguir fórum.';
@@ -826,8 +721,6 @@ BEGIN
 END;
 $$;
 
--- procedure para seguir/deixar de seguir usuário
--- uso: CALL publico.alternar_seguir_usuario(<id do seguidor>, <id do seguido>);
 CREATE PROCEDURE publico.alternar_seguir_usuario (
 	p_seguidor_id INT,
 	p_seguido_id INT
@@ -864,5 +757,92 @@ BEGIN
 		INSERT INTO privado.seguir_usuario (seguidor, seguido)
 		VALUES (p_seguidor_id, p_seguido_id);
 	END IF;
+END;
+$$;
+
+CREATE PROCEDURE publico.incluir_tag_forum (
+	p_usuario_id INT,
+	p_forum_id INT,
+	p_tag_id INT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+	v_criador_forum INT;
+	v_status_forum VARCHAR(20);
+	v_ja_incluida BOOLEAN;
+BEGIN
+	SELECT forum.criador, forum.status
+	INTO v_criador_forum, v_status_forum
+	FROM privado.forum AS forum
+	WHERE forum.id = p_forum_id;
+
+	IF v_criador_forum != p_usuario_id THEN
+		RAISE EXCEPTION 'Apenas o criador do fórum pode incluir tags.';
+	END IF;
+
+	IF v_status_forum != 'ATIVO' THEN
+		RAISE EXCEPTION 'Fórum não está ativo.';
+	END IF;
+
+	SELECT EXISTS (
+		SELECT 1
+		FROM privado.incluir_tag AS incluir_tag
+		WHERE incluir_tag.tag = p_tag_id
+		AND incluir_tag.forum = p_forum_id
+	) INTO v_ja_incluida;
+
+	IF v_ja_incluida THEN
+		RAISE EXCEPTION 'Tag já está relacionada ao fórum.';
+	END IF;
+
+	INSERT INTO privado.incluir_tag (tag, forum)
+	VALUES (p_tag_id, p_forum_id);
+END;
+$$;
+
+CREATE PROCEDURE publico.remover_tag_forum (
+	p_usuario_id INT,
+	p_forum_id INT,
+	p_tag_id INT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+	v_criador_forum INT;
+	v_status_forum VARCHAR(20);
+	v_existe BOOLEAN;
+BEGIN
+	SELECT forum.criador, forum.status
+	INTO v_criador_forum, v_status_forum
+	FROM privado.forum AS forum
+	WHERE forum.id = p_forum_id;
+
+	IF v_criador_forum != p_usuario_id THEN
+		RAISE EXCEPTION 'Apenas o criador do fórum pode remover tags.';
+	END IF;
+
+	IF v_status_forum != 'ATIVO' THEN
+		RAISE EXCEPTION 'Fórum não está ativo.';
+	END IF;
+
+	SELECT EXISTS (
+		SELECT 1
+		FROM privado.incluir_tag AS incluir_tag
+		WHERE incluir_tag.tag = p_tag_id
+		AND incluir_tag.forum = p_forum_id
+	) INTO v_existe;
+
+	IF NOT v_existe THEN
+		RAISE EXCEPTION 'Tag não está relacionada ao fórum.';
+	END IF;
+
+	DELETE FROM privado.incluir_tag
+	WHERE tag = p_tag_id
+	AND forum = p_forum_id;
 END;
 $$;

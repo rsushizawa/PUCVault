@@ -64,20 +64,10 @@ CREATE TABLE privado.tag (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	tag VARCHAR(20) NOT NULL UNIQUE,
 	criado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-	status VARCHAR(20) DEFAULT 'ESPERA',
-	status_modificado_em TIMESTAMP WITH TIME ZONE,
 
 	criador INT NOT NULL,
-	validador INT,
 
-	CONSTRAINT tag_validador_diferente_de_criador
-		CHECK (validador IS NULL OR criador != validador),
-
-	CONSTRAINT tag_status
-		CHECK (status IN ('ESPERA', 'ATIVO')),
-
-	FOREIGN KEY (criador) REFERENCES privado.usuario(id) ON DELETE RESTRICT,
-	FOREIGN KEY (validador) REFERENCES privado.usuario(id) ON DELETE SET NULL
+	FOREIGN KEY (criador) REFERENCES privado.usuario(id) ON DELETE RESTRICT
 );
 
 -- conteudo
@@ -98,7 +88,7 @@ CREATE TABLE privado.conteudo (
 CREATE TABLE privado.postagem (
 	id INT PRIMARY KEY REFERENCES privado.conteudo(id) ON DELETE CASCADE,
 	titulo VARCHAR(50) NOT NULL,
-	arquivo TEXT,
+	arquivo TEXT UNIQUE,
 	forum INT NOT NULL,
 
 	FOREIGN KEY (forum) REFERENCES privado.forum(id) ON DELETE CASCADE
@@ -199,4 +189,15 @@ CREATE TABLE privado.seguir_usuario (
 	FOREIGN KEY (seguidor) REFERENCES privado.usuario(id) ON DELETE CASCADE,
 
 	PRIMARY KEY (seguido, seguidor)
+);
+
+-- incluir uma tag a um fórum
+CREATE TABLE privado.incluir_tag (
+	tag INT NOT NULL,
+	forum INT NOT NULL,
+
+	FOREIGN KEY (tag) REFERENCES privado.tag(id) ON DELETE CASCADE,
+	FOREIGN KEY (forum) REFERENCES privado.forum(id) ON DELETE CASCADE,
+
+	PRIMARY KEY (tag, forum)
 );
