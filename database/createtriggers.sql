@@ -1,9 +1,13 @@
+-- fn_sem_autoavaliacao(avaliacao.USUARIO|avaliacao.CONTEUDO->conteudo.CRIADOR)
+-- fn_propagar_delete_conteudo(conteudo.ID|comentario.CONTEUDO_PAI)
+
+
 CREATE OR REPLACE FUNCTION privado.fn_sem_autoavaliacao()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 DECLARE
-    v_criador INT;  -- variavel global para armazenar o contador de avaliação do criador
+    v_criador INT;
 BEGIN
     SELECT criador INTO v_criador
     FROM privado.conteudo
@@ -23,7 +27,6 @@ FOR EACH ROW EXECUTE FUNCTION privado.fn_sem_autoavaliacao();
 
 
 
--- deletar comentario pai mas tratando do filho não ficar orfão na arvore 
 CREATE OR REPLACE FUNCTION privado.fn_propagar_delete_conteudo()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -32,7 +35,7 @@ BEGIN
     DELETE FROM privado.conteudo
     WHERE id IN (
         SELECT id FROM privado.comentario
-        WHERE conteudo_pai = OLD.id  
+        WHERE conteudo_pai = OLD.id
     );
 
     RETURN OLD;
@@ -42,7 +45,3 @@ $$;
 CREATE OR REPLACE TRIGGER trg_propagar_delete_conteudo
 BEFORE DELETE ON privado.conteudo
 FOR EACH ROW EXECUTE FUNCTION privado.fn_propagar_delete_conteudo();
-
-
-
-
