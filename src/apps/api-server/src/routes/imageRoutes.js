@@ -1,15 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
 const imgController = require('../controllers/imageController');
 
+const { onlyImage } = require('../middlewares/uploadMiddleware');
 const authMiddleware = require('../middlewares/authMiddleware');
 
 router.patch('/upload/:location',
   authMiddleware,
-  upload.single('file'),
+  onlyImage.single('file'),
   imgController.uploadImage
 );
 

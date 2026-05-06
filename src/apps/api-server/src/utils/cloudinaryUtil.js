@@ -10,12 +10,30 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_SECRET
 });
 
+const findFolder = (mimetype) => {
+  if (mimetype.startsWith('image/')) {
+    return 'Home/images';
+  }
+  if (mimetype.includes('pdf') || mimetype.includes('document') || mimetype.includes('msword')) {
+    return 'Home/documents';
+  }
+  return 'Home/source_codes';
+};
+
+
 const uploadToCloudinary = async (file) => {
   return new Promise((resolve, reject) => {
+    const folderDestiny = findFolder(file.mimetype);
+    const extensao = file.originalname.split('.').pop();
+    const publicIdComExtensao = `file_${Date.now()}.${extensao}`;
     const uploadStream = cloudinary.uploader.upload_stream(
       {
-        folder: "user_uploads",
-        resource_type: "auto"
+        folder: folderDestiny,
+        resource_type: "raw",
+        public_id: publicIdComExtensao,
+        use_filename: true,
+        unique_filename: true,
+        timeout: 60000
       },
       (error, result) => {
         if (error) return reject(error);
