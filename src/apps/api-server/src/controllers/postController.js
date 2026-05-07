@@ -49,30 +49,24 @@ exports.getFileFromPost = async (req, res) => {
       return res.status(404).json({ message: 'file not found' });
     }
 
-    // 1. Extraímos o nome e o ID
     const partes = post[0].arquivo.trim().split(" ");
     const file_id = partes.pop();
     const original_name = partes.join("_").replace(/[^a-zA-Z0-9.-]/g, '_');
 
-    // 2. Geramos a URL limpa do Cloudinary (sem tentar forçar nomes, apenas o arquivo bruto)
     const url_cloudinary = cloudinary.url(file_id, {
       resource_type: 'raw',
       secure: true
     });
 
-    // 3. O SEU SERVIDOR busca o arquivo no Cloudinary (Usando o fetch nativo do Node, sem Axios)
     const response = await fetch(url_cloudinary);
 
     if (!response.ok) {
       throw new Error(`Cloudinary retornou erro: ${response.statusText}`);
     }
 
-    // 4. AQUI ESTÁ A MÁGICA: Nós reescrevemos o cabeçalho!
-    // O navegador vai obedecer ao SEU servidor, e não ao Cloudinary.
     res.setHeader('Content-Disposition', `attachment; filename="${original_name}"`);
     res.setHeader('Content-Type', 'application/octet-stream');
 
-    // 5. Pegamos os dados do arquivo e enviamos direto para o usuário baixar
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
@@ -93,7 +87,6 @@ exports.createPosts = async (req, res) => {
     let concat_file_name;
 
     if (file) {
-      console.log("entrou no if");
       try {
         file_id = await uploadToCloudinary(file);
         concat_file_name = original_name + " " + file_id;
@@ -120,5 +113,23 @@ exports.createPosts = async (req, res) => {
     if (!res.headersSent) {
       return res.status(500).json({ error: "internal server error" });
     }
+  }
+};
+
+exports.userPosts = async (req, res) => {
+  try {
+    const { user_id, page_num } = req.params;
+
+    console.log('conexão sucedida userPosts');
+    const result = await postService.getUserPosts(user_id, page_num);
+
+    console.table(result);
+
+
+    return res.status(200).json({ message: 'success', result });
+
+
+  } catch (error) {
+    return res.status(500).json({ error: 'internal server error' });
   }
 };

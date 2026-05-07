@@ -67,4 +67,22 @@ exports.userInfo = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: "server error", error });
   }
-}
+};
+
+const descriptionSchema = z.object({
+  description: z.any()
+});
+
+exports.changeDescription = async (req, res) => {
+  const user_id = req.user.id;
+  const validation = descriptionSchema.safeParse(req.body);
+
+  try {
+    const { description } = validation.data;
+    await userService.changeDescription(user_id, description);
+    res.status(200).json({ description });
+  } catch (error) {
+    res.status(500).json({ message: 'server error', error });
+
+  }
+};

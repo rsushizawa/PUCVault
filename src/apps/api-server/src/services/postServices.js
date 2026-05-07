@@ -75,11 +75,29 @@ module.exports = {
       return res.rows;
 
     } catch (error) {
-      console.error("Erro no Banco:", error.message);
+      errorMsg(error);
+    } finally {
+      connect.release();
+    }
+  },
+
+  async getUserPosts(user_id, page_num) {
+    let connect;
+    try {
+      connect = await pool.connect();
+      log('conexão sucedida getUserPosts');
+
+      const res = await pool.query('SELECT * FROM publico.listar_postagens_usuario( $1, $2 )', [user_id, page_num]);
+
+      return res.rows;
+    } catch (error) {
       errorMsg(error);
     } finally {
       connect.release();
     }
   }
+
+
+
 };
 

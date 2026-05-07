@@ -20,9 +20,13 @@ router.get('/me',
   userController.me
 );
 
-router.get(':user_id',
+router.get('/:user_id',
   userController.userInfo
 );
 
+router.patch('/:user_id/description',
+  authMiddleware,
+  userController.changeDescription
+);
 
 module.exports = router;
