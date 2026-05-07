@@ -33,6 +33,9 @@ router.get('/:post_id/comments',
   commentController.listComments
 );
 
+router.get('/user/:user_id',
+  postController.userPosts
+);
 
 
 module.exports = router;

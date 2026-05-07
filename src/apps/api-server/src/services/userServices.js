@@ -220,7 +220,20 @@ module.exports = {
     } finally {
       client.release();
     }
+  },
 
+  async changeDescription(user_id, new_description) {
+    let client;
+    try {
+      client = await pool.connect();
+      console.log('conexão sucedida changeDescription');
+
+      await pool.query('CALL publico.atualizar_descricao_usuario( $1, $2)', [user_id, new_description]);
+    } catch (error) {
+      errorMsg(error);
+    } finally {
+      client.release();
+    }
   }
 };
 
