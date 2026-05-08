@@ -496,7 +496,7 @@ BEGIN
             usuario_id, tipo_penalidade, pontuacao_aplicada, motivo, aplicado_por
         )
         VALUES (
-            p_usuario_id, 'Silenciado Automaticamente', 0, 'Score de comportamento abaixo do limite (-100)', NULL
+            p_usuario_id, 'Silenciado Automaticamente', 0, 'Score de comportamento abaixo do limite (-50)', NULL
         );
     END IF;
 END;
