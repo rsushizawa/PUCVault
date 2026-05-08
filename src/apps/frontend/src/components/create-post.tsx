@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Paperclip, X } from "lucide-react";
 import MarkdownEditor from "@/components/markdown-editor";
 import AuthModal from "@/components/auth-modal";
 import { getTagColor } from "@/lib/tag-colors";
@@ -11,7 +11,7 @@ import type { Tag } from "@/types/tag";
 interface CreatePostProps {
   forumId?: string;
   mode?: "post" | "comment";
-  onPost?: (data: { title: string; content: string; tags: Tag[] }) => void;
+  onPost?: (data: { title: string; content: string; tags: Tag[]; files?: File[] }) => void;
   onComment?: (content: string) => void;
 }
 
@@ -25,6 +25,9 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
   const [tagSearch, setTagSearch] = useState("");
   const [fetchedTags, setFetchedTags] = useState<Tag[]>([]);
   const [tagMenuLoading, setTagMenuLoading] = useState(false);
+
+  const [files, setFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!tagMenuOpen || !forumId) return;
@@ -55,19 +58,21 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
     }
   }
 
-  function handlePost() {
+  async function handlePost() {
     if (mode === "comment") {
       if (!content.trim()) return;
       onComment?.(content.trim());
       reset();
-    } else {
-      if (!title.trim()) return;
-      const resolvedTags = selectedTags
-        .map((name) => fetchedTags.find((t) => t.tag === name))
-        .filter((t): t is Tag => t !== undefined);
-      onPost?.({ title: title.trim(), content, tags: resolvedTags });
-      reset();
+      return;
     }
+
+    if (!title.trim()) return;
+
+    const resolvedTags = selectedTags
+      .map((name) => fetchedTags.find((t) => t.tag === name))
+      .filter((t): t is Tag => t !== undefined);
+    onPost?.({ title: title.trim(), content, tags: resolvedTags, files });
+    reset();
   }
 
   function handleCancel() {
@@ -81,6 +86,7 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
     setTagMenuOpen(false);
     setTagSearch("");
     setFetchedTags([]);
+    setFiles([]);
     if (mode !== "comment") setIsExpanded(false);
   }
 
@@ -88,6 +94,12 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
     setSelectedTags((prev) =>
       prev.includes(tagName) ? prev.filter((t) => t !== tagName) : [...prev, tagName],
     );
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const picked = Array.from(e.target.files ?? []);
+    if (picked.length > 0) setFiles((prev) => [...prev, ...picked]);
+    e.target.value = "";
   }
 
   return (
@@ -127,86 +139,124 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
           />
 
           {/* Tags — post mode only */}
-          {mode === "post" && <div className="flex flex-col gap-2">
-            <span className="text-text-muted text-xs font-medium uppercase tracking-wider">Tags</span>
-            <div className="flex gap-2 items-center flex-wrap">
-              {fetchedTags.map((t) => {
-                const isSelected = selectedTags.includes(t.tag);
-                return (
+          {mode === "post" && (
+            <div className="flex flex-col gap-2">
+              <span className="text-text-muted text-xs font-medium uppercase tracking-wider">Tags</span>
+              <div className="flex gap-2 items-center flex-wrap">
+                {fetchedTags.filter((t) => t.status === "validado").map((t) => {
+                  const isSelected = selectedTags.includes(t.tag);
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      aria-pressed={isSelected}
+                      onClick={() => handleTagToggle(t.tag)}
+                      className={`flex items-center gap-1.5 font-semibold text-sm px-3.5 py-1.5 rounded-full transition-all duration-150 cursor-pointer ${
+                        isSelected
+                          ? "border border-current bg-surface-overlay"
+                          : "border border-transparent bg-surface-overlay hover:border-current/40"
+                      } ${isSelected ? "opacity-100" : "opacity-50 hover:opacity-75"}`}
+                      style={{ color: getTagColor(t.tag) }}
+                    >
+                      {t.tag}
+                    </button>
+                  );
+                })}
+
+                {/* Tag picker */}
+                <div className="relative">
                   <button
-                    key={t.id}
                     type="button"
-                    aria-pressed={isSelected}
-                    onClick={() => handleTagToggle(t.tag)}
-                    className={`flex items-center gap-1.5 font-semibold text-sm px-3.5 py-1.5 rounded-full transition-all duration-150 cursor-pointer ${
-                      isSelected
-                        ? "border border-current bg-surface-overlay"
-                        : "border border-transparent bg-surface-overlay hover:border-current/40"
-                    } ${isSelected ? "opacity-100" : "opacity-50 hover:opacity-75"}`}
-                    style={{ color: getTagColor(t.tag) }}
+                    aria-label="Adicionar tag"
+                    onClick={() => setTagMenuOpen((o) => !o)}
+                    className="flex items-center justify-center w-8 h-8 rounded-full bg-surface-overlay border border-accent/20 hover:border-accent/50 hover:bg-accent/10 text-accent transition-all duration-150 cursor-pointer"
                   >
-                    {t.tag}
+                    <Plus size={14} />
                   </button>
-                );
-              })}
 
-              {/* Tag picker */}
-              <div className="relative">
-                <button
-                  type="button"
-                  aria-label="Adicionar tag"
-                  onClick={() => setTagMenuOpen((o) => !o)}
-                  className="flex items-center justify-center w-8 h-8 rounded-full bg-surface-overlay border border-accent/20 hover:border-accent/50 hover:bg-accent/10 text-accent transition-all duration-150 cursor-pointer"
-                >
-                  <Plus size={14} />
-                </button>
+                  {tagMenuOpen && (
+                    <div className="absolute left-0 top-full mt-2 w-56 max-w-[calc(100vw-2rem)] bg-surface-raised border border-surface-overlay rounded-lg shadow-lg z-20 flex flex-col">
+                      <div className="px-3 py-2 border-b border-surface-overlay">
+                        <input
+                          autoFocus
+                          type="text"
+                          value={tagSearch}
+                          onChange={(e) => setTagSearch(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Escape") { setTagMenuOpen(false); setTagSearch(""); }
+                          }}
+                          placeholder="Buscar tag..."
+                          className="w-full bg-surface-input text-sm text-text-primary px-2 py-1 rounded outline-none border border-surface-overlay focus:border-accent/50 placeholder:text-text-muted"
+                        />
+                      </div>
 
-                {tagMenuOpen && (
-                  <div className="absolute left-0 top-full mt-2 w-56 max-w-[calc(100vw-2rem)] bg-surface-raised border border-surface-overlay rounded-lg shadow-lg z-20 flex flex-col">
-                    <div className="px-3 py-2 border-b border-surface-overlay">
-                      <input
-                        autoFocus
-                        type="text"
-                        value={tagSearch}
-                        onChange={(e) => setTagSearch(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Escape") { setTagMenuOpen(false); setTagSearch(""); }
-                        }}
-                        placeholder="Buscar tag..."
-                        className="w-full bg-surface-input text-sm text-text-primary px-2 py-1 rounded outline-none border border-surface-overlay focus:border-accent/50 placeholder:text-text-muted"
-                      />
+                      <div className="max-h-40 overflow-y-auto py-1">
+                        {tagMenuLoading ? (
+                          <p className="text-xs text-text-muted px-3 py-2">Carregando...</p>
+                        ) : fetchedTags.filter((t) => t.status === "validado").length === 0 ? (
+                          <p className="text-xs text-text-muted px-3 py-2">Nenhuma tag encontrada</p>
+                        ) : (
+                          fetchedTags.filter((t) => t.status === "validado").map((tag) => (
+                            <button
+                              key={tag.id}
+                              type="button"
+                              onClick={() => { handleTagToggle(tag.tag); setTagMenuOpen(false); setTagSearch(""); }}
+                              className={`w-full text-left px-3 py-1.5 text-sm hover:bg-surface-overlay transition-colors ${
+                                selectedTags.includes(tag.tag) ? "text-accent font-medium" : "text-text-secondary"
+                              }`}
+                            >
+                              {tag.tag}
+                            </button>
+                          ))
+                        )}
+                      </div>
                     </div>
-
-                    <div className="max-h-40 overflow-y-auto py-1">
-                      {tagMenuLoading ? (
-                        <p className="text-xs text-text-muted px-3 py-2">Carregando...</p>
-                      ) : fetchedTags.length === 0 ? (
-                        <p className="text-xs text-text-muted px-3 py-2">Nenhuma tag encontrada</p>
-                      ) : (
-                        fetchedTags.map((tag) => (
-                          <button
-                            key={tag.id}
-                            type="button"
-                            onClick={() => { handleTagToggle(tag.tag); setTagMenuOpen(false); setTagSearch(""); }}
-                            className={`w-full text-left px-3 py-1.5 text-sm hover:bg-surface-overlay transition-colors ${
-                              selectedTags.includes(tag.tag) ? "text-accent font-medium" : "text-text-secondary"
-                            }`}
-                          >
-                            {tag.tag}
-                          </button>
-                        ))
-                      )}
-                    </div>
-
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
-
-          </div>}
+          )}
 
           {/* Footer */}
           <div className="flex items-center gap-3">
+            {/* File attachment — post mode only */}
+            {mode === "post" && (
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+                <div className="flex flex-wrap gap-1.5 items-center">
+                  {files.map((f, i) => (
+                    <div key={i} className="flex items-center gap-1.5 bg-accent/10 border border-accent/20 text-accent text-xs font-medium px-2.5 py-1 rounded-full max-w-[160px]">
+                      <Paperclip size={11} className="shrink-0" />
+                      <span className="truncate">{f.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
+                        className="shrink-0 hover:opacity-60 transition-opacity cursor-pointer"
+                        aria-label="Remover arquivo"
+                      >
+                        <X size={11} />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
+                    aria-label="Anexar arquivo"
+                  >
+                    <Paperclip size={13} />
+                    <span>{files.length > 0 ? "Mais" : "Anexar"}</span>
+                  </button>
+                </div>
+              </>
+            )}
+
             <div className="flex-1" />
             <button
               type="button"
