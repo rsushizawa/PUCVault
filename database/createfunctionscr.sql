@@ -1,20 +1,29 @@
--- uso: SELECT * FROM publico.dados_login_usuario(p_email := 'usuario@email.com');
--- uso: SELECT * FROM publico.dados_login_usuario(p_nome_usuario := 'joao123');
+-- uso: SELECT * FROM publico.dados_login_usuario(<email || nome_usuario>);
 -- uso: SELECT * FROM publico.listar_usuarios();
--- uso: SELECT * FROM publico.buscar_usuario_por_id(1);
--- uso: SELECT * FROM publico.buscar_usuario_por_nome_usuario('joao123');
--- uso: SELECT * FROM publico.buscar_usuario_por_email('usuario@email.com');
--- uso: SELECT * FROM publico.buscar_forum_por_nome('tecnologia');
+-- uso: SELECT * FROM publico.buscar_usuario_por_id(<id>);
+-- uso: SELECT * FROM publico.buscar_usuario_por_nome_usuario(<nome_usuario>);
+-- uso: SELECT * FROM publico.buscar_usuario_por_email(<email>);
+-- uso: SELECT * FROM publico.buscar_forum_por_nome(<tag>);
+-- uso: SELECT * FROM publico.buscar_forum_por_id(<id>);
 -- uso: SELECT * FROM publico.listar_foruns();
--- uso: SELECT * FROM publico.listar_seguidores_forum(1);
--- uso: SELECT * FROM publico.buscar_tags_por_criador(1);
--- uso: SELECT * FROM publico.listar_postagens_forum(1, p_pagina := 1);
--- uso: SELECT * FROM publico.listar_arquivos_forum(1, p_pagina := 1);
--- uso: SELECT * FROM publico.listar_comentarios_postagem(1);
+-- uso: SELECT * FROM publico.listar_seguidores_forum(<id>);
+-- uso: SELECT * FROM publico.buscar_tags_por_criador(<id criador>);
+-- uso: SELECT * FROM publico.listar_postagens_forum(<id fórum>, <offset paginação (20) |  default = 1>);
+-- uso: SELECT * FROM publico.listar_arquivos_forum(<id fórum>, <offset paginação (20) | default = 1>);
+-- uso: SELECT * FROM publico.listar_comentarios_postagem(<id postagem>);
 -- uso: SELECT * FROM publico.listar_tags();
--- uso: SELECT * FROM publico.buscar_postagem(1);
--- uso: SELECT * FROM publico.buscar_tags_relevantes('tec', p_limite := 5);
+-- uso: SELECT * FROM publico.buscar_postagem(<id postagem>);
+-- uso: SELECT * FROM publico.buscar_tags_relevantes(<chars>, <quantidade de retorno | default = 5>);
+-- uso: SELECT * FROM publico.listar_tags_relacionadas_forum(<id fórum>);
+-- uso: SELECT * FROM publico.listar_postagens_feed(<id usuário>, <offset paginação (20) |  default = 1>);
+-- uso: SELECT * FROM publico.listar_anos_com_arquivo(<id fórum>);
+-- uso: SELECT * FROM publico.listar_tags_arquivo_por_ano(<id forum>, <ano>);
+-- uso: SELECT * FROM publico.listar_postagens_arquivo(<id do fórum>, <ano>, <id da tag>);
+-- uso: SELECT * FROM publico.checar_se_usuario_segue_forum(<id usuario>, <id forum>);
+-- uso: SELECT * FROM publico.listar_postagens_usuario(1, p_pagina := 1);
 
+-- retorna dados usados para operações de autentificação
+-- uso: SELECT * FROM publico.dados_login_usuario(<email || nome_usuario>);
 CREATE OR REPLACE FUNCTION publico.dados_login_usuario(
 	p_email VARCHAR DEFAULT NULL,
 	p_nome_usuario VARCHAR DEFAULT NULL
@@ -43,6 +52,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.listar_usuarios();
 CREATE OR REPLACE FUNCTION publico.listar_usuarios()
 RETURNS SETOF privado.perfil_usuario
 LANGUAGE plpgsql
@@ -55,6 +65,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.buscar_usuario_por_id(<id>);
 CREATE OR REPLACE FUNCTION publico.buscar_usuario_por_id (
 	p_id INT
 )
@@ -70,6 +81,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.buscar_usuario_por_nome_usuario(<nome_usuario>);
 CREATE OR REPLACE FUNCTION publico.buscar_usuario_por_nome_usuario (
 	p_nome_usuario VARCHAR
 )
@@ -85,6 +97,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.buscar_usuario_por_email(<email>);
 CREATE OR REPLACE FUNCTION publico.buscar_usuario_por_email (
 	p_email VARCHAR
 )
@@ -106,6 +119,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.buscar_forum_por_nome(<tag>);
 CREATE OR REPLACE FUNCTION publico.buscar_forum_por_nome (
 	p_nome VARCHAR
 )
@@ -121,6 +135,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.buscar_forum_por_id(<id>);
 CREATE OR REPLACE FUNCTION publico.buscar_forum_por_id (
 	p_id INT
 )
@@ -136,6 +151,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.listar_foruns();
 CREATE OR REPLACE FUNCTION publico.listar_foruns()
 RETURNS SETOF privado.visualizar_forum
 LANGUAGE plpgsql
@@ -149,6 +165,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.listar_seguidores_forum(<id>);
 CREATE OR REPLACE FUNCTION publico.listar_seguidores_forum (
 	p_id INT
 )
@@ -167,6 +184,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.buscar_tags_por_criador(<id criador>);
 CREATE OR REPLACE FUNCTION publico.buscar_tags_por_criador(
 	p_id INT
 )
@@ -182,6 +200,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.listar_postagens_forum(<id fórum>, <offset paginação |  default = 1>);
 CREATE OR REPLACE FUNCTION publico.listar_postagens_forum (
 	p_forum_id INT,
 	p_pagina INT DEFAULT 1
@@ -202,6 +221,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.listar_arquivos_forum(<id fórum>, <offset paginação (20) | default = 1>);
 CREATE OR REPLACE FUNCTION publico.listar_arquivos_forum (
 	p_forum_id INT,
 	p_pagina INT DEFAULT 1
@@ -222,6 +242,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.listar_comentarios_postagem(<id postagem>);
 CREATE OR REPLACE FUNCTION publico.listar_comentarios_postagem (
 	p_postagem_id INT
 )
@@ -251,6 +272,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.listar_tags();
 CREATE OR REPLACE FUNCTION publico.listar_tags ()
 RETURNS SETOF privado.tag
 LANGUAGE plpgsql
@@ -263,6 +285,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.buscar_postagem(<id postagem>);
 CREATE OR REPLACE FUNCTION publico.buscar_postagem (
 	p_id INT
 )
@@ -278,6 +301,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.buscar_tags_relevantes(<chars>, <quantidade de retorno | default = 5>);
 CREATE OR REPLACE FUNCTION publico.buscar_tags_relevantes (
 	p_busca VARCHAR,
 	p_limite INT DEFAULT 5
@@ -324,6 +348,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.listar_tags_relacionadas_forum(<id fórum>);
 CREATE OR REPLACE FUNCTION publico.listar_tags_relacionadas_forum (
 	p_forum INT
 )
@@ -343,6 +368,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.listar_postagens_feed(<id usuário>, <offset paginação (20) |  default = 1>);
 CREATE OR REPLACE FUNCTION publico.listar_postagens_feed (
 	p_usuario_id INT,
 	p_pagina INT DEFAULT 1
@@ -377,7 +403,7 @@ END;
 $$;
 
 -- retorna os anos que possuem postagens com arquivo em um fórum
--- uso: SELECT * FROM publico.listar_anos_com_arquivo(<id do fórum>);
+-- uso: SELECT * FROM publico.listar_anos_com_arquivo(<id fórum>);
 CREATE OR REPLACE FUNCTION publico.listar_anos_com_arquivo (
 	p_forum_id INT
 )
@@ -399,7 +425,7 @@ END;
 $$;
 
 -- retorna as tags que possuem postagens com arquivo em um fórum e ano específicos
--- uso: SELECT * FROM publico.listar_tags_arquivo_por_ano(<id do fórum>, <ano>);
+-- uso: SELECT * FROM publico.listar_tags_arquivo_por_ano(<id forum>, <ano>);
 CREATE OR REPLACE FUNCTION publico.listar_tags_arquivo_por_ano (
 	p_forum_id INT,
 	p_ano INT
@@ -454,6 +480,8 @@ BEGIN
 END;
 $$;
 
+-- chegagem booleana se um usuário segue um fórum
+-- uso: SELECT * FROM publico.checar_se_usuario_segue_forum(<id usuario>, <id forum>);
 CREATE OR REPLACE FUNCTION publico.checar_se_usuario_segue_forum (
 	p_usuario INT,
 	p_forum INT
@@ -471,5 +499,27 @@ BEGIN
 		WHERE usuario = p_usuario
 		AND forum = p_forum
 	) AS segue;
+END;
+$$;
+
+-- function para listar postagens de um usuário
+-- uso: SELECT * FROM publico.listar_postagens_usuario(<id usuário>, <offset paginação (20) |  default = 1>);
+CREATE OR REPLACE FUNCTION publico.listar_postagens_usuario (
+	p_usuario_id INT,
+	p_pagina INT DEFAULT 1
+)
+RETURNS SETOF privado.visualizar_postagem
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+	RETURN QUERY
+	SELECT *
+	FROM privado.visualizar_postagem AS postagem
+	WHERE postagem.criador = p_usuario_id
+	ORDER BY postagem.criado_em DESC
+	LIMIT 20
+	OFFSET (p_pagina - 1) * 20;
 END;
 $$;

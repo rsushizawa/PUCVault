@@ -21,6 +21,7 @@
 -- CALL publico.incluir_tag_forum(<id do usuário>, <id do fórum>, <id da tag>);
 -- CALL publico.remover_tag_forum(<id do usuário>, <id do fórum>, <id da tag>);
 
+-- procedure para inserção de usuário atualizada
 CREATE PROCEDURE publico.inserir_usuario (
 	p_nome VARCHAR,
 	p_nome_usuario VARCHAR,
@@ -35,11 +36,28 @@ DECLARE
 	v_identidade_visual INT;
 BEGIN
 	INSERT INTO privado.identidade_visual (img_perfil, img_banner)
-	VALUES ('abc-123', 'def-456')
+	VALUES (NULL, NULL)
 	RETURNING id INTO v_identidade_visual;
 
 	INSERT INTO privado.usuario (nome, nome_usuario, email, senha_hash, identidade_visual)
 	VALUES (p_nome, p_nome_usuario, p_email, p_senha_hash, v_identidade_visual);
+END;
+$$;
+
+-- procedure para atualizar descrição do usuário
+-- uso: CALL publico.atualizar_descricao_usuario(<id do usuário>, <nova descrição>);
+CREATE PROCEDURE publico.atualizar_descricao_usuario (
+	p_usuario_id INT,
+	p_nova_descricao VARCHAR
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+	UPDATE privado.usuario
+	SET descricao = p_nova_descricao
+	WHERE id = p_usuario_id;
 END;
 $$;
 
@@ -209,7 +227,7 @@ BEGIN
 	END IF;
 
 	INSERT INTO privado.identidade_visual (img_perfil, img_banner)
-	VALUES ('abc-123', 'def-456')
+	VALUES (NULL, NULL)
 	RETURNING id INTO v_identidade_visual;
 
 	INSERT INTO privado.forum (nome, descricao, criador, identidade_visual)

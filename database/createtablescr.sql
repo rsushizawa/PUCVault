@@ -2,18 +2,25 @@
 CREATE TABLE privado.identidade_visual (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
-	img_perfil TEXT NOT NULL,
-	img_banner TEXT NOT NULL,
+	img_perfil TEXT DEFAULT NULL,
+	img_banner TEXT DEFAULT NULL,
 
 	perfil_modificado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 	banner_modificado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+update privado.usuario
+set cargo = 'SUPERADMIN'
+where nome_usuario = 'SUPER';
+
+select * from privado.usuario;
 
 -- usuario
 CREATE TABLE privado.usuario (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	nome VARCHAR(75) NOT NULL,
 	nome_usuario VARCHAR(20) NOT NULL UNIQUE,
+	descricao VARCHAR(100),
 	email VARCHAR(50) NOT NULL UNIQUE,
 	cargo VARCHAR(15) DEFAULT 'USUARIO',
 	status VARCHAR(15) DEFAULT 'ATIVO',
