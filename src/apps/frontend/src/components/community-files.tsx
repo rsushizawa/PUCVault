@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Folder, FolderOpen, FileText, ChevronRight } from "lucide-react";
+import { Folder, FolderOpen, FileText, ChevronRight, Download } from "lucide-react";
 import { getTagColor } from "@/lib/tag-colors";
 import {
   getFileYears,
@@ -27,16 +27,26 @@ function FileRow({ file, communitySlug }: { file: FileEntry; communitySlug: stri
     year: "numeric",
   });
   return (
-    <Link
-      href={`/v/${communitySlug}/post/${file.post_id}`}
-      className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-overlay transition-colors duration-100 rounded-lg group"
-    >
+    <div className="flex items-center gap-2 px-4 py-2.5 hover:bg-surface-overlay transition-colors duration-100 rounded-lg group">
       <FileText size={14} className="text-text-muted shrink-0" />
-      <span className="text-sm text-text-primary flex-1 group-hover:text-accent transition-colors">
+      <Link
+        href={`/v/${communitySlug}/post/${file.post_id}`}
+        className="text-sm text-text-primary flex-1 group-hover:text-accent transition-colors truncate"
+      >
         {file.title}
-      </span>
-      <span className="text-xs text-text-muted shrink-0">{date}</span>
-    </Link>
+      </Link>
+      <span className="text-xs text-text-muted shrink-0 hidden sm:block">{date}</span>
+      <a
+        href={file.file_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Baixar arquivo"
+        className="shrink-0 text-text-muted hover:text-accent transition-colors ml-1"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Download size={13} />
+      </a>
+    </div>
   );
 }
 
@@ -68,7 +78,7 @@ function TagRow({
       } else {
         setLoading(true);
         try {
-          const data = await getFilesByYearAndTag(forumId, year, tag.id);
+          const data = await getFilesByYearAndTag(forumId, year, tag.name);
           filesCache.set(cacheKey, data);
           setFiles(data);
         } catch {
