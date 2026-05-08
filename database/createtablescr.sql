@@ -21,6 +21,7 @@ CREATE TABLE privado.usuario (
 	criado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 	excluido_em TIMESTAMP WITH TIME ZONE,
 	senha_hash TEXT NOT NULL,
+	score_comportamento INT NOT NULL DEFAULT 0,
 
 	identidade_visual INT NOT NULL UNIQUE,
 
@@ -106,10 +107,20 @@ CREATE TABLE privado.comentario (
 	FOREIGN KEY (conteudo_pai) REFERENCES privado.conteudo(id) ON DELETE CASCADE
 );
 
+CREATE TABLE privado.tipo_denuncia (
+    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nome VARCHAR(30) NOT NULL UNIQUE,
+    descricao VARCHAR(100) NOT NULL,
+    peso_penalidade SMALLINT NOT NULL, -- valor negativo aplicado ao denunciado
+
+	CONSTRAINT peso_deve_ser_negativo
+    	CHECK (peso_penalidade < 0)
+);
+
 -- denuncia
 CREATE TABLE privado.denuncia (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	tipo VARCHAR(30) NOT NULL,
+	tipo INT NOT NULL,
 	status VARCHAR(20) DEFAULT 'ABERTA',
 	criado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 	resolvido_em TIMESTAMP WITH TIME ZONE,
@@ -119,7 +130,7 @@ CREATE TABLE privado.denuncia (
 
 	CONSTRAINT denuncia_status
 		CHECK (status IN ('ABERTA', 'RESOLVIDA', 'IGNORADA')),
-
+	FOREIGN KEY(tipo) REFERENCES privado.tipo_denuncia(id) ON DELETE RESTRICT ,
 	FOREIGN KEY (denunciante) REFERENCES privado.usuario(id) ON DELETE RESTRICT,
 	FOREIGN KEY (resolvido_por) REFERENCES privado.usuario(id) ON DELETE SET NULL
 );
@@ -201,3 +212,47 @@ CREATE TABLE privado.incluir_tag (
 
 	PRIMARY KEY (tag, forum)
 );
+
+
+CREATE TABLE privado.historico_penalidade (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    usuario_id          INT NOT NULL,
+    denuncia_id         INT,          -- NULL em ajustes manuais
+    pontuacao_aplicada  SMALLINT NOT NULL,
+    aplicado_em         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    motivo              TEXT,
+    aplicado_por        INT,          -- NULL = sistema automático
+	tipo_penalidade     VARCHAR(50),
+
+    FOREIGN KEY (usuario_id)   REFERENCES privado.usuario(id)  ON DELETE CASCADE,
+    FOREIGN KEY (denuncia_id)  REFERENCES privado.denuncia(id) ON DELETE SET NULL,
+    FOREIGN KEY (aplicado_por) REFERENCES privado.usuario(id)  ON DELETE SET NULL
+);
+
+
+/* INSERT INTO privado.tipo_denuncia (nome, pontuacao_penalidade) VALUES
+(
+    'Spam',
+    -5
+),
+(
+    'Discurso de Ódio',
+    -25
+),
+(
+    'Conteúdo Inapropriado',               // nao irei adicionar ainda pois ainda nao foi definido se vai ter isso ou nao
+    -10
+),
+(
+    'Assédio',
+    -25
+),
+(
+    'Informação Falsa',
+    -8
+);
+(
+	'Plagio',
+	-15
+);
+*/
