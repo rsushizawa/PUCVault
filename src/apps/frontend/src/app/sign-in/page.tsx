@@ -22,7 +22,7 @@ export default function SignInPage() {
     setLoading(true);
     try {
       await signIn(form);
-      router.push("/login");
+      router.push("/onboarding");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
       if (msg.includes("409")) {
