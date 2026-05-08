@@ -473,3 +473,32 @@ BEGIN
 	) AS segue;
 END;
 $$;
+
+
+CREATE OR REPLACE FUNCTION privado.verificar_e_silenciar_usuario(p_usuario_id INT) 
+RETURNS VOID AS $$
+DECLARE
+    v_score INT;
+    v_status_atual VARCHAR(15);
+BEGIN
+    SELECT score_comportamento, status INTO v_score, v_status_atual
+    FROM privado.usuario
+    WHERE id = p_usuario_id;
+
+    -- Limite de score para silenciar o usuário 
+    IF v_score <= -50 AND v_status_atual = 'ATIVO' THEN
+        UPDATE privado.usuario
+        SET status = 'SILENCIADO',
+            ultima_mudanca_status = CURRENT_TIMESTAMP
+        WHERE id = p_usuario_id;
+
+        INSERT INTO privado.historico_penalidade (
+            usuario_id, tipo_penalidade, pontuacao_aplicada, motivo, aplicado_por
+        )
+        VALUES (
+            p_usuario_id, 'Silenciado Automaticamente', 0, 'Score de comportamento abaixo do limite (-100)', NULL
+        );
+    END IF;
+END;
+$$
+LANGUAGE plpgsql;

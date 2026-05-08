@@ -20,6 +20,8 @@ SELECT
 	usuario.status,
 	usuario.criado_em,
 	usuario.identidade_visual,
+	usuario.cargo,
+	usuario.score_comportamento,
 
 	identidade_visual.img_perfil,
 	identidade_visual.img_banner,
@@ -29,6 +31,7 @@ SELECT
 	-- qtd que o usuário sege -> u = segue
 	COUNT (DISTINCT segue.seguidor) AS segue,
 	COALESCE(karma.total, 0) AS karma
+	
 
 	FROM privado.usuario AS usuario
 	JOIN privado.identidade_visual AS identidade_visual
@@ -48,6 +51,14 @@ SELECT
 		
 		GROUP BY conteudo.criador
 	) AS karma ON karma.criador = usuario.id
+
+
+	LEFT JOIN (
+    SELECT hp.usuario_id AS usuario, SUM(hp.pontuacao_aplicada) AS total
+    FROM privado.historico_penalidade AS hp
+    WHERE hp.pontuacao_aplicada < 0   -- só penalidades, não ajustes positivos
+    GROUP BY hp.usuario_id
+	) AS reputacao ON reputacao.usuario = usuario.id
 
 	WHERE usuario.excluido_em IS NULL
 

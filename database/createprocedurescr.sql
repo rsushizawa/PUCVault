@@ -20,6 +20,7 @@
 -- CALL publico.alternar_seguir_usuario(<id do seguidor>, <id do seguido>);
 -- CALL publico.incluir_tag_forum(<id do usuário>, <id do fórum>, <id da tag>);
 -- CALL publico.remover_tag_forum(<id do usuário>, <id do fórum>, <id da tag>);
+-- CALL publico.ajustar_score_manual(<p_executor_id>,<p_usuario_alvo_id>,<p_ajuste_pontuacao>,p_motivo)
 
 CREATE PROCEDURE publico.inserir_usuario (
 	p_nome VARCHAR,
@@ -525,7 +526,7 @@ END;
 $$;
 
 CREATE PROCEDURE publico.inserir_denuncia_usuario (
-	p_tipo VARCHAR,
+	p_tipo_id INT,
 	p_denunciante_id INT,
 	p_denunciado_id INT
 )
@@ -569,7 +570,7 @@ BEGIN
 	END IF;
 
 	INSERT INTO privado.denuncia (tipo, denunciante)
-	VALUES (p_tipo, p_denunciante_id)
+	VALUES (p_tipo_id, p_denunciante_id)
 	RETURNING id INTO v_denuncia;
 
 	INSERT INTO privado.denuncia_usuario (id, usuario_denunciado)
@@ -578,7 +579,7 @@ END;
 $$;
 
 CREATE PROCEDURE publico.inserir_denuncia_conteudo (
-	p_tipo VARCHAR,
+	p_tipo_id INT,
 	p_denunciante_id INT,
 	p_conteudo_id INT
 )
@@ -628,7 +629,7 @@ BEGIN
 	END IF;
 
 	INSERT INTO privado.denuncia (tipo, denunciante)
-	VALUES (p_tipo, p_denunciante_id)
+	VALUES (p_tipo_id, p_denunciante_id)
 	RETURNING id INTO v_denuncia;
 
 	INSERT INTO privado.denuncia_conteudo (id, conteudo_denunciado)
@@ -844,5 +845,43 @@ BEGIN
 	DELETE FROM privado.incluir_tag
 	WHERE tag = p_tag_id
 	AND forum = p_forum_id;
+END;
+$$;
+
+
+
+
+CREATE OR REPLACE PROCEDURE publico.ajustar_score_manual(
+    p_executor_id INT,
+    p_usuario_alvo_id INT,
+    p_ajuste_pontuacao INT,
+    p_motivo TEXT
+) LANGUAGE plpgsql AS $$
+DECLARE
+    v_cargo_executor VARCHAR(15);
+BEGIN
+    SELECT cargo INTO v_cargo_executor FROM privado.usuario WHERE id = p_executor_id;
+
+    IF v_cargo_executor NOT IN (
+        'ADMIN',
+        'SUPERADMIN'
+    ) THEN
+        RAISE EXCEPTION 'Permissão negada: cargo insuficiente para ajustar o score de comportamento manualmente.';
+    END IF;
+
+    UPDATE privado.usuario
+    SET score_comportamento = score_comportamento + p_ajuste_pontuacao
+    WHERE id = p_usuario_alvo_id;
+
+    INSERT INTO privado.historico_penalidade (
+        usuario_id, tipo_penalidade, pontuacao_aplicada, motivo, aplicado_por
+    )
+    VALUES (
+        p_usuario_alvo_id, 'Ajuste Manual de Score', p_ajuste_pontuacao, p_motivo, p_executor_id
+    );
+
+    PERFORM privado.verificar_e_silenciar_usuario(p_usuario_alvo_id);
+
+    COMMIT;
 END;
 $$;

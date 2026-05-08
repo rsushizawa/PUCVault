@@ -107,3 +107,16 @@ CREATE INDEX IF NOT EXISTS idx_denuncia_usuario_denunciante_denunciado ON privad
 -- utilizado em: inserir_denuncia_conteudo (verifica duplicata)
 CREATE INDEX IF NOT EXISTS idx_denuncia_conteudo_denunciado ON privado.denuncia_conteudo(conteudo_denunciado);
 CREATE INDEX IF NOT EXISTS idx_denuncia_conteudo_id_conteudo ON privado.denuncia_conteudo(id, conteudo_denunciado);
+
+-- indices para tabela historico_penalidade
+CREATE INDEX IF NOT EXISTS idx_historico_penalidade_usuario ON privado.historico_penalidade(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_historico_penalidade_aplicado_em ON privado.historico_penalidade(aplicado_em DESC);
+ 
+-- indice para tabela tipo_denuncia
+-- utilizado em: inserir_denuncia_usuario, inserir_denuncia_conteudo (busca de tipo por nome)
+CREATE INDEX IF NOT EXISTS idx_tipo_denuncia_nome ON privado.tipo_denuncia(nome);
+
+-- indices para tabela tipo_denuncia
+-- indice para verificar presença de score para cada usuario
+CREATE INDEX IF NOT EXISTS idx_usuario_score_comportamento ON privado.usuario(score_comportamento);
+ 
