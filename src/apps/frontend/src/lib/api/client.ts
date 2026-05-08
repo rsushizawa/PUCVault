@@ -26,3 +26,14 @@ export function setToken(token: string) {
 export function clearToken() {
   localStorage.removeItem("auth_token")
 }
+
+export async function apiFormData<T>(path: string, form: FormData, method = "PATCH"): Promise<T> {
+  const token = getToken()
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method,
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  })
+  if (!res.ok) throw new Error(`API ${res.status}: ${path}`)
+  return res.json() as Promise<T>
+}
