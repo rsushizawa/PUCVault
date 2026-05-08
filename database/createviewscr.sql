@@ -52,7 +52,7 @@ SELECT
 		GROUP BY conteudo.criador
 	) AS karma ON karma.criador = usuario.id
 
-
+-- novo LEFT JOIN para calcular o total de penalidades recebidas pelo usuário 
 	LEFT JOIN (
     SELECT hp.usuario_id AS usuario, SUM(hp.pontuacao_aplicada) AS total
     FROM privado.historico_penalidade AS hp
