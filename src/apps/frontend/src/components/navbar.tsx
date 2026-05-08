@@ -18,7 +18,7 @@ const NavBar = () => {
     setIsLoggedIn(loggedIn);
     if (loggedIn) {
       getMe()
-        .then((user) => setAvatarUrl(user.avatarUrl))
+        .then((user) => setAvatarUrl(user.img_perfil))
         .catch(() => {});
     }
   }, []);
@@ -65,7 +65,7 @@ const NavBar = () => {
         </div>
 
         {/* Auth controls */}
-        <div className="shrink-0">
+        <div className="shrink-0 ml-auto md:ml-0">
           {isLoggedIn ? (
             <div className="relative" ref={profileRef}>
               <button
