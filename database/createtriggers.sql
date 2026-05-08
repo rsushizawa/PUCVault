@@ -1,5 +1,7 @@
 -- fn_sem_autoavaliacao(avaliacao.USUARIO|avaliacao.CONTEUDO->conteudo.CRIADOR)
--- fn_propagar_delete_conteudo(conteudo.ID|comentario.CONTEUDO_PAI)
+-- fn_aplicar_penalidade_denuncia(denuncia.STATUS -> verifica transição para 'RESOLVIDA')
+-- fn_silenciar_por_score(suario.SCORE_COMPORTAMENTO -> monitorado após atualização)
+
 
 
 CREATE OR REPLACE FUNCTION privado.fn_sem_autoavaliacao()
@@ -25,12 +27,6 @@ CREATE OR REPLACE TRIGGER trg_sem_autoavaliacao
 BEFORE INSERT OR UPDATE ON privado.avaliacao
 FOR EACH ROW EXECUTE FUNCTION privado.fn_sem_autoavaliacao();
 
-
-
-<<<<<<< HEAD
-CREATE OR REPLACE FUNCTION privado.fn_propagar_delete_conteudo()
-=======
--- fn_aplicar_penalidade_denuncia(v_peso,v_usuario_alvo)
 
 CREATE OR REPLACE FUNCTION privado.fn_aplicar_penalidade_denuncia()
 RETURNS TRIGGER
@@ -90,7 +86,6 @@ FOR EACH ROW EXECUTE FUNCTION privado.fn_aplicar_penalidade_denuncia();
 
 --  Silencia automaticamente ao atingir o limite de score
 CREATE OR REPLACE FUNCTION privado.fn_silenciar_por_score()
->>>>>>> c8bedbd (Implementação de sistema para denuncias de usuario)
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
@@ -109,7 +104,6 @@ $$;
 CREATE OR REPLACE TRIGGER trg_propagar_delete_conteudo
 BEFORE DELETE ON privado.conteudo
 FOR EACH ROW EXECUTE FUNCTION privado.fn_propagar_delete_conteudo();
-=======
     IF NEW.score_comportamento <= -50 AND OLD.status = 'ATIVO' THEN
         UPDATE privado.usuario
         SET
@@ -131,4 +125,3 @@ CREATE OR REPLACE TRIGGER trg_silenciar_por_score
 AFTER UPDATE OF score_comportamento ON privado.usuario
 FOR EACH ROW EXECUTE FUNCTION privado.fn_silenciar_por_score();
  
->>>>>>> c8bedbd (Implementação de sistema para denuncias de usuario)
