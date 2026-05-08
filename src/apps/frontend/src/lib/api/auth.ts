@@ -1,15 +1,24 @@
 import { apiFetch, setToken, clearToken } from "./client"
 
 export type UserProfile = {
-  id: string
-  username: string
-  name: string
-  email: string
-  avatarUrl: string | null
+  id: number
+  nome: string
+  nome_usuario: string
+  descricao: string | null
+  status: string
+  criado_em: string
+  identidade_visual: number
+  img_perfil: string | null
+  img_banner: string | null
+  seguidores: string
+  segue: string
+  karma: string
+  cargo?: string
 }
 
-export function getMe(): Promise<UserProfile> {
-  return apiFetch("/user/me")
+export async function getMe(): Promise<UserProfile> {
+  const { info } = await apiFetch<{ info: UserProfile }>("/user/me")
+  return info
 }
 
 export function updateMe(data: {
