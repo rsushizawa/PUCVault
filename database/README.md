@@ -1,0 +1,3 @@
+Funcionamento do sistema de denuncia 
+
+Para tal sistema, implementei uma nova coluna na tabela de usuario que vai ser o score de um usuario, tendo todos 50 inicialmente,  e enquanto o executor de uma denuncia aplicar a mesma, o usuário terá que definir um dos possíveis tipos de denuncia e a partir dele ja estara automaziado a perca de pontos pelo registro de penalidades na tabela de tipo_denuncia, os superadmins e admins terao controle de avaliar caso de denuncia, caso seja postivio iremos registrar tanto o infrator, quanto o denunciante em uma nova tabela de historico_penalidade e punindo o ususario fazendo ele perder pontos que possui em score_comportamento, e caso em algum momento ele chegue em 0, o usuário será automaticamente silenciado .
