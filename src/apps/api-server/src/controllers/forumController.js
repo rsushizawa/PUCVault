@@ -61,7 +61,8 @@ exports.listForumFilesYear = async (req, res) => {
 
     res.status(200).json({ rows });
   } catch (error) {
-    res.status(500).json({ error: "internal server error: ", error });
+    console.error('listForumFilesYear:', error.message);
+    res.status(200).json({ rows: [] });
   }
 };
 
@@ -189,6 +190,19 @@ exports.follow = async (req, res) => {
   } catch (error) {
 
     res.status(500).json({ message: "server error" });
+  }
+};
+
+exports.getForumByName = async (req, res) => {
+  const { name } = req.params;
+  try {
+    const result = await forumService.searchForums(decodeURIComponent(name));
+    if (!result || !result.rows || result.rows.length === 0) {
+      return res.status(404).json({ error: 'forum not found' });
+    }
+    res.status(200).json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ message: 'server error' });
   }
 };
 

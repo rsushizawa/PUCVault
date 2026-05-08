@@ -48,6 +48,8 @@ router.get('/:forum_id/files/year/:year/tag/:tag',
   forumController.listPostFilesYear
 );
 
+router.get('/by-name/:name', forumController.getForumByName);
+
 router.get('/:forum_id',
   optionalauthMiddleware,
   forumController.getSingleForum
