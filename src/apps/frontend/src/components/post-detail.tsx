@@ -2,10 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronUp, ChevronDown, FileText, MessageSquare } from "lucide-react";
+import { ChevronUp, ChevronDown, FileText, MessageSquare, Flag } from "lucide-react";
 import PostTag from "@/components/post-tag";
 import MarkdownBody from "@/components/markdown-body";
+import DenunciaModal from "@/components/denuncia-modal";
 import type { Post } from "@/types/api";
+
+function isImageUrl(url: string) {
+  return /\.(jpg|jpeg|png|gif|webp|svg)(\?|$)/i.test(url);
+}
+function isPdfUrl(url: string) {
+  return /\.pdf(\?|$)/i.test(url);
+}
 
 function formatDate(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -28,6 +36,7 @@ export default function PostDetail({
   onVote,
 }: PostDetailProps) {
   const [vote, setVote] = useState<1 | -1 | null>(null);
+  const [reportTarget, setReportTarget] = useState<{ type: "usuario" | "conteudo"; id: number; label: string } | null>(null);
 
   function handleVote(value: 1 | -1) {
     const next = vote === value ? null : value;
@@ -36,6 +45,15 @@ export default function PostDetail({
   }
 
   return (
+    <>
+      {reportTarget && (
+        <DenunciaModal
+          type={reportTarget.type}
+          targetId={reportTarget.id}
+          targetLabel={reportTarget.label}
+          onClose={() => setReportTarget(null)}
+        />
+      )}
     <article className="bg-surface-raised flex gap-5 p-5 items-start rounded-sm w-full">
       {/* Vote column */}
       <div className="w-[30px] bg-[#0e0e0e] flex flex-col items-center p-1 rounded-sm shrink-0">
@@ -91,24 +109,60 @@ export default function PostDetail({
         {/* Body — rendered as markdown */}
         <MarkdownBody>{post.conteudo}</MarkdownBody>
 
-        {/* File attachment */}
+        {/* File attachment / preview */}
         {post.arquivo && (
-          <a
-            href={post.arquivo}
-            download
-            className="flex items-center gap-2 text-accent text-sm hover:underline w-fit"
-          >
-            <FileText size={15} aria-hidden />
-            Download attachment
-          </a>
+          <div className="flex flex-col gap-2">
+            {isImageUrl(post.arquivo) ? (
+              <img
+                src={post.arquivo}
+                alt="Anexo"
+                className="max-w-full max-h-[400px] rounded-lg object-contain border border-surface-overlay"
+              />
+            ) : isPdfUrl(post.arquivo) ? (
+              <embed
+                src={post.arquivo}
+                type="application/pdf"
+                className="w-full h-[500px] rounded-lg border border-surface-overlay"
+              />
+            ) : null}
+            <a
+              href={post.arquivo}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-accent text-sm hover:underline w-fit"
+            >
+              <FileText size={15} aria-hidden />
+              {isImageUrl(post.arquivo) ? "Ver imagem original" : isPdfUrl(post.arquivo) ? "Abrir PDF" : "Download anexo"}
+            </a>
+          </div>
         )}
 
         {/* Footer */}
-        <div className="flex items-center gap-2 text-xs text-text-muted pt-3 border-t border-surface-overlay">
+        <div className="flex items-center gap-3 text-xs text-text-muted pt-3 border-t border-surface-overlay">
           <MessageSquare size={13} aria-hidden />
           <span>{Number(post.comentarios)} comments</span>
+          <div className="flex-1" />
+          <button
+            type="button"
+            onClick={() => setReportTarget({ type: "conteudo", id: post.id, label: post.titulo })}
+            className="flex items-center gap-1 hover:text-red-400 transition-colors cursor-pointer"
+            title="Denunciar post"
+          >
+            <Flag size={12} /> Denunciar post
+          </button>
+          {post.criador > 0 && (
+            <button
+              type="button"
+              onClick={() => setReportTarget({ type: "usuario", id: post.criador, label: `u/${post.nome_usuario}` })}
+              className="flex items-center gap-1 hover:text-red-400 transition-colors cursor-pointer"
+              title="Denunciar autor"
+            >
+              <Flag size={12} /> Denunciar autor
+            </button>
+          )}
         </div>
       </div>
     </article>
+    </>
   );
 }
