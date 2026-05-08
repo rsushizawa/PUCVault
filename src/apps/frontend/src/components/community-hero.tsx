@@ -4,6 +4,8 @@ interface CommunityHeroProps {
   repositoryType: string;
   bannerSrc?: string;
   iconSrc?: string;
+  isFollowing?: boolean;
+  onFollow?: () => void;
 }
 
 export default function CommunityHero({
@@ -12,6 +14,8 @@ export default function CommunityHero({
   repositoryType,
   bannerSrc,
   iconSrc,
+  isFollowing = false,
+  onFollow,
 }: CommunityHeroProps) {
   return (
     <div className="relative h-[192px] w-full overflow-hidden bg-surface-raised">
@@ -52,9 +56,18 @@ export default function CommunityHero({
             </div>
           </div>
         </div>
-        <button className="rounded-lg border border-accent/40 px-6 py-2.5 text-sm font-semibold text-accent hover:bg-accent/10 hover:border-accent/70 transition-all duration-200 cursor-pointer">
-          Seguir
-        </button>
+        {onFollow && (
+          <button
+            onClick={onFollow}
+            className={`rounded-lg border px-6 py-2.5 text-sm font-semibold transition-all duration-200 cursor-pointer ${
+              isFollowing
+                ? "border-accent/40 bg-accent/10 text-accent hover:bg-surface-base hover:border-accent/30"
+                : "border-accent/40 text-accent hover:bg-accent/10 hover:border-accent/70"
+            }`}
+          >
+            {isFollowing ? "Seguindo" : "Seguir"}
+          </button>
+        )}
       </div>
     </div>
   );
