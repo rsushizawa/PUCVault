@@ -525,8 +525,9 @@ BEGIN
 END;
 $$;
 
+-- modificado de VARCHAR para int para pegar id dos tipos denuncia, tambem se tornando um parametro FK 
 CREATE PROCEDURE publico.inserir_denuncia_usuario (
-	p_tipo_id INT,
+	p_tipo_id INT, 
 	p_denunciante_id INT,
 	p_denunciado_id INT
 )
@@ -578,8 +579,9 @@ BEGIN
 END;
 $$;
 
+// modificado de VARCHAR para int para pegar id do tipo da denuncia ao inves de texto, tambem se tornando um parametro FK 
 CREATE PROCEDURE publico.inserir_denuncia_conteudo (
-	p_tipo_id INT,
+	p_tipo_id INT, // modificado de VARCHAR para int para pegar id do tipo da denuncia ao inves de texto, tambem se tornando um parametro FK 
 	p_denunciante_id INT,
 	p_conteudo_id INT
 )
