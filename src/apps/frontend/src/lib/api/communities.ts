@@ -15,7 +15,14 @@ export type ForumSummary = {
   criador: number
   validador: number | null
   identidade_visual: number
+  seguidores?: string
+  nome_usuario?: string
+  img_perfil?: string | null
+  img_banner?: string | null
+  user_status?: string
 }
+
+export type ForumFollower = { id: number; username: string; nome: string }
 
 export function getForumByName(name: string): Promise<ForumSummary> {
   return apiFetch(`/forums/by-name/${encodeURIComponent(name)}`)
@@ -30,8 +37,36 @@ export function getFollowedForums(): Promise<ForumSummary[]> {
   return apiFetch("/forums/following")
 }
 
-export function getCommunity(id: string): Promise<ForumSummary> {
-  return apiFetch(`/forums/${id}`)
+export async function getCommunity(id: string): Promise<ForumSummary> {
+  const raw = await apiFetch<Record<string, unknown>>(`/forums/${id}`)
+  // The endpoint returns forum props mixed with indexed follower objects — extract only named fields
+  return raw as unknown as ForumSummary
+}
+
+export function updateForumDescription(id: string, descricao: string): Promise<void> {
+  return apiFetch(`/forums/${id}/update`, {
+    method: "PATCH",
+    body: JSON.stringify({ descricao }),
+  })
+}
+
+export function validateForum(id: string): Promise<void> {
+  return apiFetch(`/forums/${id}/validate`, { method: "PATCH" })
+}
+
+export function createForum(nome: string, descricao: string): Promise<ForumSummary> {
+  return apiFetch("/forums/create", {
+    method: "POST",
+    body: JSON.stringify({ nome, descricao }),
+  })
+}
+
+export function getForumFollowers(id: string): Promise<ForumFollower[]> {
+  return apiFetch(`/forums/${id}/list`)
+}
+
+export function followCommunity(id: string): Promise<void> {
+  return apiFetch(`/forums/${id}/follow`, { method: "POST" })
 }
 
 const PAGE_SIZE = 20
@@ -88,18 +123,19 @@ export async function getCommunityPosts(
   return { posts, total }
 }
 
-export function getFileYears(forumId: string): Promise<number[]> {
-  return apiFetch(`/forums/${forumId}/files/years`)
+export async function getFileYears(forumId: string): Promise<number[]> {
+  const { rows } = await apiFetch<{ rows: number[] }>(`/forums/${forumId}/files/year`)
+  return rows ?? []
 }
 
-export function getFileTagsByYear(forumId: string, year: number): Promise<FileTag[]> {
-  return apiFetch(`/forums/${forumId}/files/years/${year}/tags`)
+export async function getFileTagsByYear(forumId: string, year: number): Promise<FileTag[]> {
+  const { rows } = await apiFetch<{ rows: FileTag[] }>(`/forums/${forumId}/files/year/${year}`)
+  return rows ?? []
 }
 
-export function getFilesByYearAndTag(forumId: string, year: number, tagId: number): Promise<FileEntry[]> {
-  return apiFetch(`/forums/${forumId}/files/years/${year}/tags/${tagId}`)
-}
-
-export function followCommunity(id: string): Promise<void> {
-  return apiFetch(`/forums/${id}/follow`, { method: "PATCH" })
+export async function getFilesByYearAndTag(forumId: string, year: number, tagName: string): Promise<FileEntry[]> {
+  const { results } = await apiFetch<{ results: FileEntry[] }>(
+    `/forums/${forumId}/files/year/${year}/tag/${encodeURIComponent(tagName)}`
+  )
+  return results ?? []
 }
