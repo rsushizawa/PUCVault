@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import NavBar from "@/components/navbar";
 import { getMe, updateMe } from "@/lib/api/auth";
+import { uploadProfileImage } from "@/lib/api/images";
 import { Camera, User } from "lucide-react";
 
 export default function ConfigPage() {
@@ -14,9 +15,9 @@ export default function ConfigPage() {
 
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [originalAvatar, setOriginalAvatar] = useState("");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -40,11 +41,10 @@ export default function ConfigPage() {
     }
     getMe()
       .then((user) => {
-        setName(user.name ?? "");
-        setUsername(user.username ?? "");
-        setEmail(user.email ?? "");
-        setAvatarUrl(user.avatarUrl ?? "");
-        setOriginalAvatar(user.avatarUrl ?? "");
+        setName(user.nome ?? "");
+        setUsername(user.nome_usuario ?? "");
+        setAvatarUrl(user.img_perfil ?? "");
+        setOriginalAvatar(user.img_perfil ?? "");
       })
       .catch(() => {
         // Endpoint not yet available — show empty form, let user fill in
@@ -57,14 +57,18 @@ export default function ConfigPage() {
     setProfileSaving(true);
     setProfileMsg(null);
     try {
+      if (avatarFile) {
+        await uploadProfileImage("perfil", avatarFile);
+        const updated = await getMe();
+        setAvatarUrl(updated.img_perfil ?? "");
+        setOriginalAvatar(updated.img_perfil ?? "");
+        setAvatarFile(null);
+      }
       await updateMe({
         name: name || undefined,
         username: username || undefined,
-        email: email || undefined,
-        ...(avatarUrl !== originalAvatar ? { avatarUrl } : {}),
       });
       setProfileMsg({ ok: true, text: "Perfil atualizado com sucesso." });
-      setOriginalAvatar(avatarUrl);
     } catch {
       setProfileMsg({ ok: false, text: "Erro ao salvar. Tente novamente." });
     } finally {
@@ -150,7 +154,10 @@ export default function ConfigPage() {
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
-                  if (file) setAvatarUrl(URL.createObjectURL(file));
+                  if (file) {
+                    setAvatarFile(file);
+                    setAvatarUrl(URL.createObjectURL(file));
+                  }
                 }}
               />
             </div>
@@ -179,14 +186,6 @@ export default function ConfigPage() {
                 placeholder="seu_usuario"
               />
             </div>
-            <Field
-              label="E-mail"
-              type="email"
-              value={email}
-              onChange={setEmail}
-              placeholder="email@puccampinas.edu.br"
-            />
-
             {profileMsg && (
               <p
                 className={`text-sm ${profileMsg.ok ? "text-green-400" : "text-red-400"}`}
