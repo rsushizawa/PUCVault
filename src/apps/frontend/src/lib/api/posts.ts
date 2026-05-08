@@ -1,4 +1,4 @@
-import { apiFetch } from "./client"
+import { apiFetch, apiFormData } from "./client"
 import type { Post, Comment } from "@/types/api"
 
 const PAGE_SIZE = 20
@@ -62,12 +62,18 @@ export function getPost(id: string): Promise<Post> {
 
 export function createPost(
   forumId: string,
-  data: { title: string; content: string; tags: number[]; filename?: string },
-): Promise<Post> {
-  return apiFetch(`/posts/${forumId}/create`, {
-    method: "POST",
-    body: JSON.stringify({ ...data, filename: data.filename ?? null }),
-  })
+  data: { title: string; content: string; tags: number[]; files?: File[] },
+): Promise<{ message: string; file_id?: string }> {
+  const form = new FormData()
+  form.append("title", data.title)
+  form.append("content", data.content)
+  for (const tagId of data.tags) {
+    form.append("tags", String(tagId))
+  }
+  for (const file of data.files ?? []) {
+    form.append("file", file)
+  }
+  return apiFormData(`/posts/${forumId}/create`, form, "POST")
 }
 
 export function votePost(id: string, value: 1 | -1): Promise<void> {

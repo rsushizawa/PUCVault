@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Bold,
   Italic,
@@ -53,6 +53,7 @@ export default function MarkdownEditor({
   minHeight = "180px",
 }: MarkdownEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [mobileTab, setMobileTab] = useState<"write" | "preview">("write");
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -87,6 +88,32 @@ export default function MarkdownEditor({
 
   return (
     <div className="bg-surface-input rounded-xl overflow-hidden border border-surface-overlay focus-within:border-accent/30 transition-colors duration-200">
+      {/* Mobile tab switcher */}
+      <div className="flex sm:hidden border-b border-surface-overlay">
+        <button
+          type="button"
+          onClick={() => setMobileTab("write")}
+          className={`flex-1 py-2 text-xs font-semibold transition-colors ${
+            mobileTab === "write"
+              ? "text-accent border-b-2 border-accent"
+              : "text-text-muted hover:text-text-secondary"
+          }`}
+        >
+          Escrever
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab("preview")}
+          className={`flex-1 py-2 text-xs font-semibold transition-colors ${
+            mobileTab === "preview"
+              ? "text-accent border-b-2 border-accent"
+              : "text-text-muted hover:text-text-secondary"
+          }`}
+        >
+          Visualizar
+        </button>
+      </div>
+
       {/* Toolbar */}
       <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-surface-overlay bg-surface-raised flex-wrap">
         <ToolbarBtn label="Negrito" onClick={() => applyInlineFormat("**", "**", "texto")}>
@@ -120,11 +147,11 @@ export default function MarkdownEditor({
         </ToolbarBtn>
       </div>
 
-      {/* Side-by-side panes */}
-      <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-surface-overlay">
+      {/* Side-by-side panes (desktop) / single tab pane (mobile) */}
+      <div className="flex sm:flex-row sm:divide-x divide-surface-overlay">
         {/* Editor pane */}
-        <div className="flex-1 flex flex-col min-w-0">
-          <span className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-widest text-text-muted select-none">
+        <div className={`flex-1 flex flex-col min-w-0 ${mobileTab === "preview" ? "hidden sm:flex" : "flex"}`}>
+          <span className="hidden sm:block px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-widest text-text-muted select-none">
             Escrever
           </span>
           <textarea
@@ -133,16 +160,16 @@ export default function MarkdownEditor({
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
             style={{ minHeight }}
-            className="w-full px-3 pb-3 text-sm text-text-secondary placeholder:text-text-muted outline-none resize-none bg-transparent"
+            className="w-full px-3 py-3 text-sm text-text-secondary placeholder:text-text-muted outline-none resize-none bg-transparent"
           />
         </div>
 
         {/* Preview pane */}
-        <div className="flex-1 flex flex-col min-w-0">
-          <span className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-widest text-text-muted select-none">
+        <div className={`flex-1 flex flex-col min-w-0 sm:border-l border-surface-overlay ${mobileTab === "write" ? "hidden sm:flex" : "flex"}`}>
+          <span className="hidden sm:block px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-widest text-text-muted select-none">
             Visualizar
           </span>
-          <div className="flex-1 px-3 pb-3 overflow-auto" style={{ minHeight }}>
+          <div className="flex-1 px-3 pb-3 pt-3 sm:pt-0 overflow-auto" style={{ minHeight }}>
             {value.trim() ? (
               <MarkdownBody>{value}</MarkdownBody>
             ) : (
