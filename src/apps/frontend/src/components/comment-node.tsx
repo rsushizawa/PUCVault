@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronUp, ChevronDown, MessageSquare } from "lucide-react";
+import { ChevronUp, ChevronDown, MessageSquare, Flag } from "lucide-react";
 import MarkdownBody from "@/components/markdown-body";
 import MarkdownEditor from "@/components/markdown-editor";
+import DenunciaModal from "@/components/denuncia-modal";
+import UserHoverCard from "@/components/user-hover-card";
 import type { Comment } from "@/types/api";
 
 const INDENT_COLOR = "#6c8ebf";
@@ -38,6 +40,7 @@ export default function CommentNode({
   const [replying, setReplying] = useState(false);
   const [replyContent, setReplyContent] = useState("");
   const [vote, setVote] = useState<1 | -1 | null>(null);
+  const [reportTarget, setReportTarget] = useState<{ type: "usuario" | "conteudo"; id: number; label: string } | null>(null);
 
   const color = INDENT_COLOR;
   const maxDepth = 4;
@@ -59,6 +62,15 @@ export default function CommentNode({
   const descendantCount = countDescendants(comment);
 
   return (
+    <>
+      {reportTarget && (
+        <DenunciaModal
+          type={reportTarget.type}
+          targetId={reportTarget.id}
+          targetLabel={reportTarget.label}
+          onClose={() => setReportTarget(null)}
+        />
+      )}
     <div className={`flex gap-2 ${depth === 0 ? "mt-4" : "mt-2"}`}>
       {depth > 0 && (
         <button
@@ -81,9 +93,11 @@ export default function CommentNode({
               {collapsed ? "[+]" : "[–]"}
             </button>
           )}
-          <span className="font-semibold text-text-secondary">
-            u/{comment.author.username}
-          </span>
+          <UserHoverCard username={comment.author.username} userId={comment.author.id}>
+            <span className="font-semibold text-text-secondary hover:text-accent transition-colors cursor-pointer">
+              u/{comment.author.username}
+            </span>
+          </UserHoverCard>
           <span className="text-text-muted">{formatDate(comment.createdAt)}</span>
           {collapsed && descendantCount > 0 && (
             <span className="text-text-muted italic">
@@ -136,6 +150,23 @@ export default function CommentNode({
                   Reply
                 </button>
               )}
+              <button
+                type="button"
+                onClick={() => setReportTarget({ type: "conteudo", id: Number(comment.id), label: `comentário de u/${comment.author.username}` })}
+                className="flex items-center gap-1 text-xs text-text-muted hover:text-red-400 transition-colors ml-1 cursor-pointer"
+                title="Denunciar comentário"
+              >
+                <Flag size={11} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setReportTarget({ type: "usuario", id: Number(comment.author.id), label: `u/${comment.author.username}` })}
+                className="flex items-center gap-1 text-xs text-text-muted hover:text-red-400 transition-colors cursor-pointer"
+                title="Denunciar usuário"
+              >
+                <Flag size={11} />
+                <span className="text-[10px]">u/</span>
+              </button>
             </div>
 
             {/* Inline reply composer */}
@@ -183,5 +214,6 @@ export default function CommentNode({
         )}
       </div>
     </div>
+    </>
   );
 }
