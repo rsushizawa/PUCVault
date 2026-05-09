@@ -62,7 +62,7 @@ export function getPost(id: string): Promise<Post> {
 
 export function createPost(
   forumId: string,
-  data: { title: string; content: string; tags: number[]; files?: File[] },
+  data: { title: string; content: string; tags: number[]; file?: File },
 ): Promise<{ message: string; file_id?: string }> {
   const form = new FormData()
   form.append("title", data.title)
@@ -70,9 +70,7 @@ export function createPost(
   for (const tagId of data.tags) {
     form.append("tags", String(tagId))
   }
-  for (const file of data.files ?? []) {
-    form.append("file", file)
-  }
+  if (data.file) form.append("file", data.file)
   return apiFormData(`/posts/${forumId}/create`, form, "POST")
 }
 

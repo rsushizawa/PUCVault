@@ -11,7 +11,7 @@ import type { Tag } from "@/types/tag";
 interface CreatePostProps {
   forumId?: string;
   mode?: "post" | "comment";
-  onPost?: (data: { title: string; content: string; tags: Tag[]; files?: File[] }) => void;
+  onPost?: (data: { title: string; content: string; tags: Tag[]; file?: File }) => void;
   onComment?: (content: string) => void;
 }
 
@@ -26,7 +26,7 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
   const [fetchedTags, setFetchedTags] = useState<Tag[]>([]);
   const [tagMenuLoading, setTagMenuLoading] = useState(false);
 
-  const [files, setFiles] = useState<File[]>([]);
+  const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -71,7 +71,7 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
     const resolvedTags = selectedTags
       .map((name) => fetchedTags.find((t) => t.tag === name))
       .filter((t): t is Tag => t !== undefined);
-    onPost?.({ title: title.trim(), content, tags: resolvedTags, files });
+    onPost?.({ title: title.trim(), content, tags: resolvedTags, file: file ?? undefined });
     reset();
   }
 
@@ -86,7 +86,7 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
     setTagMenuOpen(false);
     setTagSearch("");
     setFetchedTags([]);
-    setFiles([]);
+    setFile(null);
     if (mode !== "comment") setIsExpanded(false);
   }
 
@@ -97,8 +97,8 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const picked = Array.from(e.target.files ?? []);
-    if (picked.length > 0) setFiles((prev) => [...prev, ...picked]);
+    const picked = e.target.files?.[0] ?? null;
+    if (picked) setFile(picked);
     e.target.value = "";
   }
 
@@ -225,34 +225,34 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
                 <input
                   ref={fileInputRef}
                   type="file"
-                  multiple
                   className="hidden"
                   onChange={handleFileChange}
                 />
-                <div className="flex flex-wrap gap-1.5 items-center">
-                  {files.map((f, i) => (
-                    <div key={i} className="flex items-center gap-1.5 bg-accent/10 border border-accent/20 text-accent text-xs font-medium px-2.5 py-1 rounded-full max-w-[160px]">
+                <div className="flex gap-1.5 items-center">
+                  {file ? (
+                    <div className="flex items-center gap-1.5 bg-accent/10 border border-accent/20 text-accent text-xs font-medium px-2.5 py-1 rounded-full max-w-[160px]">
                       <Paperclip size={11} className="shrink-0" />
-                      <span className="truncate">{f.name}</span>
+                      <span className="truncate">{file.name}</span>
                       <button
                         type="button"
-                        onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
+                        onClick={() => setFile(null)}
                         className="shrink-0 hover:opacity-60 transition-opacity cursor-pointer"
                         aria-label="Remover arquivo"
                       >
                         <X size={11} />
                       </button>
                     </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
-                    aria-label="Anexar arquivo"
-                  >
-                    <Paperclip size={13} />
-                    <span>{files.length > 0 ? "Mais" : "Anexar"}</span>
-                  </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
+                      aria-label="Anexar arquivo"
+                    >
+                      <Paperclip size={13} />
+                      <span>Anexar</span>
+                    </button>
+                  )}
                 </div>
               </>
             )}
