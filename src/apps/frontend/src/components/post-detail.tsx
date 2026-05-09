@@ -8,11 +8,24 @@ import MarkdownBody from "@/components/markdown-body";
 import DenunciaModal from "@/components/denuncia-modal";
 import type { Post } from "@/types/api";
 
-function isImageUrl(url: string) {
-  return /\.(jpg|jpeg|png|gif|webp|svg)(\?|$)/i.test(url);
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+function getFileName(arquivo: string) {
+  const parts = arquivo.trim().split(" ");
+  parts.pop(); // remove cloudinary public_id
+  return parts.join(" ");
 }
-function isPdfUrl(url: string) {
-  return /\.pdf(\?|$)/i.test(url);
+
+function isImage(arquivo: string) {
+  return /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(getFileName(arquivo));
+}
+
+function isPdf(arquivo: string) {
+  return /\.pdf$/i.test(getFileName(arquivo));
+}
+
+function fileUrl(postId: number, download = false) {
+  return `${API_BASE}/posts/${postId}/files${download ? "?download=1" : ""}`;
 }
 
 function formatDate(iso: string): string {
@@ -112,27 +125,27 @@ export default function PostDetail({
         {/* File attachment / preview */}
         {post.arquivo && (
           <div className="flex flex-col gap-2">
-            {isImageUrl(post.arquivo) ? (
+            {isImage(post.arquivo) ? (
               <img
-                src={post.arquivo}
+                src={fileUrl(post.id)}
                 alt="Anexo"
                 className="max-w-full max-h-[400px] rounded-lg object-contain border border-surface-overlay"
               />
-            ) : isPdfUrl(post.arquivo) ? (
+            ) : isPdf(post.arquivo) ? (
               <embed
-                src={post.arquivo}
+                src={fileUrl(post.id)}
                 type="application/pdf"
                 className="w-full h-[500px] rounded-lg border border-surface-overlay"
               />
             ) : null}
             <a
-              href={post.arquivo}
+              href={fileUrl(post.id, true)}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 text-accent text-sm hover:underline w-fit"
             >
               <FileText size={15} aria-hidden />
-              {isImageUrl(post.arquivo) ? "Ver imagem original" : isPdfUrl(post.arquivo) ? "Abrir PDF" : "Download anexo"}
+              {isPdf(post.arquivo) ? "Abrir PDF" : "Download"}
             </a>
           </div>
         )}
