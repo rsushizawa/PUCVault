@@ -25,7 +25,7 @@ export default function UserHoverCard({ username, userId, children }: UserHoverC
       setOpen(true);
       if (!info && username) {
         getUserByUsername(username)
-          .then((r) => setInfo(r.info))
+          .then((r) => setInfo(r))
           .catch(() => {});
       }
     }, 300);
