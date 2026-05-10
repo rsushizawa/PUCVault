@@ -7,7 +7,7 @@ const { all } = require('../middlewares/uploadMiddleware');
 
 router.post('/:forum_id/create',
   authMiddleware,
-  all.single('file'),
+  all.array('file', 10),
   postController.createPosts
 );
 

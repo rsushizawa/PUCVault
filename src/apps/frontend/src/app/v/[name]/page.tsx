@@ -158,14 +158,14 @@ export default function VaultPage() {
     }
   }
 
-  async function handlePost(data: { title: string; content: string; tags: Tag[]; files?: File[] }) {
+  async function handlePost(data: { title: string; content: string; tags: Tag[]; file?: File }) {
     if (!forum) return;
     try {
       await createPost(String(forum.id), {
         title: data.title,
         content: data.content,
         tags: data.tags.map((t) => t.id),
-        files: data.files,
+        file: data.file,
       });
       const { posts: p, total: t } = await getCommunityPosts(String(forum.id), 1);
       setPosts(p);
