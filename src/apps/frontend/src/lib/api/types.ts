@@ -1,0 +1,71 @@
+export type Forum = {
+  id: number
+  nome: string
+  descricao: string
+  status: "ESPERA" | "ATIVO" | "RECUSADO"
+  criado_em: string
+  excluido_em: string | null
+  status_modificado_em: string | null
+  criador: number
+  validador: number | null
+  identidade_visual: number
+  // Extended fields present only on getSingleForum response
+  seguidores?: string
+  img_perfil?: string | null
+  img_banner?: string | null
+  user_status?: string | number | boolean
+}
+
+export type Post = {
+  id: number
+  titulo: string
+  arquivo: string | null
+  forum: number
+  forum_nome?: string
+  nome?: string       // legacy alias for forum_nome — remove after DB-2
+  conteudo: string
+  status: string
+  criado_em: string
+  criador: number
+  nome_usuario: string
+  cargo: string
+  img_perfil: string | null
+  tags: string[]
+  engajamento: string
+  comentarios: string
+}
+
+export type Comment = {
+  id: string
+  body: string
+  author: { id: string; username: string; avatarUrl?: string }
+  createdAt: string
+  voteCount: number
+  level: number
+  children: Comment[]
+}
+
+// Matches privado.perfil_usuario view + optional fields not yet in the view
+export type User = {
+  id: number
+  nome: string
+  nome_usuario: string
+  descricao?: string | null
+  status: string
+  criado_em: string
+  identidade_visual?: number
+  img_perfil: string | null
+  img_banner?: string | null
+  seguidores?: string
+  segue?: string
+  karma?: string
+  cargo?: string
+}
+
+export type Tag = {
+  id: number
+  tag: string
+  status: string
+  total_usos: string
+  relevancia: number
+}

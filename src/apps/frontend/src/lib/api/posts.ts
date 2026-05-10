@@ -1,5 +1,5 @@
 import { apiFetch, apiFormData } from "./client"
-import type { Post, Comment } from "@/types/api"
+import type { Post, Comment } from "./types"
 
 const PAGE_SIZE = 20
 
