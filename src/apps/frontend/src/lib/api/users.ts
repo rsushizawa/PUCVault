@@ -1,19 +1,14 @@
 import { apiFetch } from "./client"
 import { Cargo, CARGO_TO_ROLE_NUM } from "@/types/cargo"
+import type { User } from "./types"
 
-export type UserInfo = {
-  id: string
-  username: string
-  nome: string
-  cargo: string
-  img_perfil: string | null
-}
+export type UserInfo = User
 
-export function getUserInfo(userId: string): Promise<{ info: UserInfo }> {
+export function getUserInfo(userId: string): Promise<{ info: User }> {
   return apiFetch(`/user/${userId}`)
 }
 
-export function getUserByUsername(username: string): Promise<{ info: UserInfo }> {
+export function getUserByUsername(username: string): Promise<{ info: User }> {
   return apiFetch(`/user/by-username/${encodeURIComponent(username)}`)
 }
 

@@ -1,26 +1,11 @@
 import { apiFetch } from "./client"
-import type { Post } from "@/types/api"
+import type { Post, Forum } from "./types"
+
+export type { Forum } from "./types"
+export type ForumSummary = Forum
 
 export type FileTag   = { id: number; name: string; count: number }
 export type FileEntry = { post_id: number; title: string; file_url: string; uploaded_at: string }
-
-export type ForumSummary = {
-  id: number
-  nome: string
-  descricao: string
-  status: string
-  criado_em: string
-  excluido_em: string | null
-  status_modificado_em: string | null
-  criador: number
-  validador: number | null
-  identidade_visual: number
-  seguidores?: string
-  nome_usuario?: string
-  img_perfil?: string | null
-  img_banner?: string | null
-  user_status?: string
-}
 
 export type ForumFollower = { id: number; username: string; nome: string }
 

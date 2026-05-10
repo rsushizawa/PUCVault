@@ -1,5 +1,5 @@
 import { apiFetch } from "./client";
-import type { Tag } from "@/types/tag";
+import type { Tag } from "./types";
 
 export function getForumTags(forumId: string): Promise<Tag[]> {
   return apiFetch(`/tags/forum/${forumId}`);
