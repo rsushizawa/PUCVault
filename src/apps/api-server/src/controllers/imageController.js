@@ -1,5 +1,6 @@
 const imgService = require('../services/imageServices');
 const userService = require('../services/userServices');
+const { ok, fail } = require('../helpers/response');
 const path = require('path');
 const envPath = path.resolve(__dirname, '../../src/.env');
 require('dotenv').config({ path: envPath });
@@ -20,16 +21,13 @@ exports.uploadImage = async (req, res) => {
     const result = await userService.getUserInfo(user_id);
     const usr = result.rows && result.rows[0];
 
-
-
-
     const validLocations = ['banner', 'perfil'];
     if (!validLocations.includes(location)) {
-      return res.status(400).json({ message: 'localizacao inválida' });
+      return fail(res, 400, 'localizacao inválida');
     }
 
     if (!imageFile) {
-      return res.status(400).json({ message: 'arquivo ausente' });
+      return fail(res, 400, 'arquivo ausente');
     }
 
     const currentImageId = location === 'perfil' ? usr.img_perfil : usr.img_banner;
@@ -50,17 +48,15 @@ exports.uploadImage = async (req, res) => {
 
     const newImageId = await imgService.uploadImage(visualidentity_id, location, imageFile);
 
-    res.status(200).json({
-      message: 'success',
-      imageId: newImageId
-    });
+    return ok(res, { imageId: newImageId });
 
   } catch (error) {
     console.error('--- CONTROLLER ERROR ---');
     console.error(error);
-    return res.status(500).json({ message: 'erro interno ao processar imagem' });
+    return fail(res, 500, 'erro interno ao processar imagem');
   }
 };
+
 exports.getImageUrl = async (req, res) => {
   try {
     const { user_id } = req.params;
@@ -68,10 +64,10 @@ exports.getImageUrl = async (req, res) => {
     const user = result.rows && result.rows[0];
 
     if (!user || !user.img_perfil) {
-      return res.status(404).json({ message: 'image not found' });
+      return fail(res, 404, 'image not found');
     }
 
-    const url_profile = cloudinary.url(user.img_perfil, {
+    const img_perfil = cloudinary.url(user.img_perfil, {
       width: 500,
       height: 500,
       crop: "fill",
@@ -79,7 +75,7 @@ exports.getImageUrl = async (req, res) => {
       secure: true
     });
 
-    const url_banner = cloudinary.url(user.img_banner, {
+    const img_banner = cloudinary.url(user.img_banner, {
       width: 1500,
       height: 500,
       crop: "fill",
@@ -87,9 +83,8 @@ exports.getImageUrl = async (req, res) => {
       secure: true
     });
 
-
-    res.status(200).json({ img_perfil: url_profile, img_banner: url_banner });
+    return ok(res, { img_perfil, img_banner });
   } catch (error) {
-    return res.status(500).json({ message: 'erro interno ao processar imagem' });
+    return fail(res, 500, 'erro interno ao processar imagem');
   }
 };

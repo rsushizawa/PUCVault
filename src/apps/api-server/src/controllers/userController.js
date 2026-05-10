@@ -1,5 +1,6 @@
 const userService = require('../services/userServices');
 const roleMiddleware = require('../middlewares/roleMiddleware');
+const { ok, fail } = require('../helpers/response');
 const { z } = require('zod');
 const jwt = require('jsonwebtoken');
 
@@ -8,9 +9,7 @@ const jwt = require('jsonwebtoken');
 
 
 
-//reportUser(type, reportee_id, reported_id) 
-
-
+//reportUser(type, reportee_id, reported_id)
 
 exports.changeRole = async (req, res) => {
 
@@ -25,11 +24,9 @@ exports.changeRole = async (req, res) => {
 
   try {
     await userService.changeUserRole(executor_id, user_id, newRole);
-
-    res.status(200).json({ message: "success" })
+    return ok(res, null);
   } catch (error) {
-    res.status(500).json({ message: "server error" });
-
+    return fail(res, 500, "server error");
   }
 };
 
@@ -40,11 +37,9 @@ exports.follow = async (req, res) => {
 
   try {
     await userService.toggleFollowUser(user_id, target_id);
-
-    res.status(200).json({ message: "success" })
+    return ok(res, null);
   } catch (error) {
-
-    res.status(500).json({ message: "server error" });
+    return fail(res, 500, "server error");
   }
 };
 
@@ -57,9 +52,9 @@ exports.me = async (req, res) => {
     delete userInfo.rows[0].senha_hash;
     const info = userInfo.rows[0];
     console.log(info);
-    res.status(200).json({ info });
+    return ok(res, info);
   } catch (error) {
-    res.status(500).json({ message: "server error", error });
+    return fail(res, 500, "server error");
   }
 };
 
@@ -70,9 +65,9 @@ exports.userInfo = async (req, res) => {
     delete userInfo.rows[0].senha_hash;
     const info = userInfo.rows[0];
     console.log(info);
-    res.status(200).json({ info });
+    return ok(res, info);
   } catch (error) {
-    res.status(500).json({ message: "server error", error });
+    return fail(res, 500, "server error");
   }
 };
 
@@ -87,9 +82,8 @@ exports.changeDescription = async (req, res) => {
   try {
     const { description } = validation.data;
     await userService.changeDescription(user_id, description);
-    res.status(200).json({ description });
+    return ok(res, { description });
   } catch (error) {
-    res.status(500).json({ message: 'server error', error });
-
+    return fail(res, 500, "server error");
   }
 };
