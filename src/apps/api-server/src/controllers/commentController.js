@@ -1,4 +1,5 @@
 const commentService = require('../services/commentServices');
+const { ok, fail } = require('../helpers/response');
 const { z } = require('zod');
 
 const commentSchema = z.object({
@@ -9,7 +10,7 @@ const commentSchema = z.object({
 exports.createComment = async (req, res) => {
   const validation = commentSchema.safeParse(req.body);
   if (!validation.success) {
-    return res.status(400).json({ error: "invalid data", detail: validation.error.format() });
+    return fail(res, 400, validation.error.format());
   }
   const { content, parentId } = validation.data;
   const user_id = req.user.id;
@@ -17,10 +18,10 @@ exports.createComment = async (req, res) => {
 
   try {
     await commentService.createComment(content, user_id, father_id);
-    res.status(200).json({ message: "success" });
+    return ok(res, null);
 
   } catch (error) {
-    res.status(500).json({ error: "internal server error" });
+    return fail(res, 500, "internal server error");
   }
 
 };
@@ -31,10 +32,9 @@ exports.listComments = async (req, res) => {
     const commentResults = await commentService.listComments(post_id);
     const rows = commentResults.rows;
     console.table(rows);
-
-    res.status(200).json({ rows });
+    return ok(res, rows);
 
   } catch (error) {
-    res.status(500).json({ error: "internal server error" });
+    return fail(res, 500, "internal server error");
   }
 };

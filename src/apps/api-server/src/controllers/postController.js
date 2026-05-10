@@ -1,5 +1,6 @@
 const postService = require("../services/postServices");
 const tagService = require("../services/tagServices");
+const { ok, paginated, fail } = require("../helpers/response");
 const { z } = require("zod");
 const { uploadToCloudinary } = require("../utils/cloudinaryUtil");
 
@@ -17,12 +18,11 @@ exports.getPosts = async (req, res) => {
   try {
     const rows = await postService.getPost(forum_id, page_num);
     const total = rows.length;
-
-    res.status(200).json({ rows, total });
     console.table(rows);
+    return paginated(res, rows, total);
   } catch (error) {
     console.error("Error in getPosts:", error);
-    res.status(500).json({ error: "internal server error" });
+    return fail(res, 500, "internal server error");
   }
 };
 
@@ -31,11 +31,10 @@ exports.getSinglePost = async (req, res) => {
 
   try {
     const result = await postService.getSinglePost(post_id);
-
-    res.status(200).json(result[0]);
+    return ok(res, result[0]);
   } catch (error) {
-    console.error("Error in getPosts:", error);
-    res.status(500).json({ error: "internal server error" });
+    console.error("Error in getSinglePost:", error);
+    return fail(res, 500, "internal server error");
   }
 };
 
@@ -58,7 +57,7 @@ exports.getFileFromPost = async (req, res) => {
     const post = await postService.getSinglePost(post_id);
 
     if (!post[0] || !post[0].arquivo) {
-      return res.status(404).json({ message: "file not found" });
+      return fail(res, 404, "file not found");
     }
 
     const partes = post[0].arquivo.trim().split(" ");
@@ -91,9 +90,7 @@ exports.getFileFromPost = async (req, res) => {
     return res.status(200).send(Buffer.from(arrayBuffer));
   } catch (error) {
     console.error("Erro no download:", error);
-    return res
-      .status(500)
-      .json({ message: "erro interno", error: error.message });
+    return fail(res, 500, error.message);
   }
 };
 
@@ -109,10 +106,7 @@ exports.createPosts = async (req, res) => {
         concat_file_name = file.originalname + " " + file_id;
       } catch (cloudinaryErr) {
         console.error("cloudinary error:", cloudinaryErr);
-        return res.status(500).json({
-          error: "Falha no upload do arquivo",
-          detail: cloudinaryErr.message,
-        });
+        return fail(res, 500, cloudinaryErr.message);
       }
     }
 
@@ -134,11 +128,11 @@ exports.createPosts = async (req, res) => {
     );
     console.log("conexão sucedida createPost");
 
-    return res.status(200).json({ message: "success", file_id });
+    return ok(res, { file_id });
   } catch (error) {
     console.error("ERRO CRÍTICO NO createPosts:", error);
     if (!res.headersSent) {
-      return res.status(500).json({ error: "internal server error" });
+      return fail(res, 500, "internal server error");
     }
   }
 };
@@ -152,8 +146,8 @@ exports.userPosts = async (req, res) => {
 
     console.table(result);
 
-    return res.status(200).json({ message: "success", result });
+    return ok(res, result);
   } catch (error) {
-    return res.status(500).json({ error: "internal server error" });
+    return fail(res, 500, "internal server error");
   }
 };

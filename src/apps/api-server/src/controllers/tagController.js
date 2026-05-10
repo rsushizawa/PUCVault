@@ -1,4 +1,5 @@
 const tagService = require('../services/tagServices');
+const { ok, fail } = require('../helpers/response');
 const { z } = require('zod');
 
 const tagSchema = z.object({
@@ -12,23 +13,22 @@ exports.printUserTags = async (req, res) => {
     const tagsResult = await tagService.getUserTags(user_id);
     const rows = tagsResult.rows;
     console.table(rows);
-
-    res.status(200).json({ rows });
+    return ok(res, rows);
 
   } catch (error) {
     console.log('internal server error: ', error.message);
+    return fail(res, 500, "internal server error");
   }
 };
 
 exports.printAllTags = async (req, res) => {
   try {
     const tags = await tagService.listTags();
-    res.json([tags.rows]);
     console.table(tags.rows);
-
-    res.status(200).json({ message: "success" });
+    return ok(res, tags.rows);
   } catch (error) {
     console.log('internal server error: ', error.message);
+    return fail(res, 500, "internal server error");
   }
 };
 
@@ -40,10 +40,10 @@ exports.searchTags = async (req, res) => {
     const tagsResult = await tagService.findTags(searchTerm);
     const rows = tagsResult.rows;
     console.table(rows);
-
-    res.status(200).json({ rows });
+    return ok(res, rows);
   } catch (error) {
     console.log('internal server error: ', error.message);
+    return fail(res, 500, "internal server error");
   }
 };
 
@@ -52,13 +52,13 @@ exports.createTags = async (req, res) => {
     const user_id = req.user.id;
     const validation = tagSchema.safeParse(req.body);
     if (!validation.success) {
-      return res.status(400).json({ error: validation.error });
+      return fail(res, 400, validation.error.message);
     }
     const { name } = validation.data;
     await tagService.createTag(name, user_id);
-    return res.status(200).json({ message: "success" });
+    return ok(res, null);
   } catch (error) {
-    return res.status(500).json({ message: "internal server error" });
+    return fail(res, 500, "internal server error");
   }
 };
 
@@ -70,15 +70,13 @@ exports.validateTags = async (req, res) => {
   if (tagState === 1) status = 'ATIVO';
   else if (tagState === 0) status = 'RECUSADO';
   else {
-    return res.status(400).json({ error: 'invalid input' });
+    return fail(res, 400, 'invalid input');
   }
   try {
     await tagService.validateTag(tag_id, user_id, status);
-    res.status(200).json({ message: "success" });
+    return ok(res, null);
   } catch (error) {
-    res.status(500).json({ message: "server error" });
     console.error(error);
-
+    return fail(res, 500, "server error");
   }
 };
-
