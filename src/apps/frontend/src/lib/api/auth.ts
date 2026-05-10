@@ -4,8 +4,7 @@ import type { User } from "./types"
 export type UserProfile = User
 
 export async function getMe(): Promise<User> {
-  const { info } = await apiFetch<{ info: User }>("/user/me")
-  return info
+  return apiFetch<User>("/user/me")
 }
 
 export function updateMe(data: {
@@ -19,7 +18,7 @@ export function updateMe(data: {
 }
 
 export async function login(email: string, password: string): Promise<void> {
-  const { token } = await apiFetch<{ token: string }>("/auth/login", {
+  const { token } = await apiFetch<{ user: unknown; token: string }>("/auth/login", {
     method: "POST",
     body: JSON.stringify({ userEmail: email, password }),
   })

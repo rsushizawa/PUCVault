@@ -13,9 +13,8 @@ export function getForumByName(name: string): Promise<ForumSummary> {
   return apiFetch(`/forums/by-name/${encodeURIComponent(name)}`)
 }
 
-export async function getForums(): Promise<ForumSummary[]> {
-  const { rows } = await apiFetch<{ rows: ForumSummary[] }>("/forums/print/forums")
-  return rows
+export function getForums(): Promise<ForumSummary[]> {
+  return apiFetch<ForumSummary[]>("/forums/print/forums")
 }
 
 export function getFollowedForums(): Promise<ForumSummary[]> {
@@ -99,7 +98,7 @@ export async function getCommunityPosts(
   id: string,
   page = 1,
 ): Promise<{ posts: Post[]; total: number }> {
-  const { rows } = await apiFetch<{ rows: RawPostRow[] }>(`/posts/${id}/page/${page}`)
+  const rows = await apiFetch<RawPostRow[]>(`/posts/${id}/page/${page}`)
   const posts = rows.map(mapPostRow)
   const total =
     rows.length === PAGE_SIZE
@@ -109,18 +108,13 @@ export async function getCommunityPosts(
 }
 
 export async function getFileYears(forumId: string): Promise<number[]> {
-  const { rows } = await apiFetch<{ rows: number[] }>(`/forums/${forumId}/files/year`)
-  return rows ?? []
+  return (await apiFetch<number[]>(`/forums/${forumId}/files/year`)) ?? []
 }
 
 export async function getFileTagsByYear(forumId: string, year: number): Promise<FileTag[]> {
-  const { rows } = await apiFetch<{ rows: FileTag[] }>(`/forums/${forumId}/files/year/${year}`)
-  return rows ?? []
+  return (await apiFetch<FileTag[]>(`/forums/${forumId}/files/year/${year}`)) ?? []
 }
 
 export async function getFilesByYearAndTag(forumId: string, year: number, tagName: string): Promise<FileEntry[]> {
-  const { results } = await apiFetch<{ results: FileEntry[] }>(
-    `/forums/${forumId}/files/year/${year}/tag/${encodeURIComponent(tagName)}`
-  )
-  return results ?? []
+  return (await apiFetch<FileEntry[]>(`/forums/${forumId}/files/year/${year}/tag/${encodeURIComponent(tagName)}`)) ?? []
 }

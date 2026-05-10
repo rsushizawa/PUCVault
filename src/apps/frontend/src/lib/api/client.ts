@@ -16,7 +16,23 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     },
   })
   if (!res.ok) throw new Error(`API ${res.status}: ${path}`)
-  return res.json() as Promise<T>
+  const json = await res.json()
+  return json.data as T
+}
+
+export async function apiFetchPaginated<T>(path: string, init?: RequestInit): Promise<{ data: T[]; total: number }> {
+  const token = getToken()
+  const res = await fetch(`${BASE_URL}${path}`, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...init?.headers,
+    },
+  })
+  if (!res.ok) throw new Error(`API ${res.status}: ${path}`)
+  const json = await res.json()
+  return { data: json.data as T[], total: json.total as number }
 }
 
 export function setToken(token: string) {
@@ -35,5 +51,6 @@ export async function apiFormData<T>(path: string, form: FormData, method = "PAT
     body: form,
   })
   if (!res.ok) throw new Error(`API ${res.status}: ${path}`)
-  return res.json() as Promise<T>
+  const json = await res.json()
+  return json.data as T
 }

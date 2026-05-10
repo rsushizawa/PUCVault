@@ -30,7 +30,7 @@ type RawFeedRow = {
 }
 
 export async function getFeed(page = 1): Promise<{ posts: Post[]; total: number }> {
-  const { rows } = await apiFetch<{ rows: RawFeedRow[] }>(`/feed/page/${page}`)
+  const rows = await apiFetch<RawFeedRow[]>(`/feed/page/${page}`)
   const posts: Post[] = rows.map((row) => ({
     id: row.id,
     titulo: row.titulo,
@@ -120,8 +120,8 @@ function buildCommentTree(rows: RawCommentRow[], postId: string): Comment[] {
 }
 
 export async function getComments(postId: string): Promise<Comment[]> {
-  const data = await apiFetch<{ rows: RawCommentRow[] }>(`/posts/${postId}/comments`)
-  return buildCommentTree(data.rows, postId)
+  const rows = await apiFetch<RawCommentRow[]>(`/posts/${postId}/comments`)
+  return buildCommentTree(rows, postId)
 }
 
 export function createComment(
