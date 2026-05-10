@@ -4,12 +4,12 @@ import type { User } from "./types"
 
 export type UserInfo = User
 
-export function getUserInfo(userId: string): Promise<{ info: User }> {
-  return apiFetch(`/user/${userId}`)
+export function getUserInfo(userId: string): Promise<User> {
+  return apiFetch<User>(`/user/${userId}`)
 }
 
-export function getUserByUsername(username: string): Promise<{ info: User }> {
-  return apiFetch(`/user/by-username/${encodeURIComponent(username)}`)
+export function getUserByUsername(username: string): Promise<User> {
+  return apiFetch<User>(`/user/by-username/${encodeURIComponent(username)}`)
 }
 
 export function changeRole(userId: string, cargo: Cargo): Promise<void> {
