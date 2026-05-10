@@ -1,5 +1,6 @@
 import { apiFetch } from "./client"
 import type { Post, Forum } from "./types"
+import { PAGE_SIZE, mapPostRow, calcTotal, type RawPostRow } from "./utils"
 
 export type { Forum } from "./types"
 export type ForumSummary = Forum
@@ -53,58 +54,12 @@ export function followCommunity(id: string): Promise<void> {
   return apiFetch(`/forums/${id}/follow`, { method: "POST" })
 }
 
-const PAGE_SIZE = 20
-
-type RawPostRow = {
-  id: number
-  titulo: string
-  conteudo: string
-  nome_usuario: string
-  img_perfil: string | null
-  criado_em: string
-  tags: any[]
-  engajamento: number | string
-  comentarios: number | string
-  arquivo: string | null
-  forum?: number
-  criador?: number
-  cargo?: string
-  status?: string
-}
-
-function mapPostRow(row: RawPostRow): Post {
-  return {
-    id: row.id,
-    titulo: row.titulo,
-    arquivo: row.arquivo ?? null,
-    forum: row.forum ?? 0,
-    conteudo: row.conteudo,
-    status: row.status ?? "",
-    criado_em: row.criado_em,
-    criador: row.criador ?? 0,
-    nome_usuario: row.nome_usuario,
-    cargo: row.cargo ?? "",
-    img_perfil: row.img_perfil ?? null,
-    tags: (row.tags ?? [])
-      .filter((t: any) => t != null)
-      .map((t: any) => (typeof t === "string" ? t : (t.tag ?? t.name ?? t.nome ?? "")))
-      .filter((s: string) => s !== ""),
-    engajamento: String(row.engajamento),
-    comentarios: String(row.comentarios),
-  }
-}
-
 export async function getCommunityPosts(
   id: string,
   page = 1,
 ): Promise<{ posts: Post[]; total: number }> {
   const rows = await apiFetch<RawPostRow[]>(`/posts/${id}/page/${page}`)
-  const posts = rows.map(mapPostRow)
-  const total =
-    rows.length === PAGE_SIZE
-      ? page * PAGE_SIZE + 1
-      : (page - 1) * PAGE_SIZE + rows.length
-  return { posts, total }
+  return { posts: rows.map(mapPostRow), total: calcTotal(rows, page) }
 }
 
 export async function getFileYears(forumId: string): Promise<number[]> {

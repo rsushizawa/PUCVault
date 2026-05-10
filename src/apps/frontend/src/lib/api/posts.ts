@@ -1,59 +1,10 @@
 import { apiFetch, apiFormData } from "./client"
 import type { Post, Comment } from "./types"
-
-const PAGE_SIZE = 20
-
-function normalizeTags(raw: unknown[]): string[] {
-  return raw
-    .filter((t) => t != null)
-    .map((t: any) => (typeof t === "string" ? t : (t.tag ?? t.name ?? t.nome ?? "")))
-    .filter((s) => s !== "")
-}
-
-type RawFeedRow = {
-  id: number
-  titulo: string
-  conteudo: string
-  nome_usuario: string
-  img_perfil: string | null
-  criado_em: string
-  tags: any[]
-  engajamento: number | string
-  comentarios: number | string
-  arquivo: string | null
-  nome?: string
-  forum_nome?: string
-  forum?: number
-  criador?: number
-  cargo?: string
-  status?: string
-}
+import { mapPostRow, calcTotal, type RawPostRow } from "./utils"
 
 export async function getFeed(page = 1): Promise<{ posts: Post[]; total: number }> {
-  const rows = await apiFetch<RawFeedRow[]>(`/feed/page/${page}`)
-  const posts: Post[] = rows.map((row) => ({
-    id: row.id,
-    titulo: row.titulo,
-    arquivo: row.arquivo ?? null,
-    forum: row.forum ?? 0,
-    conteudo: row.conteudo,
-    status: row.status ?? "",
-    criado_em: row.criado_em,
-    criador: row.criador ?? 0,
-    nome_usuario: row.nome_usuario,
-    cargo: row.cargo ?? "",
-    img_perfil: row.img_perfil ?? null,
-    tags: normalizeTags(row.tags ?? []),
-    engajamento: String(row.engajamento),
-    comentarios: String(row.comentarios),
-    nome: row.nome ?? row.forum_nome,
-    forum_nome: row.forum_nome,
-  }))
-  const total =
-    rows.length === PAGE_SIZE
-      ? page * PAGE_SIZE + 1
-      : (page - 1) * PAGE_SIZE + rows.length
-  return { posts, total }
+  const rows = await apiFetch<RawPostRow[]>(`/feed/page/${page}`)
+  return { posts: rows.map(mapPostRow), total: calcTotal(rows, page) }
 }
 
 export function getPost(id: string): Promise<Post> {
