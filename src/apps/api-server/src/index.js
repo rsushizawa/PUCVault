@@ -13,6 +13,7 @@ const postRoutes = require('./routes/postRoutes.js');
 const denunciaRoutes = require('./routes/denunciaRoutes.js');
 const feedRoutes = require('./routes/feedRoutes.js');
 const imgRoutes = require('./routes/imageRoutes.js');
+const denunciaRoutes = require('./routes/denunciaRoutes.js');
 
 app.use(cors());
 app.use(express.json());
@@ -26,6 +27,8 @@ app.use("/user", userRoutes);
 app.use("/tags", tagRoutes);
 
 app.use("/posts", postRoutes);
+
+app.use('/denuncias', denunciaRoutes);
 
 app.use("/feed", feedRoutes);
 
