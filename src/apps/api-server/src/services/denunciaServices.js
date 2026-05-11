@@ -16,7 +16,9 @@ const pool = new Pool({
   database: databaseAcess,
   user: userAccess,
   password: passAccess,
-  ssl: false
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 function errorMsg(error) {
@@ -123,4 +125,3 @@ module.exports = {
     }
   }
 };
-
