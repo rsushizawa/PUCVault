@@ -5,7 +5,7 @@ import { Plus, Paperclip, X } from "lucide-react";
 import MarkdownEditor from "@/components/markdown-editor";
 import AuthModal from "@/components/auth-modal";
 import { getTagColor } from "@/lib/tag-colors";
-import { getForumTags, searchTags } from "@/lib/api/tags";
+import { getTags, searchTags } from "@/lib/api/tags";
 import type { Tag } from "@/types/tag";
 
 interface CreatePostProps {
@@ -23,32 +23,53 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [tagMenuOpen, setTagMenuOpen] = useState(false);
   const [tagSearch, setTagSearch] = useState("");
-  const [fetchedTags, setFetchedTags] = useState<Tag[]>([]);
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const [searchResults, setSearchResults] = useState<Tag[]>([]);
   const [tagMenuLoading, setTagMenuLoading] = useState(false);
 
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Load initial tag list once when the form expands
   useEffect(() => {
-    if (!tagMenuOpen || !forumId) return;
+    if (!isExpanded || availableTags.length > 0) return;
     let cancelled = false;
     const load = async () => {
       setTagMenuLoading(true);
       try {
-        const result =
-          tagSearch.length >= 2
-            ? await searchTags(tagSearch, forumId)
-            : await getForumTags(forumId);
-        if (!cancelled) setFetchedTags(result);
+        const result = await getTags();
+        if (!cancelled) setAvailableTags(result);
       } catch {
-        if (!cancelled) setFetchedTags([]);
+        // leave empty
       } finally {
         if (!cancelled) setTagMenuLoading(false);
       }
     };
     load();
     return () => { cancelled = true; };
-  }, [tagSearch, tagMenuOpen, forumId]);
+  }, [isExpanded, availableTags.length]);
+
+  // Fetch search results while the user is typing
+  useEffect(() => {
+    if (!tagMenuOpen || tagSearch.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    let cancelled = false;
+    const load = async () => {
+      setTagMenuLoading(true);
+      try {
+        const result = await searchTags(tagSearch);
+        if (!cancelled) setSearchResults(result);
+      } catch {
+        if (!cancelled) setSearchResults([]);
+      } finally {
+        if (!cancelled) setTagMenuLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [tagSearch, tagMenuOpen]);
 
   function handleExpandClick() {
     if (!localStorage.getItem("auth_token")) {
@@ -69,7 +90,7 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
     if (!title.trim()) return;
 
     const resolvedTags = selectedTags
-      .map((name) => fetchedTags.find((t) => t.tag === name))
+      .map((name) => availableTags.find((t) => t.tag === name))
       .filter((t): t is Tag => t !== undefined);
     onPost?.({ title: title.trim(), content, tags: resolvedTags, file: file ?? undefined });
     reset();
@@ -85,15 +106,19 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
     setSelectedTags([]);
     setTagMenuOpen(false);
     setTagSearch("");
-    setFetchedTags([]);
+    setAvailableTags([]);
+    setSearchResults([]);
     setFile(null);
     if (mode !== "comment") setIsExpanded(false);
   }
 
-  function handleTagToggle(tagName: string) {
+  function handleTagToggle(tagName: string, sourceTag?: Tag) {
     setSelectedTags((prev) =>
       prev.includes(tagName) ? prev.filter((t) => t !== tagName) : [...prev, tagName],
     );
+    if (sourceTag && !availableTags.some((t) => t.tag === tagName)) {
+      setAvailableTags((prev) => [...prev, sourceTag]);
+    }
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -143,7 +168,7 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
             <div className="flex flex-col gap-2">
               <span className="text-text-muted text-xs font-medium uppercase tracking-wider">Tags</span>
               <div className="flex gap-2 items-center flex-wrap">
-                {fetchedTags.filter((t) => t.status === "validado").map((t) => {
+                {availableTags.map((t) => {
                   const isSelected = selectedTags.includes(t.tag);
                   return (
                     <button
@@ -193,22 +218,25 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
                       <div className="max-h-40 overflow-y-auto py-1">
                         {tagMenuLoading ? (
                           <p className="text-xs text-text-muted px-3 py-2">Carregando...</p>
-                        ) : fetchedTags.filter((t) => t.status === "validado").length === 0 ? (
-                          <p className="text-xs text-text-muted px-3 py-2">Nenhuma tag encontrada</p>
-                        ) : (
-                          fetchedTags.filter((t) => t.status === "validado").map((tag) => (
-                            <button
-                              key={tag.id}
-                              type="button"
-                              onClick={() => { handleTagToggle(tag.tag); setTagMenuOpen(false); setTagSearch(""); }}
-                              className={`w-full text-left px-3 py-1.5 text-sm hover:bg-surface-overlay transition-colors ${
-                                selectedTags.includes(tag.tag) ? "text-accent font-medium" : "text-text-secondary"
-                              }`}
-                            >
-                              {tag.tag}
-                            </button>
-                          ))
-                        )}
+                        ) : (() => {
+                          const list = tagSearch.length >= 2 ? searchResults : availableTags;
+                          return list.length === 0 ? (
+                            <p className="text-xs text-text-muted px-3 py-2">Nenhuma tag encontrada</p>
+                          ) : (
+                            list.map((tag) => (
+                              <button
+                                key={tag.id}
+                                type="button"
+                                onClick={() => { handleTagToggle(tag.tag, tag); setTagMenuOpen(false); setTagSearch(""); }}
+                                className={`w-full text-left px-3 py-1.5 text-sm hover:bg-surface-overlay transition-colors ${
+                                  selectedTags.includes(tag.tag) ? "text-accent font-medium" : "text-text-secondary"
+                                }`}
+                              >
+                                {tag.tag}
+                              </button>
+                            ))
+                          );
+                        })()}
                       </div>
                     </div>
                   )}
