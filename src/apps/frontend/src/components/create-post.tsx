@@ -11,7 +11,7 @@ import type { Tag } from "@/types/tag";
 interface CreatePostProps {
   forumId?: string;
   mode?: "post" | "comment";
-  onPost?: (data: { title: string; content: string; tags: Tag[]; file?: File }) => void;
+  onPost?: (data: { title: string; content: string; tags: Tag[]; file?: File }) => Promise<void>;
   onComment?: (content: string) => void;
 }
 
@@ -29,6 +29,8 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
 
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Load initial tag list once when the form expands
   useEffect(() => {
@@ -92,8 +94,17 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
     const resolvedTags = selectedTags
       .map((name) => availableTags.find((t) => t.tag === name))
       .filter((t): t is Tag => t !== undefined);
-    onPost?.({ title: title.trim(), content, tags: resolvedTags, file: file ?? undefined });
-    reset();
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      await onPost?.({ title: title.trim(), content, tags: resolvedTags, file: file ?? undefined });
+      reset();
+    } catch {
+      setSubmitError("Erro ao publicar. Tente novamente.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   function handleCancel() {
@@ -109,6 +120,7 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
     setAvailableTags([]);
     setSearchResults([]);
     setFile(null);
+    setSubmitError(null);
     if (mode !== "comment") setIsExpanded(false);
   }
 
@@ -296,12 +308,15 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
             <button
               type="button"
               onClick={handlePost}
-              disabled={mode === "comment" ? !content.trim() : !title.trim()}
+              disabled={isSubmitting || (mode === "comment" ? !content.trim() : !title.trim())}
               className="px-5 py-2 rounded-lg text-sm bg-accent text-surface-base font-semibold hover:opacity-90 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             >
-              {mode === "comment" ? "Comentar" : "Publicar"}
+              {isSubmitting ? "Publicando..." : mode === "comment" ? "Comentar" : "Publicar"}
             </button>
           </div>
+          {submitError && (
+            <p className="text-xs text-red-400 text-right">{submitError}</p>
+          )}
         </div>
       )}
     </>

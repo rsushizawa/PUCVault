@@ -14,13 +14,13 @@ const mockComment: Comment = {
   children: [],
 };
 
-vi.mock("@/lib/api/posts", () => ({
+vi.mock("@/lib/api/comments", () => ({
   getComments: vi.fn().mockResolvedValue([]),
   createComment: vi.fn().mockResolvedValue({}),
   voteComment: vi.fn().mockResolvedValue({}),
 }));
 
-import { getComments, createComment, voteComment } from "@/lib/api/posts";
+import { getComments, createComment, voteComment } from "@/lib/api/comments";
 
 describe("CommentSection", () => {
   beforeEach(() => {
