@@ -6,6 +6,7 @@ import { ChevronUp, ChevronDown, FileText, MessageSquare, Flag } from "lucide-re
 import PostTag from "@/components/post-tag";
 import MarkdownBody from "@/components/markdown-body";
 import DenunciaModal from "@/components/denuncia-modal";
+import UserHoverCard from "@/components/user-hover-card";
 import type { Post } from "@/types/api";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -103,13 +104,15 @@ export default function PostDetail({
             <PostTag key={tag} tag={tag} />
           ))}
           <span className="text-xs text-text-muted">
-            Posted by{" "}
-            <Link
-              href={`/user/${post.nome_usuario}`}
-              className="hover:text-text-secondary"
-            >
-              u/{post.nome_usuario}
-            </Link>{" "}
+            Postado por{" "}
+            <UserHoverCard username={post.nome_usuario} userId={String(post.criador)}>
+              <Link
+                href={`/u/${post.nome_usuario}`}
+                className="hover:text-text-secondary"
+              >
+                u/{post.nome_usuario}
+              </Link>
+            </UserHoverCard>{" "}
             · {formatDate(post.criado_em)}
           </span>
         </div>
