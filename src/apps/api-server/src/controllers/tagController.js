@@ -32,6 +32,16 @@ exports.printAllTags = async (req, res) => {
   }
 };
 
+exports.getTags = async (req, res) => {
+  try {
+    const tagsResult = await tagService.findTags('');
+    return ok(res, tagsResult.rows);
+  } catch (error) {
+    console.log('internal server error: ', error.message);
+    return fail(res, 500, "internal server error");
+  }
+};
+
 
 
 exports.searchTags = async (req, res) => {
