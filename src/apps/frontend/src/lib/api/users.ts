@@ -1,6 +1,7 @@
 import { apiFetch } from "./client"
 import { Cargo, CARGO_TO_ROLE_NUM } from "@/types/cargo"
-import type { User } from "./types"
+import { mapPostRow, type RawPostRow } from "./utils"
+import type { User, Post, Forum } from "./types"
 
 export type UserInfo = User
 
@@ -22,4 +23,21 @@ export function changeRole(userId: string, cargo: Cargo): Promise<void> {
 
 export function followUser(targetId: string): Promise<void> {
   return apiFetch(`/user/${targetId}/follow`, { method: "PATCH" })
+}
+
+export async function getUserPosts(userId: string): Promise<Post[]> {
+  const rows = await apiFetch<RawPostRow[]>(`/posts/user/${userId}`)
+  return rows.map(mapPostRow)
+}
+
+export function getUserFollowedForums(userId: string): Promise<Forum[]> {
+  return apiFetch<Forum[]>(`/user/${userId}/forums`)
+}
+
+export function checkForumFollow(userId: string, forumId: string): Promise<{ follows: boolean }> {
+  return apiFetch<{ follows: boolean }>(`/user/${userId}/forum-follow/${forumId}`)
+}
+
+export function isFollowingUser(targetId: string): Promise<{ follows: boolean }> {
+  return apiFetch<{ follows: boolean }>(`/user/${targetId}/is-following`)
 }
