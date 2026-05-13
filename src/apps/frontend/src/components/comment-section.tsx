@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import CommentNode from "@/components/comment-node";
 import CreatePost from "@/components/create-post";
-import { getComments, createComment, voteComment } from "@/lib/api/posts";
+import { getComments, createComment, voteComment } from "@/lib/api/comments";
 import type { Comment } from "@/types/api";
 
 interface CommentSectionProps {
