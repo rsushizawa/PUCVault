@@ -15,5 +15,35 @@ router.patch('/:target_id/follow',
   userController.follow
 );
 
+router.get('/me',
+  authMiddleware,
+  userController.me
+);
+
+router.get('/by-username/:username',
+  userController.userByUsername
+);
+
+router.get('/:user_id/forums',
+  userController.followedForums
+);
+
+router.get('/:target_id/is-following',
+  authMiddleware,
+  userController.isFollowing
+);
+
+router.get('/:user_id/forum-follow/:forum_id',
+  userController.checkForumFollow
+);
+
+router.get('/:user_id',
+  userController.userInfo
+);
+
+router.patch('/:user_id/description',
+  authMiddleware,
+  userController.changeDescription
+);
 
 module.exports = router;

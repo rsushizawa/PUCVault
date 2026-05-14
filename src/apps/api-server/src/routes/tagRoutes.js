@@ -15,4 +15,10 @@ router.get('/:user_id/print',
   tagController.printUserTags
 );
 
+router.get('/search', tagController.searchTags);
+
+router.get('/', tagController.getTags);
+
+
+
 module.exports = router;

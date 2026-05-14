@@ -3,6 +3,7 @@ const router = express.Router();
 const forumController = require('../controllers/forumController');
 
 const authMiddleware = require('../middlewares/authMiddleware');
+const optionalauthMiddleware = require('../middlewares/optionalauthMiddleware');
 
 router.get('/print/forums', forumController.print);
 
@@ -22,7 +23,7 @@ router.patch('/:forum_id/page/:page_num',
   forumController.files
 );
 
-router.patch('/:forum_id/follow',
+router.post('/:forum_id/follow',
   authMiddleware,
   forumController.follow
 );
@@ -35,6 +36,23 @@ router.patch('/:forum_id/files/page/:page_num',
   forumController.files
 );
 
+router.get('/:forum_id/files/year',
+  forumController.listForumFilesYear
+);
 
+router.get('/:forum_id/files/year/:year',
+  forumController.listTagsFilesYear
+);
+
+router.get('/:forum_id/files/year/:year/tag/:tag',
+  forumController.listPostFilesYear
+);
+
+router.get('/by-name/:name', forumController.getForumByName);
+
+router.get('/:forum_id',
+  optionalauthMiddleware,
+  forumController.getSingleForum
+);
 
 module.exports = router;

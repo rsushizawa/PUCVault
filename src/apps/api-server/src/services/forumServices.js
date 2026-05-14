@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const { z } = require('zod');
 const bcrypt = require('bcryptjs');
-const { Pool } = require('pg');
+const { pool } = require('../config/database');
 const path = require('path');
 const { error, log } = require('console');
 const saltRounds = 10;
@@ -15,14 +15,6 @@ const passAccess = process.env.DB_PASS;
 const portAccess = process.env.DB_PORT;
 const databaseAcess = process.env.DB_NAME;
 
-const pool = new Pool({
-  host: hostAccess,
-  port: portAccess,
-  database: databaseAcess,
-  user: userAccess,
-  password: passAccess,
-  ssl: false
-});
 
 function errorMsg(error) {
   console.error('--- DETALHES DO ERRO ---');
@@ -67,6 +59,51 @@ module.exports = {
       client.release();
     }
   },
+
+  async checkUserForum(user_id, forum_id) {
+    let client;
+
+    try {
+      client = await pool.connect();
+      console.log('conexão sucedida checkUserForum');
+      const res = await pool.query('SELECT * FROM publico.checar_se_usuario_segue_forum($1, $2)', [user_id, forum_id]);
+      return res;
+
+    } catch (error) {
+      errorMsg(error);
+      client.release();
+    }
+  },
+
+  async listTagsFilesYear(forum_id, year) {
+    let client;
+    try {
+      client = await pool.connect();
+      console.log('conexão sucedida listTagsFilesYear');
+      const res = await pool.query('SELECT * FROM publico.listar_tags_arquivo_por_ano( $1, $2 )', [forum_id, year]);
+      return res.rows;
+    } catch (error) {
+      errorMsg(error);
+    } finally {
+      client.release();
+    }
+  },
+
+  async listForumFilesYear(forum_id) {
+    let client;
+    try {
+      client = await pool.connect();
+      console.log('conexão sucedida listForumFilesYear');
+      const res = await pool.query('SELECT * FROM publico.listar_anos_com_arquivo( $1 )', [forum_id]);
+      return res.rows;
+    } catch (error) {
+      errorMsg(error);
+    } finally {
+      client.release();
+    }
+  },
+
+
 
 
   async searchForums(name) {
@@ -144,17 +181,16 @@ module.exports = {
       console.log('conexão sucedida validateForum');
 
       const res = await pool.query('SELECT * FROM publico.listar_seguidores_forum( $1 )', [forum_id]);
-
+      return res;
       console.table(res.rows);
     } catch (error) {
       errorMsg(error);
     } finally {
       connect.release();
     }
-
-
-
   },
+
+
 
   async toggleFollowForum(user_id, forum_id) {
     let client;
@@ -171,6 +207,37 @@ module.exports = {
     }
 
   },
+
+  async getSingleForum(forum_id) {
+    let client;
+    try {
+      client = await pool.connect();
+      console.log('conexão sucedida getSingleForum');
+
+      const res = await pool.query('SELECT * FROM publico.buscar_forum_por_id ( $1 )', [forum_id]);
+      return res;
+    } catch (error) {
+      errorMsg(error);
+    } finally {
+      client.release();
+    }
+  },
+
+  async getForumPostCount(forum_id) {
+    let client;
+    try {
+      client = await pool.connect();
+      const res = await pool.query(
+        'SELECT total_posts FROM publico.listar_foruns() WHERE id = $1',
+        [forum_id]
+      );
+      return Number(res.rows[0]?.total_posts ?? 0);
+    } catch (error) {
+      errorMsg(error);
+    } finally {
+      client.release();
+    }
+  }
 
 
 };

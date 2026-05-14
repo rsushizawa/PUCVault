@@ -1,11 +1,6 @@
-const express = require('express');
-const cors = require('cors');
-const { z } = require('zod');
-const bcrypt = require('bcryptjs');
-const { Pool } = require('pg');
+const { pool } = require('../config/database');
 const path = require('path');
 const { error, log } = require('console');
-const saltRounds = 10;
 const envPath = path.resolve(__dirname, '../../src/.env');
 
 require('dotenv').config({ path: envPath });
@@ -15,14 +10,6 @@ const passAccess = process.env.DB_PASS;
 const portAccess = process.env.DB_PORT;
 const databaseAcess = process.env.DB_NAME;
 
-const pool = new Pool({
-  host: hostAccess,
-  port: portAccess,
-  database: databaseAcess,
-  user: userAccess,
-  password: passAccess,
-  ssl: false
-});
 
 function errorMsg(error) {
   console.error('--- DETALHES DO ERRO ---');
@@ -57,11 +44,44 @@ module.exports = {
 
   },
 
+
+
+
+  async listTags() {
+    let connect;
+    try {
+      connect = await pool.connect();
+      console.log('conexão sucedida listTags');
+
+      const res = await pool.query('SELECT * FROM pulbico.listar_tags()');
+      return res;
+
+    } catch (error) {
+      errorMsg(error);
+    } finally {
+      connect.release();
+    }
+  },
+
+  async findTags(find) {
+    let connect;
+    try {
+      connect = await pool.connect();
+      console.log('conexão sucedida findTags');
+      const res = await pool.query('SELECT * FROM publico.buscar_tags_relevantes($1)', [find]);
+      return res;
+    } catch (error) {
+      errorMsg(error);
+    } finally {
+      connect.release();
+    }
+  },
+
   async createTag(tagName, creator_id) {
     let connect;
 
     try {
-      connect = pool.connect();
+      connect = await pool.connect();
       console.log('conexão sucedida createTag');
 
       await pool.query('CALL publico.inserir_tag($1,$2)', [tagName, creator_id]);
@@ -77,7 +97,7 @@ module.exports = {
     let connect;
 
     try {
-      connect = pool.connect();
+      connect = await pool.connect();
       console.log('conexão sucedida validateTag');
 
       await pool.query('CALL publico.validar_tag($1,$2,$3)', [tag_id, validator_id, tagState]);

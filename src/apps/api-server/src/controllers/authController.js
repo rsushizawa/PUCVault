@@ -1,5 +1,6 @@
 
 const authService = require('../services/userServices');
+const { ok, fail } = require('../helpers/response');
 const { z } = require('zod');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -9,7 +10,7 @@ const envPath = path.resolve(__dirname, '../../src/.env');
 
 require('dotenv').config({ path: envPath });
 
-const passAccess = process.env.DB_PASS;
+const passAccess = process.env.JWT_SECRET;
 
 //deleteUser(user_id)
 
@@ -25,9 +26,13 @@ const signinSchema = z.object({
 
 const print = async (req, res) => {
   try {
-    await authService.printLogins();
+    const loginResult = await authService.printLogins();
+    const rows = loginResult.rows;
+    console.table(rows);
+    return ok(res, rows);
   } catch (error) {
     console.log('internal server error', error.message);
+    return fail(res, 500, 'internal server error');
   }
 };
 
@@ -37,29 +42,23 @@ const signin = async (req, res) => {
   const validation = signinSchema.safeParse(req.body);
 
   if (!validation.success) {
-    return res.status(400).json({ error: "Invalid data", detail: validation.error.format() });
+    return fail(res, 400, validation.error.format());
   }
 
   const { email, name, username, password } = validation.data;
   try {
     const userExists = await authService.searchLogins(username, email);
     if (userExists) {
-      return res.status(409).json({ error: 'username / email already in use ' });
+      return fail(res, 409, 'username / email already in use');
     }
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     await authService.addLogin(name, username, email, hashedPassword);
     await authService.printLogins();
-    res.status(201).json({ message: "Username created with success!", username });
-
+    return ok(res, { username });
 
   } catch (error) {
     console.error("CRITICAL ERROR IN /sign-in:", error);
-
-    res.status(500).json({
-      error: "Error processing password",
-      details: error.message // Remove this line before putting your app in production!
-    });
-
+    return fail(res, 500, error.message);
   }
 
 };
@@ -68,34 +67,25 @@ const login = async (req, res) => {
   const { userEmail, password } = req.body;
 
   try {
-    let isAuthenticated = await authService.validateLoginCredentials(userEmail, password);
-    const token = jwt.sign(
-	{ id: isAuthenticated.user.id, role: isAuthenticated.user.cargo },
-      passAccess,
-      { expiresIn: '1d' }
-    );
+    const isAuthenticated = await authService.validateLoginCredentials(userEmail, password);
 
     if (isAuthenticated.authenticated) {
-
-      //entrou
-      res.status(200).json({
-        message: "login success",
-        user: isAuthenticated.user,
-        token: token
-      });
-    }
-    else {
-      //fica na tela de login pq nao entrou
-      console.log('login failed', isAuthenticated.message);
-      res.status(401).json({ error: isAuthenticated.message });
+      const token = jwt.sign(
+        { id: isAuthenticated.user.id },
+        passAccess,
+        { expiresIn: '1d' }
+      );
+      return ok(res, { user: isAuthenticated.user, token });
+    } else {
+      return fail(res, 401, isAuthenticated.message);
     }
 
   } catch (error) {
-    console.log('internal server error', error.message);
+    console.error('internal server error', error.message);
+    return fail(res, 500, 'internal server error');
   }
 };
 
 
 
 module.exports = { print, login, signin };
-
