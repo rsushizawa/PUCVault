@@ -10,6 +10,7 @@ const forumRoutes = require('./routes/forumRoutes.js');
 const userRoutes = require('./routes/userRoutes.js');
 const tagRoutes = require('./routes/tagRoutes.js');
 const postRoutes = require('./routes/postRoutes.js');
+const denunciaRoutes = require('./routes/denunciaRoutes.js');
 const feedRoutes = require('./routes/feedRoutes.js');
 const imgRoutes = require('./routes/imageRoutes.js');
 
@@ -28,6 +29,8 @@ app.use("/posts", postRoutes);
 
 app.use("/feed", feedRoutes);
 
+app.use('/posts', postRoutes);
+app.use('/denuncias', denunciaRoutes);
 app.use('/image', imgRoutes);
 
 app.get("/", (req, res) => {
