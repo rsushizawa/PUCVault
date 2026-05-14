@@ -7,8 +7,12 @@ export async function getFeed(page = 1): Promise<{ posts: Post[]; total: number 
   return { posts: rows.map(mapPostRow), total: calcTotal(rows, page) }
 }
 
-export function getPost(id: string): Promise<Post> {
-  return apiFetch(`/posts/${id}`)
+export async function getPost(id: string): Promise<Post> {
+  const raw = await apiFetch<any>(`/posts/${id}`)
+  if (!raw.arquivo && raw.arquivo_nome && raw.arquivo_caminho) {
+    raw.arquivo = `${raw.arquivo_nome} ${raw.arquivo_caminho}`
+  }
+  return raw as Post
 }
 
 export function createPost(

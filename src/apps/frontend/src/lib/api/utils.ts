@@ -20,6 +20,8 @@ export type RawPostRow = {
   engajamento: number | string
   comentarios: number | string
   arquivo: string | null
+  arquivo_nome: string | null
+  arquivo_caminho: string | null
   forum?: number
   criador?: number
   cargo?: string
@@ -32,7 +34,9 @@ export function mapPostRow(row: RawPostRow): Post {
   return {
     id: row.id,
     titulo: row.titulo,
-    arquivo: row.arquivo ?? null,
+    arquivo: row.arquivo_nome && row.arquivo_caminho
+      ? `${row.arquivo_nome} ${row.arquivo_caminho}`
+      : (row.arquivo ?? null),
     forum: row.forum ?? 0,
     conteudo: row.conteudo,
     status: row.status ?? "",
