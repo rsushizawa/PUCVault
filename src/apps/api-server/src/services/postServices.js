@@ -29,13 +29,13 @@ function errorMsg(error) {
 
 
 module.exports = {
-  async createPost(title, content, creator_id, forum_id, file_id, tag_id_array) {
+  async createPost(title, content, creator_id, forum_id, file_nome, file_caminho, tag_id_array) {
     let connect;
     try {
       connect = await pool.connect();
       console.log('conexão sucedida createPost');
 
-      await pool.query('CALL publico.inserir_postagem($1, $2, $3, $4, $5, $6)', [title, content, creator_id, forum_id, file_id, tag_id_array]);
+      await pool.query('CALL publico.inserir_postagem($1, $2, $3, $4, $5, $6, $7)', [title, content, creator_id, forum_id, file_nome, file_caminho, tag_id_array]);
 
     } catch (error) {
       errorMsg(error);

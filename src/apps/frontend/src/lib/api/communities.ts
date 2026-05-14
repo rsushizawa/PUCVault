@@ -1,6 +1,6 @@
-import { apiFetch } from "./client"
+import { apiFetch, apiFetchPaginated } from "./client"
 import type { Post, Forum } from "./types"
-import { PAGE_SIZE, mapPostRow, calcTotal, type RawPostRow } from "./utils"
+import { mapPostRow, type RawPostRow } from "./utils"
 
 export type { Forum } from "./types"
 export type ForumSummary = Forum
@@ -58,8 +58,8 @@ export async function getCommunityPosts(
   id: string,
   page = 1,
 ): Promise<{ posts: Post[]; total: number }> {
-  const rows = await apiFetch<RawPostRow[]>(`/posts/${id}/page/${page}`)
-  return { posts: rows.map(mapPostRow), total: calcTotal(rows, page) }
+  const { data, total } = await apiFetchPaginated<RawPostRow>(`/posts/${id}/page/${page}`)
+  return { posts: data.map(mapPostRow), total }
 }
 
 export async function getFileYears(forumId: string): Promise<number[]> {

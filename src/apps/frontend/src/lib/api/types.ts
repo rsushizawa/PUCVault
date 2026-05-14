@@ -9,6 +9,7 @@ export type Forum = {
   criador: number
   validador: number | null
   identidade_visual: number
+  total_posts?: number
   // Extended fields present only on getSingleForum response
   seguidores?: string
   img_perfil?: string | null

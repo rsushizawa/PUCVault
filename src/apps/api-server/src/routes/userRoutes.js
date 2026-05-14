@@ -20,6 +20,23 @@ router.get('/me',
   userController.me
 );
 
+router.get('/by-username/:username',
+  userController.userByUsername
+);
+
+router.get('/:user_id/forums',
+  userController.followedForums
+);
+
+router.get('/:target_id/is-following',
+  authMiddleware,
+  userController.isFollowing
+);
+
+router.get('/:user_id/forum-follow/:forum_id',
+  userController.checkForumFollow
+);
+
 router.get('/:user_id',
   userController.userInfo
 );

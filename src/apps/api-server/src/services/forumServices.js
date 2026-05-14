@@ -221,6 +221,22 @@ module.exports = {
     } finally {
       client.release();
     }
+  },
+
+  async getForumPostCount(forum_id) {
+    let client;
+    try {
+      client = await pool.connect();
+      const res = await pool.query(
+        'SELECT total_posts FROM publico.listar_foruns() WHERE id = $1',
+        [forum_id]
+      );
+      return Number(res.rows[0]?.total_posts ?? 0);
+    } catch (error) {
+      errorMsg(error);
+    } finally {
+      client.release();
+    }
   }
 
 

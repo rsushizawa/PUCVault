@@ -1,5 +1,6 @@
 const { pool } = require('../config/database');
 const { error, log } = require('console');
+const bcrypt = require('bcryptjs');
 
 
 
@@ -228,6 +229,77 @@ module.exports = {
     } finally {
       client.release();
     }
-  }
+  },
+
+  async getUserByUsername(username) {
+    let client;
+    try {
+      client = await pool.connect();
+      console.log('conexão sucedida getUserByUsername');
+      const res = await pool.query('SELECT * FROM publico.buscar_usuario_por_nome_usuario($1)', [username]);
+      if (!res.rows || res.rows.length === 0) return null;
+      const user = { ...res.rows[0] };
+      delete user.senha_hash;
+      return user;
+    } catch (error) {
+      errorMsg(error);
+    } finally {
+      if (client) client.release();
+    }
+  },
+
+  async getUserFollowedForums(user_id) {
+    // TODO: requires publico.listar_forums_seguidos_usuario(p_usuario_id INT) — see TO-DO.md
+    let client;
+    try {
+      client = await pool.connect();
+      console.log('conexão sucedida getUserFollowedForums');
+      const res = await pool.query(
+        'SELECT * FROM publico.listar_forums_seguidos_usuario($1)',
+        [user_id]
+      );
+      return res.rows;
+    } catch (error) {
+      return [];
+    } finally {
+      if (client) client.release();
+    }
+  },
+
+  async checkUserFollow(viewer_id, target_id) {
+    // TODO: requires publico.checar_se_usuario_segue_usuario(p_seguidor INT, p_seguido INT) — see TO-DO.md
+    let client;
+    try {
+      client = await pool.connect();
+      const res = await pool.query(
+        'SELECT * FROM publico.checar_se_usuario_segue_usuario($1, $2)',
+        [viewer_id, target_id]
+      );
+      if (!res.rows || res.rows.length === 0) return { follows: false };
+      return { follows: !!res.rows[0].segue };
+    } catch (error) {
+      return { follows: false };
+    } finally {
+      if (client) client.release();
+    }
+  },
+
+  async checkForumFollow(user_id, forum_id) {
+    let client;
+    try {
+      client = await pool.connect();
+      console.log('conexão sucedida checkForumFollow');
+      const res = await pool.query(
+        'SELECT * FROM publico.checar_se_usuario_segue_forum($1, $2)',
+        [user_id, forum_id]
+      );
+      if (!res.rows || res.rows.length === 0) return { follows: false };
+      return { follows: !!res.rows[0].segue };
+    } catch (error) {
+      errorMsg(error);
+    } finally {
+      if (client) client.release();
+    }
+  },
 };
 
