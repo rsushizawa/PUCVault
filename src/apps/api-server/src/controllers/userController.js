@@ -59,13 +59,55 @@ exports.me = async (req, res) => {
 };
 
 exports.userInfo = async (req, res) => {
-  const user_id = req.params;
+  const { user_id } = req.params;
   try {
     const userInfo = await userService.getUserInfo(user_id);
+    if (!userInfo.rows || userInfo.rows.length === 0) return fail(res, 404, "user not found");
     delete userInfo.rows[0].senha_hash;
     const info = userInfo.rows[0];
-    console.log(info);
     return ok(res, info);
+  } catch (error) {
+    return fail(res, 500, "server error");
+  }
+};
+
+exports.userByUsername = async (req, res) => {
+  const { username } = req.params;
+  try {
+    const user = await userService.getUserByUsername(username);
+    if (!user) return fail(res, 404, "user not found");
+    return ok(res, user);
+  } catch (error) {
+    return fail(res, 500, "server error");
+  }
+};
+
+exports.followedForums = async (req, res) => {
+  const { user_id } = req.params;
+  try {
+    const forums = await userService.getUserFollowedForums(user_id);
+    return ok(res, forums ?? []);
+  } catch (error) {
+    return fail(res, 500, "server error");
+  }
+};
+
+exports.isFollowing = async (req, res) => {
+  const viewer_id = req.user.id;
+  const { target_id } = req.params;
+  try {
+    const result = await userService.checkUserFollow(viewer_id, target_id);
+    return ok(res, result);
+  } catch (error) {
+    return fail(res, 500, "server error");
+  }
+};
+
+exports.checkForumFollow = async (req, res) => {
+  const { user_id, forum_id } = req.params;
+  try {
+    const result = await userService.checkForumFollow(user_id, forum_id);
+    return ok(res, result ?? { follows: false });
   } catch (error) {
     return fail(res, 500, "server error");
   }

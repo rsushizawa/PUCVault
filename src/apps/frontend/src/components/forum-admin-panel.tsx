@@ -1,9 +1,14 @@
 "use client";
 
+import { getTags, searchTags } from "@/lib/api/tags";
 import { useEffect, useState } from "react";
 import { Tag as TagIcon, Flag, AlertTriangle, Plus, X } from "lucide-react";
 import { getForumTags, createTag, deleteForumTag } from "@/lib/api/tags";
-import { listarDenuncias, resolverDenuncia, type Denuncia } from "@/lib/api/denuncias";
+import {
+  listarDenuncias,
+  resolverDenuncia,
+  type Denuncia,
+} from "@/lib/api/denuncias";
 import type { ForumSummary } from "@/lib/api/communities";
 import type { Tag } from "@/types/tag";
 import { Cargo, isAtLeast } from "@/types/cargo";
@@ -14,7 +19,10 @@ interface ForumAdminPanelProps {
   userCargo: string;
 }
 
-export default function ForumAdminPanel({ forum, userCargo }: ForumAdminPanelProps) {
+export default function ForumAdminPanel({
+  forum,
+  userCargo,
+}: ForumAdminPanelProps) {
   const [tags, setTags] = useState<Tag[]>([]);
   const [tagsLoading, setTagsLoading] = useState(true);
   const [deletingTag, setDeletingTag] = useState<number | null>(null);
@@ -25,12 +33,21 @@ export default function ForumAdminPanel({ forum, userCargo }: ForumAdminPanelPro
 
   const [newTagName, setNewTagName] = useState("");
   const [creatingTag, setCreatingTag] = useState(false);
-  const [tagCreateMsg, setTagCreateMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [tagCreateMsg, setTagCreateMsg] = useState<{
+    ok: boolean;
+    text: string;
+  } | null>(null);
 
   const isAdmin = isAtLeast(userCargo, Cargo.ADMIN);
   const canManageTags = isAtLeast(userCargo, Cargo.VALIDADOR);
 
   useEffect(() => {
+    const load = async () => {
+      const result = await getTags();
+      setTags(result);
+    };
+    load();
+
     getForumTags(String(forum.id))
       .then(setTags)
       .catch(() => setTags([]))
@@ -38,7 +55,10 @@ export default function ForumAdminPanel({ forum, userCargo }: ForumAdminPanelPro
   }, [forum.id]);
 
   useEffect(() => {
-    if (!isAdmin) { setDenunciasLoading(false); return; }
+    if (!isAdmin) {
+      setDenunciasLoading(false);
+      return;
+    }
     listarDenuncias()
       .then(setDenuncias)
       .catch(() => setDenuncias([]))
@@ -65,10 +85,16 @@ export default function ForumAdminPanel({ forum, userCargo }: ForumAdminPanelPro
     try {
       const tag = await createTag(newTagName.trim());
       setNewTagName("");
-      setTagCreateMsg({ ok: true, text: `Tag "${tag.tag}" criada com sucesso.` });
+      setTagCreateMsg({
+        ok: true,
+        text: `Tag "${tag.tag}" criada com sucesso.`,
+      });
       setTags((prev) => [...prev, tag]);
     } catch {
-      setTagCreateMsg({ ok: false, text: "Erro ao criar tag. Tente novamente." });
+      setTagCreateMsg({
+        ok: false,
+        text: "Erro ao criar tag. Tente novamente.",
+      });
     } finally {
       setCreatingTag(false);
     }
@@ -92,7 +118,9 @@ export default function ForumAdminPanel({ forum, userCargo }: ForumAdminPanelPro
       <section className="bg-surface-raised rounded-xl border border-surface-overlay p-5 flex flex-col gap-3">
         <div className="flex items-center gap-2">
           <TagIcon size={15} className="text-accent" />
-          <h3 className="text-text-primary font-semibold text-sm">Tags do fórum</h3>
+          <h3 className="text-text-primary font-semibold text-sm">
+            Tags do fórum
+          </h3>
         </div>
 
         {tagsLoading ? (
@@ -134,7 +162,9 @@ export default function ForumAdminPanel({ forum, userCargo }: ForumAdminPanelPro
         <section className="bg-surface-raised rounded-xl border border-surface-overlay p-5 flex flex-col gap-3">
           <div className="flex items-center gap-2">
             <Plus size={15} className="text-accent" />
-            <h3 className="text-text-primary font-semibold text-sm">Criar nova tag</h3>
+            <h3 className="text-text-primary font-semibold text-sm">
+              Criar nova tag
+            </h3>
           </div>
 
           <form onSubmit={handleCreateTag} className="flex gap-2">
@@ -155,7 +185,9 @@ export default function ForumAdminPanel({ forum, userCargo }: ForumAdminPanelPro
           </form>
 
           {tagCreateMsg && (
-            <p className={`text-xs ${tagCreateMsg.ok ? "text-green-400" : "text-red-400"}`}>
+            <p
+              className={`text-xs ${tagCreateMsg.ok ? "text-green-400" : "text-red-400"}`}
+            >
               {tagCreateMsg.text}
             </p>
           )}
@@ -167,13 +199,17 @@ export default function ForumAdminPanel({ forum, userCargo }: ForumAdminPanelPro
         <section className="bg-surface-raised rounded-xl border border-surface-overlay p-5 flex flex-col gap-3">
           <div className="flex items-center gap-2">
             <Flag size={15} className="text-red-400" />
-            <h3 className="text-text-primary font-semibold text-sm">Denúncias pendentes</h3>
+            <h3 className="text-text-primary font-semibold text-sm">
+              Denúncias pendentes
+            </h3>
           </div>
 
           {denunciasLoading ? (
             <p className="text-text-muted text-xs">Carregando...</p>
           ) : denuncias.length === 0 ? (
-            <p className="text-text-muted text-xs">Nenhuma denúncia pendente.</p>
+            <p className="text-text-muted text-xs">
+              Nenhuma denúncia pendente.
+            </p>
           ) : (
             <div className="flex flex-col gap-2">
               {denuncias.map((d) => (
@@ -181,13 +217,18 @@ export default function ForumAdminPanel({ forum, userCargo }: ForumAdminPanelPro
                   key={d.id}
                   className="flex items-start gap-3 px-3 py-2.5 bg-surface-overlay rounded-lg"
                 >
-                  <AlertTriangle size={13} className="text-red-400 shrink-0 mt-0.5" />
+                  <AlertTriangle
+                    size={13}
+                    className="text-red-400 shrink-0 mt-0.5"
+                  />
                   <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                     <span className="text-xs text-text-primary font-medium line-clamp-2">
                       {d.descricao}
                     </span>
                     <span className="text-[10px] text-text-muted">
-                      {d.conteudo_id ? `Conteúdo #${d.conteudo_id}` : `Usuário #${d.denunciado_id}`}
+                      {d.conteudo_id
+                        ? `Conteúdo #${d.conteudo_id}`
+                        : `Usuário #${d.denunciado_id}`}
                       {" · "}
                       {new Date(d.criado_em).toLocaleDateString("pt-BR")}
                     </span>

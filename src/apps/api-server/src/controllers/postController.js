@@ -1,4 +1,5 @@
 const postService = require("../services/postServices");
+const forumService = require("../services/forumServices");
 const tagService = require("../services/tagServices");
 const { ok, paginated, fail } = require("../helpers/response");
 const { z } = require("zod");
@@ -16,8 +17,10 @@ const postSchema = z.object({
 exports.getPosts = async (req, res) => {
   const { forum_id, page_num } = req.params;
   try {
-    const rows = await postService.getPost(forum_id, page_num);
-    const total = rows.length;
+    const [rows, total] = await Promise.all([
+      postService.getPost(forum_id, page_num),
+      forumService.getForumPostCount(forum_id),
+    ]);
     console.table(rows);
     return paginated(res, rows, total);
   } catch (error) {
@@ -56,13 +59,12 @@ exports.getFileFromPost = async (req, res) => {
     const { post_id } = req.params;
     const post = await postService.getSinglePost(post_id);
 
-    if (!post[0] || !post[0].arquivo) {
+    if (!post[0] || !post[0].arquivo_caminho) {
       return fail(res, 404, "file not found");
     }
 
-    const partes = post[0].arquivo.trim().split(" ");
-    const file_id = partes.pop();
-    const original_name = partes.join(" ");
+    const file_id = post[0].arquivo_caminho;
+    const original_name = post[0].arquivo_nome ?? "";
     const ext = original_name.split(".").pop()?.toLowerCase() ?? "";
     const contentType = MIME_BY_EXT[ext] ?? "application/octet-stream";
 
@@ -98,12 +100,12 @@ exports.createPosts = async (req, res) => {
   try {
     const file = req.files?.[0] ?? null;
     let file_id = null;
-    let concat_file_name = null;
+    let file_nome = null;
 
     if (file) {
       try {
         file_id = await uploadToCloudinary(file);
-        concat_file_name = file.originalname + " " + file_id;
+        file_nome = file.originalname;
       } catch (cloudinaryErr) {
         console.error("cloudinary error:", cloudinaryErr);
         return fail(res, 500, cloudinaryErr.message);
@@ -123,7 +125,8 @@ exports.createPosts = async (req, res) => {
       content,
       req.user.id,
       forum_id,
-      concat_file_name,
+      file_nome,
+      file_id,
       tag_id_array,
     );
     console.log("conexão sucedida createPost");
