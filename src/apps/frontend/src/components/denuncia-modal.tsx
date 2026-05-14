@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X, Flag } from "lucide-react";
-import { denunciarUsuario, denunciarConteudo } from "@/lib/api/denuncias";
+import { denunciarUsuario, denunciarConteudo, TIPOS_DENUNCIA, type TipoDenuncia } from "@/lib/api/denuncias";
 
 interface DenunciaModalProps {
   type: "usuario" | "conteudo";
@@ -12,21 +12,21 @@ interface DenunciaModalProps {
 }
 
 export default function DenunciaModal({ type, targetId, targetLabel, onClose }: DenunciaModalProps) {
-  const [descricao, setDescricao] = useState("");
+  const [tipo, setTipo] = useState<TipoDenuncia | "">("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!descricao.trim()) return;
+    if (!tipo) return;
     setLoading(true);
     setError(false);
     try {
       if (type === "usuario") {
-        await denunciarUsuario(targetId, descricao.trim());
+        await denunciarUsuario(targetId, tipo);
       } else {
-        await denunciarConteudo(targetId, descricao.trim());
+        await denunciarConteudo(targetId, tipo);
       }
       setDone(true);
     } catch {
@@ -79,13 +79,16 @@ export default function DenunciaModal({ type, targetId, targetLabel, onClose }: 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-text-secondary text-xs font-medium">Motivo</label>
-              <textarea
-                value={descricao}
-                onChange={(e) => setDescricao(e.target.value)}
-                rows={4}
-                placeholder="Descreva o motivo da denúncia..."
-                className="bg-surface-input text-text-primary text-sm px-3 py-2 rounded-lg outline-none border border-surface-overlay hover:border-accent/30 focus:border-accent/50 placeholder:text-text-muted transition-all duration-200 resize-none"
-              />
+              <select
+                value={tipo}
+                onChange={(e) => setTipo(e.target.value as TipoDenuncia)}
+                className="bg-surface-input text-text-primary text-sm px-3 py-2 rounded-lg outline-none border border-surface-overlay hover:border-accent/30 focus:border-accent/50 transition-all duration-200"
+              >
+                <option value="" disabled>Selecione um motivo...</option>
+                {TIPOS_DENUNCIA.map((t) => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
             </div>
 
             {error && (
@@ -102,7 +105,7 @@ export default function DenunciaModal({ type, targetId, targetLabel, onClose }: 
               </button>
               <button
                 type="submit"
-                disabled={loading || !descricao.trim()}
+                disabled={loading || !tipo}
                 className="px-5 py-2 rounded-lg text-sm bg-red-500/80 text-white font-semibold hover:bg-red-500 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
               >
                 {loading ? "Enviando..." : "Denunciar"}
