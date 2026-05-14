@@ -103,7 +103,7 @@ export default function ForumAdminPanel({
   async function handleResolverDenuncia(id: number) {
     setResolvingId(id);
     try {
-      await resolverDenuncia(id);
+      await resolverDenuncia(id, "RESOLVIDA");
       setDenuncias((prev) => prev.filter((d) => d.id !== id));
     } catch {
       // stays in list
@@ -223,12 +223,14 @@ export default function ForumAdminPanel({
                   />
                   <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                     <span className="text-xs text-text-primary font-medium line-clamp-2">
-                      {d.descricao}
+                      {d.tipo.replace(/_/g, " ")}
                     </span>
                     <span className="text-[10px] text-text-muted">
-                      {d.conteudo_id
-                        ? `Conteúdo #${d.conteudo_id}`
-                        : `Usuário #${d.denunciado_id}`}
+                      {d.conteudo_denunciado
+                        ? `Conteúdo #${d.conteudo_denunciado}`
+                        : `Usuário #${d.usuario_denunciado}`}
+                      {" · por "}
+                      {d.denunciante}
                       {" · "}
                       {new Date(d.criado_em).toLocaleDateString("pt-BR")}
                     </span>

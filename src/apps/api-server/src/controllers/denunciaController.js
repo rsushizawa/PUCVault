@@ -132,7 +132,7 @@ exports.resolverDenuncia = async (req, res) => {
 exports.listarDenuncias = async (req, res) => {
   try {
     const result = await denunciaService.listarDenunciasAbertas();
-    return res.status(200).json({ message: 'success', denuncias: result.rows });
+    return res.status(200).json({ data: result.rows });
   } catch (error) {
     console.error('Erro ao listar denúncias:', error.message);
     return res.status(500).json({ error: 'internal server error' });
