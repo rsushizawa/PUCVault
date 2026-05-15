@@ -6,7 +6,11 @@ const authMiddleware = (allowedRoles) => {
         .json({ error: "Not Authenticated, user not found" });
     }
 
-    const userRole = req.user.cargo;
+    if (!allowedRoles.includes(req.user.cargo)) {
+      return res.status(403).json({
+        error: `Forbidden: you need one of these roles: ${allowedRoles.join(", ")}`,
+      });
+    }
 
     if (!allowedRoles.includes(userRole)) {
       return res.status(403).json({
@@ -18,4 +22,4 @@ const authMiddleware = (allowedRoles) => {
   };
 };
 
-module.exports = authMiddleware;
+module.exports = roleMiddleware;

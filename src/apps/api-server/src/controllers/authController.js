@@ -17,7 +17,6 @@ require("dotenv").config({ path: envPath });
 
 const passAccess = process.env.JWT_SECRET;
 
-
 const saltRounds = 10;
 
 const generateRandomPIN = () => crypto.randomInt(100000, 999999).toString();
@@ -155,7 +154,7 @@ const loginSchema = z.object({
     ),
 
   password: z.string().min(8, "Senha (mínimo 8 caracteres)"),
-  keep_connected: z.boolean().default(false)
+  keep_connected: z.boolean().default(false),
 });
 
 exports.login = async (req, res) => {
@@ -181,9 +180,9 @@ exports.login = async (req, res) => {
         const token = jwt.sign(
           { id: user.id, cargo: user.cargo },
           passAccess,
-          keep_connected ? { expiresIn: '1m' } : { expiresIn: '1d' }
+          keep_connected ? { expiresIn: "1m" } : { expiresIn: "1d" },
         );
-        res.cookie('auth_token', token, {
+        res.cookie("auth_token", token, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           sameSite: "strict",
@@ -226,8 +225,16 @@ exports.verifyLogin = async (req, res) => {
   try {
     const payload = jwt.verify(twoFacToken, passAccess);
 
-    if (payload.purpose !== "2fa") {
-      return res.status(403).json({ error: "incorrect PIN purpose" });
+    if (isAuthenticated.authenticated) {
+      const cargo = await authService.buscarCargo(isAuthenticated.user.id);
+      const token = jwt.sign(
+        { id: isAuthenticated.user.id, cargo },
+        passAccess,
+        { expiresIn: "1d" },
+      );
+      return ok(res, { user: isAuthenticated.user, token });
+    } else {
+      return fail(res, 401, isAuthenticated.message);
     }
 
     const isPinCorrect = await bcrypt.compare(pin_input, payload.pinHash);
@@ -341,7 +348,10 @@ exports.forgotPasswordSendEmail = async (req, res) => {
   const pin = generateRandomPIN();
   const pinHash = await bcrypt.hash(pin, saltRounds);
 
-  const sent_token = generateJWTToken({ id: user.id, pinHash }, "password_recovery");
+  const sent_token = generateJWTToken(
+    { id: user.id, pinHash },
+    "password_recovery",
+  );
 
   try {
     await emailServices.sendEmail(email, pin, "password_recovery");

@@ -10,7 +10,13 @@ import PostCard from "@/components/post-card";
 import { CommunitySidebar } from "@/components/community-sidebar";
 import CommunityFiles from "@/components/community-files";
 import ForumAdminPanel from "@/components/forum-admin-panel";
-import { getForumByName, getCommunityPosts, getCommunity, followCommunity, updateForumDescription } from "@/lib/api/communities";
+import {
+  getForumByName,
+  getCommunityPosts,
+  getCommunity,
+  followCommunity,
+  updateForumDescription,
+} from "@/lib/api/communities";
 import type { ForumSummary } from "@/lib/api/communities";
 import { uploadForumImage } from "@/lib/api/images";
 import { createPost, votePost } from "@/lib/api/posts";
@@ -53,7 +59,10 @@ export default function VaultPage() {
   // Forum config state
   const [configDescricao, setConfigDescricao] = useState("");
   const [configSaving, setConfigSaving] = useState(false);
-  const [configMsg, setConfigMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [configMsg, setConfigMsg] = useState<{
+    ok: boolean;
+    text: string;
+  } | null>(null);
 
   // Forum image config state (SUPERADMIN only)
   const perfilInputRef = useRef<HTMLInputElement>(null);
@@ -63,7 +72,9 @@ export default function VaultPage() {
   const [perfilFile, setPerfilFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [imgSaving, setImgSaving] = useState(false);
-  const [imgMsg, setImgMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [imgMsg, setImgMsg] = useState<{ ok: boolean; text: string } | null>(
+    null,
+  );
 
   // Posts + pagination
   const [posts, setPosts] = useState<Post[]>([]);
@@ -77,7 +88,9 @@ export default function VaultPage() {
 
   // Fetch current user silently
   useEffect(() => {
-    getMe().then(setUser).catch(() => {});
+    getMe()
+      .then(setUser)
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -120,7 +133,10 @@ export default function VaultPage() {
       setLoadingMore(true);
       const nextPage = pageRef.current + 1;
       try {
-        const { posts: newPosts, total: t } = await getCommunityPosts(String(forum.id), nextPage);
+        const { posts: newPosts, total: t } = await getCommunityPosts(
+          String(forum.id),
+          nextPage,
+        );
         setPosts((prev) => [...prev, ...newPosts]);
         setTotal(t);
         pageRef.current = nextPage;
@@ -137,7 +153,9 @@ export default function VaultPage() {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
     const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) loadMoreFnRef.current(); },
+      ([entry]) => {
+        if (entry.isIntersecting) loadMoreFnRef.current();
+      },
       { threshold: 0.1 },
     );
     obs.observe(sentinel);
@@ -166,7 +184,9 @@ export default function VaultPage() {
     try {
       await updateForumDescription(String(forum.id), configDescricao);
       setConfigMsg({ ok: true, text: "Descrição atualizada com sucesso." });
-      setForum((prev) => prev ? { ...prev, descricao: configDescricao } : prev);
+      setForum((prev) =>
+        prev ? { ...prev, descricao: configDescricao } : prev,
+      );
     } catch {
       setConfigMsg({ ok: false, text: "Erro ao salvar. Tente novamente." });
     } finally {
@@ -180,23 +200,41 @@ export default function VaultPage() {
     setImgSaving(true);
     setImgMsg(null);
     try {
-      if (perfilFile) await uploadForumImage(String(forum.id), "perfil", perfilFile);
-      if (bannerFile) await uploadForumImage(String(forum.id), "banner", bannerFile);
+      if (perfilFile)
+        await uploadForumImage(String(forum.id), "perfil", perfilFile);
+      if (bannerFile)
+        await uploadForumImage(String(forum.id), "banner", bannerFile);
       const refreshed = await getForumByName(decodedName);
       setPerfilUrl(refreshed.img_perfil ?? "");
       setBannerUrl(refreshed.img_banner ?? "");
-      setForum((prev) => prev ? { ...prev, img_perfil: refreshed.img_perfil, img_banner: refreshed.img_banner } : prev);
+      setForum((prev) =>
+        prev
+          ? {
+              ...prev,
+              img_perfil: refreshed.img_perfil,
+              img_banner: refreshed.img_banner,
+            }
+          : prev,
+      );
       setPerfilFile(null);
       setBannerFile(null);
       setImgMsg({ ok: true, text: "Imagens atualizadas com sucesso." });
     } catch {
-      setImgMsg({ ok: false, text: "Erro ao salvar imagens. Tente novamente." });
+      setImgMsg({
+        ok: false,
+        text: "Erro ao salvar imagens. Tente novamente.",
+      });
     } finally {
       setImgSaving(false);
     }
   }
 
-  async function handlePost(data: { title: string; content: string; tags: Tag[]; file?: File }) {
+  async function handlePost(data: {
+    title: string;
+    content: string;
+    tags: Tag[];
+    file?: File;
+  }) {
     if (!forum) return;
     await createPost(String(forum.id), {
       title: data.title,
@@ -214,7 +252,9 @@ export default function VaultPage() {
     return (
       <div className="min-h-screen bg-surface-base flex flex-col">
         <NavBar />
-        <p className="text-text-muted text-center py-24 text-sm">Vault não encontrado.</p>
+        <p className="text-text-muted text-center py-24 text-sm">
+          Vault não encontrado.
+        </p>
       </div>
     );
   }
@@ -222,7 +262,10 @@ export default function VaultPage() {
   const elevated = user ? isElevated(user.cargo ?? "") : false;
   const isCreator = user && forum ? forum.criador === Number(user.id) : false;
   const showMod = elevated;
-  const showConfig = !!(user && (isCreator || isAtLeast(user.cargo ?? "", Cargo.ADMIN)));
+  const showConfig = !!(
+    user &&
+    (isCreator || isAtLeast(user.cargo ?? "", Cargo.ADMIN))
+  );
   const hasMore = posts.length < total;
 
   return (
@@ -247,10 +290,15 @@ export default function VaultPage() {
           <div className="flex flex-col gap-4">
             {activeTab === "forum" && (
               <>
-                <CreatePost forumId={String(forum?.id ?? "")} onPost={handlePost} />
+                <CreatePost
+                  forumId={String(forum?.id ?? "")}
+                  onPost={handlePost}
+                />
 
                 {postsLoading && (
-                  <p className="text-text-muted text-sm animate-fade-in py-4">Carregando posts...</p>
+                  <p className="text-text-muted text-sm animate-fade-in py-4">
+                    Carregando posts...
+                  </p>
                 )}
                 {postsError && (
                   <p className="text-sm text-red-400">{postsError}</p>
@@ -274,7 +322,9 @@ export default function VaultPage() {
                         voteCount={Number(post.engajamento)}
                         commentCount={Number(post.comentarios)}
                         initialVote={post.userVote}
-                        onVote={(v) => votePost(String(post.id), v).catch(() => {})}
+                        onVote={(v) =>
+                          votePost(String(post.id), v).catch(() => {})
+                        }
                       />
                     ))}
                   </div>
@@ -282,10 +332,14 @@ export default function VaultPage() {
 
                 <div ref={sentinelRef} className="py-2 flex justify-center">
                   {loadingMore && (
-                    <span className="text-text-muted text-xs animate-fade-in">Carregando mais...</span>
+                    <span className="text-text-muted text-xs animate-fade-in">
+                      Carregando mais...
+                    </span>
                   )}
                   {!hasMore && !postsLoading && posts.length > 0 && (
-                    <span className="text-text-muted text-xs">Você viu todos os posts.</span>
+                    <span className="text-text-muted text-xs">
+                      Você viu todos os posts.
+                    </span>
                   )}
                 </div>
               </>
@@ -296,24 +350,32 @@ export default function VaultPage() {
             )}
 
             {activeTab === "moderação" && forum && user && (
-              <ForumAdminPanel
-                forum={forum}
-                userCargo={user.cargo ?? ""}
-              />
+              <ForumAdminPanel forum={forum} userCargo={user.cargo ?? ""} />
             )}
 
             {activeTab === "config" && forum && (
               <section className="bg-surface-raised rounded-xl p-6 border border-surface-overlay flex flex-col gap-5 max-w-2xl">
-                <h2 className="text-text-primary font-semibold">Configurações do fórum</h2>
+                <h2 className="text-text-primary font-semibold">
+                  Configurações do fórum
+                </h2>
 
                 {user?.cargo === Cargo.SUPERADMIN && (
-                  <form onSubmit={handleSaveForumImages} className="flex flex-col gap-4 pb-5 border-b border-surface-overlay">
-                    <label className="text-text-secondary text-xs font-medium">Imagens</label>
+                  <form
+                    onSubmit={handleSaveForumImages}
+                    className="flex flex-col gap-4 pb-5 border-b border-surface-overlay"
+                  >
+                    <label className="text-text-secondary text-xs font-medium">
+                      Imagens
+                    </label>
 
                     {/* Banner */}
                     <div className="relative w-full h-32 rounded-lg overflow-hidden bg-accent/10 border border-surface-overlay">
                       {bannerUrl ? (
-                        <img src={bannerUrl} alt="Banner" className="w-full h-full object-cover" />
+                        <img
+                          src={bannerUrl}
+                          alt="Banner"
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
                         <div className="w-full h-full" />
                       )}
@@ -345,7 +407,11 @@ export default function VaultPage() {
                       <div className="relative">
                         <div className="w-16 h-16 rounded-full bg-accent/15 flex items-center justify-center overflow-hidden shrink-0 border border-accent/20">
                           {perfilUrl ? (
-                            <img src={perfilUrl} alt="Ícone" className="w-full h-full object-cover" />
+                            <img
+                              src={perfilUrl}
+                              alt="Ícone"
+                              className="w-full h-full object-cover"
+                            />
                           ) : (
                             <div className="w-full h-full" />
                           )}
@@ -372,11 +438,17 @@ export default function VaultPage() {
                           }}
                         />
                       </div>
-                      <p className="text-text-muted text-xs">Clique no ícone para trocar a imagem do fórum</p>
+                      <p className="text-text-muted text-xs">
+                        Clique no ícone para trocar a imagem do fórum
+                      </p>
                     </div>
 
                     {imgMsg && (
-                      <p className={`text-sm ${imgMsg.ok ? "text-green-400" : "text-red-400"}`}>{imgMsg.text}</p>
+                      <p
+                        className={`text-sm ${imgMsg.ok ? "text-green-400" : "text-red-400"}`}
+                      >
+                        {imgMsg.text}
+                      </p>
                     )}
 
                     <button
@@ -390,15 +462,22 @@ export default function VaultPage() {
                 )}
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-text-secondary text-xs font-medium">Nome</label>
+                  <label className="text-text-secondary text-xs font-medium">
+                    Nome
+                  </label>
                   <p className="text-text-muted text-sm px-3 py-2 rounded-lg bg-surface-input border border-surface-overlay select-none">
                     {forum.nome}
                   </p>
                 </div>
 
-                <form onSubmit={handleSaveForumConfig} className="flex flex-col gap-4">
+                <form
+                  onSubmit={handleSaveForumConfig}
+                  className="flex flex-col gap-4"
+                >
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-text-secondary text-xs font-medium">Descrição</label>
+                    <label className="text-text-secondary text-xs font-medium">
+                      Descrição
+                    </label>
                     <textarea
                       value={configDescricao}
                       onChange={(e) => setConfigDescricao(e.target.value)}
@@ -409,7 +488,9 @@ export default function VaultPage() {
                   </div>
 
                   {configMsg && (
-                    <p className={`text-sm ${configMsg.ok ? "text-green-400" : "text-red-400"}`}>
+                    <p
+                      className={`text-sm ${configMsg.ok ? "text-green-400" : "text-red-400"}`}
+                    >
                       {configMsg.text}
                     </p>
                   )}
@@ -429,16 +510,32 @@ export default function VaultPage() {
           <div className="hidden lg:block">
             <CommunitySidebar
               communityName={forum?.nome ?? ""}
-              createdAt={forum ? new Date(forum.criado_em).toLocaleDateString("pt-BR") : ""}
+              createdAt={
+                forum
+                  ? new Date(forum.criado_em).toLocaleDateString("pt-BR")
+                  : ""
+              }
               isPublic={true}
               memberCount="—"
               memberLabel="Membros"
               postCount={String(total)}
               postLabel="Posts"
               rules={[
-                { id: 1, title: "Seja respeitoso", description: "Trate os outros com respeito." },
-                { id: 2, title: "Sem plágio", description: "Sempre cite as fontes." },
-                { id: 3, title: "Fique no tema", description: "Mantenha posts relevantes." },
+                {
+                  id: 1,
+                  title: "Seja respeitoso",
+                  description: "Trate os outros com respeito.",
+                },
+                {
+                  id: 2,
+                  title: "Sem plágio",
+                  description: "Sempre cite as fontes.",
+                },
+                {
+                  id: 3,
+                  title: "Fique no tema",
+                  description: "Mantenha posts relevantes.",
+                },
               ]}
             />
           </div>
