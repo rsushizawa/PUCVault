@@ -1,6 +1,10 @@
+<<<<<<< HEAD
 const db = require("../config/database");
 const path = require("path");
 
+=======
+const { pool } = require('../config/database');
+>>>>>>> 3c5ab62 (fix: db connection and missing imports)
 function errorMsg(error) {
   console.error("--- DETALHES DO ERRO ---");
   console.error("Mensagem:", error.message);
@@ -14,8 +18,14 @@ function errorMsg(error) {
 module.exports = {
   async denunciarUsuario(tipo, denunciante_id, denunciado_id) {
     try {
+<<<<<<< HEAD
       console.log("conexão sucedida denunciarUsuario");
       await db.query("CALL publico.inserir_denuncia_usuario($1, $2, $3)", [
+=======
+      connect = await pool.connect();
+      console.log("conexão sucedida denunciarUsuario");
+      await connect.query("CALL publico.inserir_denuncia_usuario($1, $2, $3)", [
+>>>>>>> 3c5ab62 (fix: db connection and missing imports)
         tipo,
         denunciante_id,
         denunciado_id,
