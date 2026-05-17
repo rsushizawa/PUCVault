@@ -1,8 +1,7 @@
 const postService = require("../services/postServices");
-const forumService = require("../services/forumServices");
+const contentService = require("../services/contentServices");
 const tagService = require("../services/tagServices");
-const { ok, paginated, fail } = require("../helpers/response");
-const { z } = require("zod");
+const { z, success } = require("zod");
 const { uploadToCloudinary } = require("../utils/cloudinaryUtil");
 
 const cloudinary = require("cloudinary").v2;
@@ -58,19 +57,20 @@ exports.getFileFromPost = async (req, res) => {
   try {
     const { post_id } = req.params;
     const post = await postService.getSinglePost(post_id);
-
     if (!post[0] || !post[0].arquivo_caminho) {
-      return fail(res, 404, "file not found");
+      return res.status(404).json({ message: 'file not found' });
     }
 
     const file_id = post[0].arquivo_caminho;
-    const original_name = post[0].arquivo_nome ?? "";
-    const ext = original_name.split(".").pop()?.toLowerCase() ?? "";
-    const contentType = MIME_BY_EXT[ext] ?? "application/octet-stream";
-
+    const original_name = post[0].arquivo_nome;
+    const extensao = original_name.split('.').pop().toLowerCase();
+    let resourceType = 'image';
+    if (['pdf', 'doc', 'docx', 'xls', 'rar', 'zip', 'c', 'cpp', 'txt', 'json'].includes(extensao)) {
+      resourceType = 'raw';
+    }
     const url_cloudinary = cloudinary.url(file_id, {
-      resource_type: "raw",
-      secure: true,
+      resource_type: resourceType,
+      secure: true
     });
 
     const response = await fetch(url_cloudinary);
@@ -100,12 +100,11 @@ exports.createPosts = async (req, res) => {
   try {
     const file = req.files?.[0] ?? null;
     let file_id = null;
-    let file_nome = null;
+
 
     if (file) {
       try {
-        file_id = await uploadToCloudinary(file);
-        file_nome = file.originalname;
+        file_id = await uploadToCloudinary(file, null);
       } catch (cloudinaryErr) {
         console.error("cloudinary error:", cloudinaryErr);
         return fail(res, 500, cloudinaryErr.message);
@@ -113,6 +112,7 @@ exports.createPosts = async (req, res) => {
     }
 
     const { title, content, tags } = req.body;
+    const user_id = req.user.id;
     const { forum_id } = req.params;
     const tag_id_array = tags
       ? Array.isArray(tags)
@@ -120,24 +120,40 @@ exports.createPosts = async (req, res) => {
         : [Number(tags)]
       : [];
 
-    await postService.createPost(
-      title,
-      content,
-      req.user.id,
-      forum_id,
-      file_nome,
-      file_id,
-      tag_id_array,
-    );
+    await postService.createPost(title, content, user_id, forum_id, original_name, file_id, tag_id_array);
     console.log("conexão sucedida createPost");
 
     return ok(res, { file_id });
   } catch (error) {
     console.error("ERRO CRÍTICO NO createPosts:", error);
     if (!res.headersSent) {
-      return fail(res, 500, "internal server error");
+      return res.status(500).json({ error: "internal server error" });
     }
   }
+};
+
+exports.deletePost = async (req, res) => {
+  try {
+    const { post_id } = req.params;
+    const user_id = req.user.id;
+    const post = await this.getSinglePost(post_id);
+    const file_id = post[0].arquivo;
+
+    const deletionResult = await cloudinary.uploader.destroy(file_id, {
+      resource_type: 'raw',
+      invalidate: true
+    });
+    post[0].arquivo_caminho = null;
+    post[0].arquivo_nome = null;
+
+    console.log("delete file: ", deletionResult);
+
+    await contentService.deleteContent(post_id, user_id);
+    res.status(200).json({ message: 'success' });
+  } catch (error) {
+    return res.status(500).json({ error: 'internal server error' });
+  }
+
 };
 
 exports.userPosts = async (req, res) => {
@@ -149,8 +165,64 @@ exports.userPosts = async (req, res) => {
 
     console.table(result);
 
-    return ok(res, result);
+
+    return res.status(200).json({ message: 'success', result });
+
+
   } catch (error) {
-    return fail(res, 500, "internal server error");
+    return res.status(500).json({ error: 'internal server error' });
+  }
+};
+
+
+const commentSchema = z.object({
+  content: z.string(),
+  parentId: z.string().optional(),
+});
+
+exports.createComment = async (req, res) => {
+  const validation = commentSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res.status(400).json({ error: "invalid data", detail: validation.error.format() });
+  }
+  const { content, parentId } = validation.data;
+  const user_id = req.user.id;
+  const father_id = parentId ? Number(parentId) : Number(req.params.father_id);
+
+  try {
+    await postService.createComment(content, user_id, father_id);
+    res.status(200).json({ message: "success" });
+
+  } catch (error) {
+    res.status(500).json({ error: "internal server error" });
+  }
+
+};
+
+exports.listComments = async (req, res) => {
+  const { post_id } = req.params;
+  try {
+    const commentResults = await postService.listComments(post_id);
+    const rows = commentResults.rows;
+    console.table(rows);
+
+    res.status(200).json({ rows });
+
+  } catch (error) {
+    res.status(500).json({ error: "internal server error" });
+  }
+};
+
+exports.rateContent = async (req, res) => {
+  try {
+
+    const user_id = req.user.id;
+    const content_id = req.params;
+    const { rating } = req.body;
+
+    await postService.rateContent(user_id, content_id, rating);
+    return res.status(200).json({ message: 'post rated successfully' });
+  } catch (error) {
+    return res.status(500).json({ error: 'internal server error', error });
   }
 };

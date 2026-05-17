@@ -3,6 +3,7 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 
 const authMiddleware = require('../middlewares/authMiddleware');
+const optionalauthMiddleware = require('../middlewares/optionalauthMiddleware');
 
 router.patch('/:user_id/change_role',
   authMiddleware,
@@ -38,6 +39,7 @@ router.get('/:user_id/forum-follow/:forum_id',
 );
 
 router.get('/:user_id',
+  optionalauthMiddleware,
   userController.userInfo
 );
 

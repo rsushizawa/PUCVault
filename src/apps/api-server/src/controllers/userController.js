@@ -1,6 +1,4 @@
 const userService = require('../services/userServices');
-const roleMiddleware = require('../middlewares/roleMiddleware');
-const { ok, fail } = require('../helpers/response');
 const { z } = require('zod');
 const jwt = require('jsonwebtoken');
 
@@ -48,7 +46,7 @@ exports.me = async (req, res) => {
   const user_id = req.user.id;
 
   try {
-    const userInfo = await userService.getUserInfo(user_id);
+    const userInfo = await userService.getUserInfo(user_id, null);
     delete userInfo.rows[0].senha_hash;
     const info = userInfo.rows[0];
     console.log(info);
@@ -60,9 +58,9 @@ exports.me = async (req, res) => {
 
 exports.userInfo = async (req, res) => {
   const { user_id } = req.params;
+  const logged_id = req.user ? req.user.id : null;
   try {
-    const userInfo = await userService.getUserInfo(user_id);
-    if (!userInfo.rows || userInfo.rows.length === 0) return fail(res, 404, "user not found");
+    const userInfo = await userService.getUserInfo(user_id, logged_id);
     delete userInfo.rows[0].senha_hash;
     const info = userInfo.rows[0];
     return ok(res, info);

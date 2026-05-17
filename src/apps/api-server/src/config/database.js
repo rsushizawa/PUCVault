@@ -20,7 +20,20 @@ const pool = new Pool({
   password: passAccess,
   ssl: {
     rejectUnauthorized: false
-  }
+  },
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 });
 
-module.exports = { pool };
+pool.on('error', (err, client) => {
+  console.error('Erro inesperado no cliente do banco de dados', err);
+});
+
+module.exports = {
+  query: (text, params) => pool.query(text, params),
+
+  getClient: () => pool.connect(),
+
+  pool: pool
+};

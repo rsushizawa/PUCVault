@@ -8,11 +8,22 @@ const authMiddleware = require('../middlewares/authMiddleware');
 router.patch('/upload/:location',
   authMiddleware,
   onlyImage.single('file'),
-  imgController.uploadImage
+  imgController.uploadImageUser
 );
 
-router.get('/get/:user_id',
-  imgController.getImageUrl
+router.get('/get/user/:user_id',
+  imgController.getImageUrlUser
 );
+
+router.patch('/:forum_id/upload/:location',
+  authMiddleware,
+  onlyImage.single('file'),
+  imgController.uploadImageForum
+);
+
+router.get('/get/forum/:forum_id',
+  imgController.getImageUrlForum
+);
+
 
 module.exports = router;

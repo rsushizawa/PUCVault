@@ -5,7 +5,10 @@ const authMiddleware = require('../middlewares/authMiddleware');
 
 
 
-router.post('/create', authMiddleware, tagController.createTags);
+router.post('/create',
+  authMiddleware,
+  tagController.createTags
+);
 
 router.patch('/:tag_id/validate',
   authMiddleware, tagController.validateTags
@@ -15,7 +18,9 @@ router.get('/:user_id/print',
   tagController.printUserTags
 );
 
-router.get('/search', tagController.searchTags);
+router.get('/search',
+  tagController.searchTags
+);
 
 router.get('/', tagController.getTags);
 
