@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const postController = require('../controllers/postController');
-const commentController = require('../controllers/commentController');
 const authMiddleware = require('../middlewares/authMiddleware');
 const { all } = require('../middlewares/uploadMiddleware');
 
@@ -18,7 +17,7 @@ router.get('/:forum_id/page/:page_num',
 
 router.post('/:father_id/comments/create',
   authMiddleware,
-  commentController.createComment
+  postController.createComment
 );
 
 router.get('/:post_id',
@@ -30,12 +29,22 @@ router.get('/:post_id/files',
 );
 
 router.get('/:post_id/comments',
-  commentController.listComments
+  postController.listComments
 );
 
 router.get('/user/:user_id',
   postController.userPosts
 );
 
+router.delete('/:post_id/delete',
+  authMiddleware,
+  postController.deletePost
+);
+
+
+router.patch(':content_id/rate',
+  authMiddleware,
+  postController.rateContent
+);
 
 module.exports = router;

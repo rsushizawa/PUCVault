@@ -1,5 +1,4 @@
 const userService = require('../services/userServices');
-const roleMiddleware = require('../middlewares/roleMiddleware');
 const { z } = require('zod');
 const jwt = require('jsonwebtoken');
 
@@ -46,7 +45,7 @@ exports.me = async (req, res) => {
   const user_id = req.user.id;
 
   try {
-    const userInfo = await userService.getUserInfo(user_id);
+    const userInfo = await userService.getUserInfo(user_id, null);
     delete userInfo.rows[0].senha_hash;
     const info = userInfo.rows[0];
     console.log(info);
@@ -57,9 +56,10 @@ exports.me = async (req, res) => {
 };
 
 exports.userInfo = async (req, res) => {
-  const user_id = req.params;
+  const { user_id } = req.params;
+  const logged_id = req.user ? req.user.id : null;
   try {
-    const userInfo = await userService.getUserInfo(user_id);
+    const userInfo = await userService.getUserInfo(user_id, logged_id);
     delete userInfo.rows[0].senha_hash;
     const info = userInfo.rows[0];
     console.log(info);

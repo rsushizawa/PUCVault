@@ -1,5 +1,4 @@
 const forumService = require('../services/forumServices');
-const roleMiddleware = require('../middlewares/roleMiddleware');
 const { z } = require('zod');
 
 

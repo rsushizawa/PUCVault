@@ -12,7 +12,10 @@ router.patch('/:forum_id/update',
   forumController.updateForumDescription
 );
 
-router.post('/create', authMiddleware, forumController.createForum);
+router.post('/create',
+  authMiddleware,
+  forumController.createForum
+);
 
 router.patch('/:forum_id/validate',
   authMiddleware,

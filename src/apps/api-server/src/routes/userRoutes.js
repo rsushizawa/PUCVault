@@ -3,6 +3,7 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 
 const authMiddleware = require('../middlewares/authMiddleware');
+const optionalauthMiddleware = require('../middlewares/optionalauthMiddleware');
 
 router.patch('/:user_id/change_role',
   authMiddleware,
@@ -21,6 +22,7 @@ router.get('/me',
 );
 
 router.get('/:user_id',
+  optionalauthMiddleware,
   userController.userInfo
 );
 

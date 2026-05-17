@@ -10,7 +10,7 @@ const email_user = process.env.EMAIL_USER;
 const secret = process.env.EMAIL_SECRET;
 
 
-exports.sendRecoveryCode = async (email, token) => {
+exports.sendEmail = async (email, code) => {
   try {
 
     const transporter = nodemailer.createTransport({
@@ -25,8 +25,8 @@ exports.sendRecoveryCode = async (email, token) => {
       from: `"Suporte PUCVault" <${email_user}>`,
       to: email,
       subject: 'Recuperação de Senha',
-      text: `Código de Recuperação: ${token}`,
-      html: `<h2> Código de Recuperação: ${tokenDeRecuperacao}</h2>`
+      text: `PIN: ${code}`,
+      html: `<h2> PIN: ${code}</h2>`
     }
     const info = await transporter.sendMail(EmailBody);
     console.log('Email sent successfully: ', info.messageId);
@@ -38,6 +38,3 @@ exports.sendRecoveryCode = async (email, token) => {
 };
 
 
-exports.twoFacAuth = async (email, code) => {
-
-};

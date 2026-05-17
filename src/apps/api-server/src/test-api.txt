@@ -1,6 +1,0 @@
-curl -X POST http://localhost:8000/auth/login -H "Content-Type: application/json" -d '{"userEmail": "mario_gamer", "password": "mario_gamer"}'
-curl http://localhost:8000/forums/print/forums
-curl http://localhost:8000/auth/print/logins
-curl -i -X DELETE http://localhost:8000/forums/1 -H "Authorization: Bearer TOKEN"
-
-curl -i -X PATCH http://localhost:8000/forums/1/description -H "Authorization: Bearer TOKEN_HERE" -H "Content-Type: application/json" -d '{"description": "New updated forum rules."}'
