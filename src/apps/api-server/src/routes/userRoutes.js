@@ -48,4 +48,9 @@ router.patch('/:user_id/description',
   userController.changeDescription
 );
 
+router.patch('/toggle-2fa',
+  authMiddleware,
+  userController.toggle2FA
+);
+
 module.exports = router;

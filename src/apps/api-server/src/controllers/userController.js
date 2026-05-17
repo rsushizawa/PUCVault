@@ -127,3 +127,19 @@ exports.changeDescription = async (req, res) => {
     return fail(res, 500, "server error");
   }
 };
+
+exports.toggle2FA = async (req, res) => {
+  try {
+    const user_id = req.user?.id || req.params.user_id;
+    if (!user_id) {
+      return res.status(400).json({ error: "User ID não identificado" });
+    }
+    await userService.toggle2FA(user_id);
+    const result = await userService.getUserInfo(user_id, null);
+    const user = result.rows ? result.rows[0] : (Array.isArray(result) ? result[0] : result);
+    const twofactorStatus = user.a2f;
+    res.status(200).json({ messsage: `2fa toggled to ${twofactorStatus}` });
+  } catch (error) {
+    res.status(500).json({ message: 'server error', error });
+  }
+}

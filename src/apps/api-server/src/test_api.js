@@ -211,6 +211,7 @@ async function menuUser() {
     console.log(" 3. Seguir Usuário");
     console.log(" 4. Mudar Cargo (Role)");
     console.log(" 5. Alterar Descrição");
+    console.log(" 6. Alternar 2FA (Ativar/Desativar)");
     console.log(" 0. Voltar");
 
     const opt = await ask("Escolha: ");
@@ -232,6 +233,8 @@ async function menuUser() {
       const id = await ask("Seu User ID: ");
       const description = await ask("Nova Descrição: ");
       await testRoute("Change Description", `/user/${id}/description`, "PATCH", { description }, true);
+    } else if (opt === '6') {
+      await testRoute("Alternar 2FA", `/user/toggle-2fa`, "PATCH", null, true);
     }
     await pause();
   }
