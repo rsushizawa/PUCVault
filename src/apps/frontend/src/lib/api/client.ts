@@ -1,4 +1,10 @@
-import { headers } from "next/headers";
+// BUG: `next/headers` is a Server Component-only API but client.ts is imported by Client Components
+// (page.tsx → posts.ts → client.ts and layout.tsx → auth.ts → client.ts).
+// Importing it here causes a build error: "You're importing a module that depends on next/headers".
+// Fix: remove this import entirely. If server-side cookie forwarding is needed, split client.ts into
+// two files — serverFetch.ts (imports next/headers, used only in async Server Components) and
+// client.ts (no next/headers, used in Client Components). `credentials: "include"` already handles
+// cookie forwarding for client-side fetches via the browser.
 
 const BASE_URL = process.env.NEXT_PUBLIC_API ?? "http://localhost:8000";
 
