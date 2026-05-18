@@ -309,10 +309,21 @@ async function menuPosts() {
       await testRoute("Listar Comentários", `/posts/${pId}/comments`, "GET");
     } else if (opt === '7') {
       const cId = await ask("Content ID: ");
-      const rating = await ask("Avaliação (ex: 1 ou -1): ");
-      await testRoute("Rate Content", `/posts/${cId}/rate`, "PATCH", { rating }, true);
-    }
-    await pause();
+
+      console.log("     1) Dar Like (Upvote)");
+      console.log("     2) Dar Dislike (Downvote)");
+      const tipoAvaliacao = await ask("Escolha a opção (1 ou 2): ");
+
+      if (tipoAvaliacao === '1') {
+        // Dispara o PATCH para a rota de upvote sem passar body, usando a autenticação (true)
+        await testRoute("Upvote Content", `/posts/${cId}/upvote`, "PATCH", null, true);
+      } else if (tipoAvaliacao === '2') {
+        // Dispara o PATCH para a rota de downvote sem passar body, usando a autenticação (true)
+        await testRoute("Downvote Content", `/posts/${cId}/downvote`, "PATCH", null, true);
+      } else {
+        console.log("   ❌ Opção inválida. Operação cancelada.");
+      }
+    } await pause();
   }
 }
 
