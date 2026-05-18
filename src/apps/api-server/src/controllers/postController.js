@@ -213,14 +213,27 @@ exports.listComments = async (req, res) => {
   }
 };
 
-exports.rateContent = async (req, res) => {
+exports.upvoteContent = async (req, res) => {
   try {
 
     const user_id = req.user.id;
     const content_id = req.params;
     const { rating } = req.body;
 
-    await postService.rateContent(user_id, content_id, rating);
+    await postService.rateContent(user_id, content_id);
+    return res.status(200).json({ message: 'post rated successfully' });
+  } catch (error) {
+    return res.status(500).json({ error: 'internal server error', error });
+  }
+};
+exports.downvoteContent = async (req, res) => {
+  try {
+
+    const user_id = req.user.id;
+    const content_id = req.params;
+    const { rating } = req.body;
+
+    await postService.rateContent(user_id, content_id);
     return res.status(200).json({ message: 'post rated successfully' });
   } catch (error) {
     return res.status(500).json({ error: 'internal server error', error });

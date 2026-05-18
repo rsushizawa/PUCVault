@@ -87,11 +87,21 @@ module.exports = {
       errorMsg(error);
     }
   },
-  async rateContent(user_id, content_id, rate) {
+  async toggleUpvoteContent(user_id, content_id) {
     try {
       console.log('conexão sucedida rateContent');
 
-      await db.query('CALL publico.avaliar_conteudo( $1, $2, $3 )', [user_id, content_id, rate]);
+      await db.query('CALL publico.avaliar_conteudo( $1, $2, $3 )', [user_id, content_id, 1]);
+
+    } catch (error) {
+      errorMsg(error);
+    }
+  },
+  async toggleDownvoteContent(user_id, content_id) {
+    try {
+      console.log('conexão sucedida rateContent');
+
+      await db.query('CALL publico.avaliar_conteudo( $1, $2, $3 )', [user_id, content_id, -1]);
 
     } catch (error) {
       errorMsg(error);
