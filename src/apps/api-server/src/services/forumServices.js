@@ -1,19 +1,5 @@
-const express = require('express');
-const cors = require('cors');
-const { z } = require('zod');
-const bcrypt = require('bcryptjs');
 const { pool } = require('../config/database');
-const path = require('path');
 const { error, log } = require('console');
-const saltRounds = 10;
-const envPath = path.resolve(__dirname, '../../src/.env');
-
-require('dotenv').config({ path: envPath });
-const hostAccess = process.env.DB_HOST;
-const userAccess = process.env.DB_USER;
-const passAccess = process.env.DB_PASS;
-const portAccess = process.env.DB_PORT;
-const databaseAcess = process.env.DB_NAME;
 
 
 function errorMsg(error) {

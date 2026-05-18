@@ -5,9 +5,6 @@ const envPath = path.resolve(__dirname, '../../src/.env');
 
 require('dotenv').config({ path: envPath });
 
-
-
-
 function errorMsg(error) {
   console.error('--- DETALHES DO ERRO ---');
   console.error('Mensagem:', error.message);

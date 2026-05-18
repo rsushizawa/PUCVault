@@ -60,16 +60,7 @@ const login = async (req, res) => {
   const { userEmail, password } = req.body;
 
   try {
-    let isAuthenticated = await authService.validateLoginCredentials(
-      userEmail,
-      password,
-    );
-    const token = jwt.sign(
-      { id: isAuthenticated.user.id, role: isAuthenticated.user.cargo },
-      passAccess,
-      { expiresIn: "1d" },
-    );
-
+    const isAuthenticated = await authService.validateLoginCredentials(userEmail, password);
     if (isAuthenticated.authenticated) {
       const token = jwt.sign(
         { id: isAuthenticated.user.id },
