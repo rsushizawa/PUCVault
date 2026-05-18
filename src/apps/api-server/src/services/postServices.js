@@ -1,6 +1,5 @@
-const { pool } = require('../config/database');
+const db = require('../config/database');
 const path = require('path');
-const { error, log } = require('console');
 
 function errorMsg(error) {
   console.error('--- DETALHES DO ERRO ---');
@@ -15,35 +14,26 @@ function errorMsg(error) {
 
 
 module.exports = {
-  async createPost(title, content, creator_id, forum_id, file_nome, file_caminho, tag_id_array) {
-    let connect;
+  async createPost(title, content, creator_id, forum_id, file_name, file_id, tag_id_array) {
     try {
-      connect = await pool.connect();
       console.log('conexão sucedida createPost');
 
-      await pool.query('CALL publico.inserir_postagem($1, $2, $3, $4, $5, $6, $7)', [title, content, creator_id, forum_id, file_nome, file_caminho, tag_id_array]);
+      await db.query('CALL publico.inserir_postagem($1, $2, $3, $4, $5, $6, $7)', [title, content, creator_id, forum_id, file_name, file_id, tag_id_array]);
 
     } catch (error) {
       errorMsg(error);
-    } finally {
-      connect.release();
     }
   },
 
   async getSinglePost(forum_id) {
-    let connect;
-
     try {
-      connect = await pool.connect();
       console.log('conexão sucedida getSinglePost');
 
-      const res = await pool.query('SELECT * FROM publico.buscar_postagem( $1 )', [forum_id]);
+      const res = await db.query('SELECT * FROM publico.buscar_postagem( $1 )', [forum_id]);
 
       return res.rows
     } catch (error) {
       errorMsg(error);
-    } finally {
-      connect.release();
     }
   },
 
@@ -51,40 +41,71 @@ module.exports = {
 
 
   async getPost(forum_id, page_num) {
-    let connect;
     try {
-      connect = await pool.connect();
       console.log('conexão sucedida getPost');
 
-      const res = await pool.query('SELECT * FROM publico.listar_postagens_forum($1::int, $2::int)', [forum_id, page_num]);
+      const res = await db.query('SELECT * FROM publico.listar_postagens_forum($1::int, $2::int)', [forum_id, page_num]);
 
       return res.rows;
 
     } catch (error) {
       errorMsg(error);
-    } finally {
-      connect.release();
     }
   },
 
   async getUserPosts(user_id, page_num) {
-    let connect;
     try {
-      connect = await pool.connect();
       log('conexão sucedida getUserPosts');
 
-      const res = await pool.query('SELECT * FROM publico.listar_postagens_usuario( $1, $2 )', [user_id, page_num]);
+      const res = await db.query('SELECT * FROM publico.listar_postagens_usuario( $1, $2 )', [user_id, page_num]);
 
       return res.rows;
     } catch (error) {
       errorMsg(error);
-    } finally {
-      connect.release();
+    }
+  },
+  async createComment(content, creator_id, father_content_id) {
+    try {
+      console.log('conexão sucedida createComment');
+
+      await db.query('CALL publico.inserir_comentario($1, $2, $3)', [content, creator_id, father_content_id]);
+
+    } catch (error) {
+      errorMsg(error);
+    }
+  },
+
+  async listComments(post_id) {
+    try {
+      console.log('conexão sucedida listComments');
+
+      const res = await db.query('SELECT * FROM publico.listar_comentarios_postagem( $1 )', [post_id]);
+
+      return res;
+    } catch (error) {
+      errorMsg(error);
+    }
+  },
+  async toggleUpvoteContent(user_id, content_id) {
+    try {
+      console.log('conexão sucedida rateContent');
+
+      await db.query('CALL publico.avaliar_conteudo( $1, $2, $3 )', [user_id, content_id, 1]);
+
+    } catch (error) {
+      errorMsg(error);
+    }
+  },
+  async toggleDownvoteContent(user_id, content_id) {
+    try {
+      console.log('conexão sucedida rateContent');
+
+      await db.query('CALL publico.avaliar_conteudo( $1, $2, $3 )', [user_id, content_id, -1]);
+
+    } catch (error) {
+      errorMsg(error);
     }
   }
-
-
-
 };
 
 

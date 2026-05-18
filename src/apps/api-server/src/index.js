@@ -13,7 +13,6 @@ const postRoutes = require('./routes/postRoutes.js');
 const denunciaRoutes = require('./routes/denunciaRoutes.js');
 const feedRoutes = require('./routes/feedRoutes.js');
 const imgRoutes = require('./routes/imageRoutes.js');
-const denunciaRoutes = require('./routes/denunciaRoutes.js');
 
 app.use(cors());
 app.use(express.json());
