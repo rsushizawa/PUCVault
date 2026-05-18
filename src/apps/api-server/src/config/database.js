@@ -27,7 +27,7 @@ const pool = new Pool({
 });
 
 pool.on('error', (err, client) => {
-  console.error('Erro inesperado no cliente do banco de dados', err);
+  console.error('Erro inesperado no cliente do banco de dados', err.message);
 });
 
 module.exports = {

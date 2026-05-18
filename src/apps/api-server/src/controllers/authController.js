@@ -70,7 +70,7 @@ exports.signin = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     const signupToken = generateJWTToken({ email, name, username, hashedPassword, twofacauth, pinHash: pinHash }, 'email_verification');
 
-    await emailServices.sendEmail(email, pin)
+    await emailServices.sendEmail(email, pin, 'email_verification');
 
     return res.status(200).json({ message: 'PIN sent to email', signupToken });
 
@@ -99,8 +99,8 @@ exports.verifySignup = async (req, res) => {
       return res.status(401).json({ error: 'token incorrect' });
     }
     await authService.addLogin(payload.name, payload.username, payload.email, payload.hashedPassword);
-
     if (payload.twofacauth) {
+      console.log("➡️ Entrou no condicional payload.twofacauth! Ativando 2FA...");
       const result = await authService.getUserInfoByEmail(payload.email);
       const user = result.rows ? result.rows[0] : (Array.isArray(result) ? result[0] : result);
       const user_id = user.id;
@@ -137,42 +137,45 @@ const loginSchema = z.object({
 });
 
 
-
-
 exports.login = async (req, res) => {
-
   const validation = loginSchema.safeParse(req.body);
   if (!validation.success) {
     return res.status(400).json({ error: "Invalid data", detail: validation.error.format() });
   }
+
   const { userEmail, password } = validation.data;
   try {
     const isAuthenticated = await authService.validateLoginCredentials(userEmail, password);
+
     if (isAuthenticated.authenticated) {
       const user = isAuthenticated.user || (isAuthenticated.rows && isAuthenticated.rows[0]);
+
       if (!user.a2f) {
         const token = jwt.sign(
           {
             id: user.id,
-            require_twofac: user.a2f
+            cargo: user.cargo
           },
           passAccess,
           { expiresIn: '1d' }
         );
         return res.status(200).json({
           message: "login success",
-          user: isAuthenticated.user,
+          user: user,
           token,
         });
-      } else {
+      }
+      else {
         const pin = generateRandomPIN();
         const pinHash = await bcrypt.hash(pin, saltRounds);
 
         const twoFacToken = generateJWTToken({
-          id: user.id, pinHash: pinHash
+          id: user.id,
+          cargo: user.cargo,
+          pinHash: pinHash
         }, '2fa');
 
-        await emailServices.sendEmail(user.email, pin);
+        await emailServices.sendEmail(user.email, pin, '2fa');
 
         return res.status(200).json({
           message: 'PIN sent to email successfully',
@@ -181,19 +184,19 @@ exports.login = async (req, res) => {
       }
 
     } else {
-      return res.status(400).status({ error: 'user or password incorrect' });
+      return res.status(401).json({ error: 'user or password incorrect' });
     }
-
 
   } catch (error) {
     console.error('internal server error', error.message);
-    res.status(500).json({ error: 'internal server error' });
+    return res.status(500).json({ error: 'internal server error' });
   }
 };
 
 exports.verifyLogin = async (req, res) => {
   const { twoFacToken, pin_input } = req.body;
   console.log('conexao sucedida verifyLogin');
+
   try {
     const payload = jwt.verify(twoFacToken, passAccess);
 
@@ -206,6 +209,7 @@ exports.verifyLogin = async (req, res) => {
     if (!isPinCorrect) {
       return res.status(401).json({ error: 'PIN incorrect' });
     }
+
     const token = jwt.sign(
       { id: payload.id, cargo: payload.cargo },
       passAccess,
@@ -296,11 +300,11 @@ exports.forgotPasswordSendEmail = async (req, res) => {
   const pin = generateRandomPIN();
   const pinHash = bcrypt.hash(pin, saltRounds);
 
-  const sent_token = generateJWTToken(pin, pinHash, 'password_recovery')
+  const sent_token = generateJWTToken({ pin, pinHash }, 'password_recovery');
 
   try {
 
-    await emailServices.sendEmail(email, pin);
+    await emailServices.sendEmail(email, pin, 'password_recovery');
     return res.status(200).json({
       message: 'PIN enviado para o email com sucesso',
       pinToken: sent_token
