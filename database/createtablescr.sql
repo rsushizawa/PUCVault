@@ -2,8 +2,8 @@
 CREATE TABLE privado.identidade_visual (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
-	img_perfil TEXT NOT NULL,
-	img_banner TEXT NOT NULL,
+	img_perfil TEXT DEFAULT NULL,
+	img_banner TEXT DEFAULT NULL,
 
 	perfil_modificado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 	banner_modificado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -14,6 +14,7 @@ CREATE TABLE privado.usuario (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	nome VARCHAR(75) NOT NULL,
 	nome_usuario VARCHAR(20) NOT NULL UNIQUE,
+	descricao VARCHAR(100),
 	email VARCHAR(50) NOT NULL UNIQUE,
 	cargo VARCHAR(15) DEFAULT 'USUARIO',
 	status VARCHAR(15) DEFAULT 'ATIVO',
@@ -21,6 +22,7 @@ CREATE TABLE privado.usuario (
 	criado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 	excluido_em TIMESTAMP WITH TIME ZONE,
 	senha_hash TEXT NOT NULL,
+	a2f boolean default false,
 
 	identidade_visual INT NOT NULL UNIQUE,
 
@@ -90,6 +92,8 @@ CREATE TABLE privado.postagem (
 	titulo VARCHAR(50) NOT NULL,
 	arquivo TEXT UNIQUE,
 	forum INT NOT NULL,
+	arquivo_nome TEXT UNIQUE,
+	arquivo_caminho TEXT UNIQUE,
 
 	FOREIGN KEY (forum) REFERENCES privado.forum(id) ON DELETE CASCADE
 );
@@ -108,14 +112,14 @@ CREATE TABLE privado.comentario (
 
 -- denuncia
 CREATE TABLE privado.denuncia (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	tipo VARCHAR(30) NOT NULL,
-	status VARCHAR(20) DEFAULT 'ABERTA',
-	criado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-	resolvido_em TIMESTAMP WITH TIME ZONE,
+		id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+		tipo VARCHAR(30) NOT NULL,
+		status VARCHAR(20) DEFAULT 'ABERTA',
+		criado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+		resolvido_em TIMESTAMP WITH TIME ZONE,
 
-	denunciante INT NOT NULL,
-	resolvido_por INT,
+		denunciante INT NOT NULL,
+		resolvido_por INT,
 
 	CONSTRAINT denuncia_status
 		CHECK (status IN ('ABERTA', 'RESOLVIDA', 'IGNORADA')),
@@ -200,4 +204,22 @@ CREATE TABLE privado.incluir_tag (
 	FOREIGN KEY (forum) REFERENCES privado.forum(id) ON DELETE CASCADE,
 
 	PRIMARY KEY (tag, forum)
+);
+
+-- registro de penalidades (silêncios) aplicados a usuários
+-- strikes expiram conforme a duração do silêncio:
+--   <= 1 dia -> strike válido por 1 semana
+--   <= 3 dias -> strike válido por 3 meses
+--   > 3 dias -> strike válido por 6 meses
+CREATE TABLE privado.penalidade (
+    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    denuncia_id INT NOT NULL,
+    duracao INTERVAL NOT NULL,
+    aplicado_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    strike_valido_ate TIMESTAMPTZ NOT NULL,
+    removido_em TIMESTAMPTZ,
+
+    FOREIGN KEY (usuario_id) REFERENCES privado.usuario(id) ON DELETE CASCADE,
+    FOREIGN KEY (denuncia_id) REFERENCES privado.denuncia(id) ON DELETE RESTRICT
 );
