@@ -1,0 +1,44 @@
+# TODO: Fill in the values below before running.
+#   1. Create a .env file at the project root with:
+#        API_URL=http://localhost:8000
+#        FRONTEND_URL=http://localhost:3000
+#        JWT_SECRET=<your secret>
+#        SUPABASE_URL=<your Supabase project URL>
+#        SUPABASE_KEY=<your Supabase service role key>
+#        CLOUDINARY_URL=<your Cloudinary URL>
+#   2. Set the correct build context paths for api and frontend if they differ.
+#   3. Replace the Nginx config path under proxy.volumes with the actual nginx.conf location.
+#   4. Create nginx.conf at the project root:
+#        server {
+#          listen 80;
+#          location /api/ { proxy_pass http://api:8000/; }
+#          location /     { proxy_pass http://frontend:3000; }
+#        }
+#   5. Add hot-reload support for development by mounting source dirs as volumes:
+#        api:      - ./src/apps/api-server:/app
+#        frontend: - ./src/apps/frontend:/app
+
+services:
+  api:
+    build:
+      context: ./src/apps/api-server
+    env_file: .env
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./src/apps/frontend
+    env_file: .env
+    ports:
+      - "3000:3000"
+
+  proxy:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - api
+      - frontend

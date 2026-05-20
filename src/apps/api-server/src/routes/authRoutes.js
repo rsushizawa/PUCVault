@@ -31,6 +31,10 @@ router.post('/verify-sign-in',
   authController.verifySignup
 );
 
+router.post('/logout',
+  authController.logout
+);
+
 router.patch('/change-password',
   authMiddleware,
   authController.changePassword

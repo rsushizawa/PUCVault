@@ -1,12 +1,5 @@
 import { headers } from "next/headers";
 
-// Add API_URL=http://localhost:8000 to .env.local. NEXT_PUBLIC_API_URL stays here for client-side use.
-// TODO: Once authController sets the httpOnly cookie, replace header injection in all three functions below with:
-//   credentials: 'include'   ← browser sends the cookie automatically, no Authorization header needed
-// Also update the Express CORS config in the server entry point:
-//   app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }))
-//   A wildcard origin ('*') blocks credentialed requests — must be a specific origin string.
-//
 const BASE_URL = process.env.NEXT_PUBLIC_API ?? "http://localhost:8000";
 
 export async function apiFetch<T>(

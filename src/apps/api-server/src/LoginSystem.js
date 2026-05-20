@@ -6,7 +6,7 @@ const { Pool } = require('pg');
 const path = require('path');
 const { error } = require('console');
 
-const envPath = path.resolve(__dirname, "../../../../.env");
+const envPath = path.resolve(__dirname, '../../../../.env');
 
 
 let user_id;
@@ -70,10 +70,10 @@ async function validateLoginCredentials(userEmail, password) {
       returnvalue = await pool.query('SELECT * FROM publico.dados_login_usuario( $1, $2 )', [null, userEmail]);
     }
     if (returnvalue.rowCount === 0) {
-      console.log("user not found");
+      console.log('user not found');
       return {
         authenticated: false,
-        message: "user or email not found",
+        message: 'user or email not found'
       };
     }
     const userRow = returnvalue.rows[0];
@@ -81,16 +81,16 @@ async function validateLoginCredentials(userEmail, password) {
 
     if (passwordValid) {
       delete userRow.senha_hash;
-      console.log("login successful");
+      console.log('login successful');
       return {
         authenticated: true,
-        user: userRow,
+        user: userRow
       };
     } else {
-      console.log("login failed");
+      console.log('login failed');
       return {
         authenticated: false,
-        message: "incorrect password",
+        message: 'incorrect password'
       };
     }
   } catch (error) {
@@ -126,6 +126,7 @@ async function printLogins() {
   } catch (error) {
 
     errorMsg(error);
+
   }
 }
 
@@ -137,11 +138,12 @@ app.use(express.json());
 
 
 
+
 const signinSchema = z.object({
   email: z.string().trim().toLowerCase().email("Invalid email").max(50),
   name: z.string().min(3, "Nome(mínimo 3 caracteres)").max(75),
   username: z.string().min(3, "Username (mínimo 3 caracteres)").max(20),
-  password: z.string().min(8, "Senha (mínimo 8 caracteres)"),
+  password: z.string().min(8, "Senha (mínimo 8 caracteres)")
 });
 
 
@@ -155,17 +157,12 @@ app.get('/sign-in', (req, res) => {
   res.json(login);
 });
 
-//post sign-in basicamente pronto
-app.post("/sign-in", async (req, res) => {
-  const validation = loginSchema.safeParse(req.body);
 //post sign-in basicamente pronto 
 app.post('/sign-in', async (req, res) => {
   const validation = signinSchema.safeParse(req.body);
 
   if (!validation.success) {
-    return res
-      .status(400)
-      .json({ error: "Invalid data", detail: validation.error.format() });
+    return res.status(400).json({ error: "Invalid data", detail: validation.error.format() });
   }
 
   const { email, name, username, password } = validation.data;
@@ -187,26 +184,31 @@ app.post('/sign-in', async (req, res) => {
     // 2. You can also send the error message to Postman/Frontend temporarily for debugging
     res.status(500).json({
       error: "Error processing password",
-      details: error.message, // Remove this line before putting your app in production!
+      details: error.message // Remove this line before putting your app in production!
     });
+
   }
+
 });
 
-app.post("/login", async (req, res) => {
+app.post('/login', async (req, res) => {
   const { userEmail, password } = req.body;
+
   try {
     let isAuthenticated = await validateLoginCredentials(userEmail, password);
     if (isAuthenticated.authenticated) {
       //entrou
       user_id = isAuthenticated.user.id;
       res.status(200).json(isAuthenticated.user);
-    } else {
+    }
+    else {
       //fica na tela de login pq nao entrou
       console.log('login failed', isAuthenticated.message);
       res.status(401).json({ error: isAuthenticated.message });
     }
+
   } catch (error) {
-    console.log("internal server error", error.message);
+    console.log('internal server error', error.message);
   }
 });
 
@@ -300,8 +302,26 @@ app.post('/forums', async (req, res) => {
   }
 });
 
+// TODO: Wire up two missing forum admin endpoints:
+//
+//   POST /forum/:id/validate
+//     Body: { status: 'ATIVO' | 'RECUSADO' }
+//     Requires VALIDADOR or SUPERADMIN role (roleMiddleware).
+//     DB call: CALL publico.validar_forum(forum_id INT, validador_id INT, status TEXT)
+//     Use req.user.id as validador_id; req.params.id as forum_id.
+//
+//   PATCH /forum/:id/description
+//     Body: { description: string }
+//     Requires forum ownership or ADMIN role.
+//     DB call: CALL publico.atualizar_descricao_forum(forum_id INT, usuario_id INT, nova_descricao TEXT)
+//     Use req.user.id as usuario_id; req.params.id as forum_id; req.body.description as nova_descricao.
+
+
+
+
 
 app.listen(8000, () => console.log('Rodando!'));
+
 
 
 
