@@ -8,17 +8,11 @@ require('dotenv').config({ path: envPath });
 const passAccess = process.env.JWT_SECRET;
 
 const optionalauthMiddleware = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.split(' ')[1];
-
-    if (token) {
-      try {
-        const decode = jwt.verify(token, passAccess);
-        req.user = decode;
-      } catch (error) {
-      }
-    }
+  const token = req.cookies?.auth_token;
+  if (token) {
+    try {
+      req.user = jwt.verify(token, passAccess);
+    } catch {}
   }
   next();
 }

@@ -155,20 +155,18 @@ exports.login = async (req, res) => {
 
       if (!user.a2f) {
         const token = jwt.sign(
-          {
-            id: user.id,
-            cargo: user.cargo
-          },
+          { id: user.id, cargo: user.cargo },
           passAccess,
           keep_connected ? { expiresIn: '1m' } : { expiresIn: '1d' }
         );
-        return res.status(200).json({
-          message: "login success",
-          user: user,
-          token,
+        res.cookie('auth_token', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          maxAge: 86400000,
         });
-      }
-      else {
+        return res.status(200).json({ message: "login success", user });
+      } else {
         const pin = generateRandomPIN();
         const pinHash = await bcrypt.hash(pin, saltRounds);
 
@@ -219,10 +217,14 @@ exports.verifyLogin = async (req, res) => {
       { expiresIn: '1d' }
     );
 
-    return res.status(200).json({
-      message: 'user authenticated and logged in',
-      token
+    res.cookie('auth_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 86400000,
     });
+
+    return res.status(200).json({ message: 'user authenticated and logged in' });
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
       return res.status(403).json({ error: 'token expired' });
@@ -284,6 +286,11 @@ const emailSchema = z.object({
 });
 
 
+
+exports.logout = (req, res) => {
+  res.clearCookie('auth_token', { httpOnly: true, sameSite: 'strict' });
+  return res.status(200).json({ message: 'logged out' });
+};
 
 exports.forgotPasswordSendEmail = async (req, res) => {
   const validation = emailSchema.safeParse(req.body);

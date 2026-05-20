@@ -1,12 +1,27 @@
+// TODO: (FE-SC-1 Step 3): Convert this file to an async server component:
+//   1. Delete "use client" below.
+//   2. Change `export default function Home()` to `export default async function Home()`.
+//   3. Check auth: import { cookies } from 'next/headers'; const isLoggedIn = !!cookies().get('auth_token');
+//   4. Fetch forums: const forums = await serverFetch<ForumSummary[]>('/forum') — import serverFetch from '@/lib/api/server'.
+//   5. Fetch first feed page if isLoggedIn: const { data: posts, total } = await serverFetch<...>('/post/feed?page=1').
+//   6. Render <FeedClient initialPosts={posts} initialTotal={total} isLoggedIn={isLoggedIn} forums={forums} />.
 "use client";
 
+// TODO: (FE-SC-1 Step 3): Delete this import — useState, useEffect, useRef are not used in server components.
+// TODO: (FE-SC-1 Step 4): Create src/components/feed-client.tsx ("use client"). Move all state, useEffect, useRef,
+//   intersection observer, and vote logic there. Props interface:
+//   { initialPosts: Post[]; initialTotal: number; isLoggedIn: boolean; forums: ForumSummary[] }
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Users } from "lucide-react";
 import NavBar from "@/components/navbar";
 import PostCard from "@/components/post-card";
+// TODO: (FE-SC-1 Step 3): Delete this import — forums are fetched server-side via serverFetch('/forum').
+//   Keep `import type { ForumSummary }` if needed for prop typing on FeedClient.
 import { getForums } from "@/lib/api/communities";
 import type { ForumSummary } from "@/lib/api/communities";
+// TODO: (FE-SC-1 Step 4): Delete this import. getFeed moves to the server component (serverFetch('/post/feed?page=1')).
+//   votePost moves to FeedClient — it's a user action and must stay in a client component.
 import { getFeed, votePost } from "@/lib/api/posts";
 import type { Post } from "@/types/api";
 
@@ -34,6 +49,9 @@ export default function Home() {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const loadMoreFnRef = useRef<() => Promise<void>>(async () => {});
 
+  // TODO: (FE-SC-1 Step 3): Delete this entire useEffect block (lines below through the closing `}, [])`).
+  //   isLoggedIn, forums, and initial feed are all resolved server-side before the page renders.
+  //   In the server component: const isLoggedIn = !!cookies().get('auth_token') from 'next/headers'.
   useEffect(() => {
     const loggedIn = !!localStorage.getItem("auth_token");
     setIsLoggedIn(loggedIn);
@@ -120,7 +138,9 @@ export default function Home() {
                   <PostCard
                     key={post.id}
                     postId={String(post.id)}
-                    communitySlug={post.forum_nome ?? post.nome ?? String(post.forum)}
+                    communitySlug={
+                      post.forum_nome ?? post.nome ?? String(post.forum)
+                    }
                     forumId={String(post.forum)}
                     title={post.titulo}
                     body={post.conteudo}
@@ -129,8 +149,12 @@ export default function Home() {
                     tags={post.tags}
                     voteCount={Number(post.engajamento)}
                     commentCount={Number(post.comentarios)}
-                    onUpvote={() => votePost(String(post.id), 1).catch(() => {})}
-                    onDownvote={() => votePost(String(post.id), -1).catch(() => {})}
+                    onUpvote={() =>
+                      votePost(String(post.id), 1).catch(() => {})
+                    }
+                    onDownvote={() =>
+                      votePost(String(post.id), -1).catch(() => {})
+                    }
                   />
                 ))}
               </div>
