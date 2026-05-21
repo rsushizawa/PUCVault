@@ -1,6 +1,5 @@
 const db = require('../config/database');
 const { error, log } = require('console');
-const { listPostFilesYear } = require('../controllers/forumController');
 
 
 function errorMsg(error) {
