@@ -1,293 +1,255 @@
-##  /auth
+# Documentação da API - PUC Vault
 
-**Definição:** Gerencia o ciclo de vida de autenticação e registro de usuários.
-
-- **GET** `/print/logins`
-
-    - **Definição:** Lista todos os logins registrados no sistema (uso administrativo/debug).
-        
-    - **Retorno:** `{ rows }`
-        
-- **POST** `/login`
-    
-    - **Entrada:** `userEmail` (body), `password` (body)
-        
-    - **Definição:** Autentica o usuário e gera um token JWT.
-        
-    - **Retorno:** `{ message, user, token }`
-        
-- **POST** `/sign-in`
-    
-    - **Entrada:** `email`, `name`, `username`, `password` (body)
-        
-    - **Definição:** Cria uma nova conta de usuário com senha criptografada.
-        
-    - **Retorno:** `{ message, username }`
-        
+Esta documentação descreve todos os endpoints da API do sistema **PUC Vault**, estruturados de acordo com as rotas reais consumidas e validadas pelo script de automação e testes integrados (`test_api.js`).
 
 ---
 
-##  /feed
+## 🔐 /auth
+**Definição:** Gerencia o ciclo de vida de autenticação, registro de contas e segurança multifator (2FA/PIN).
 
-**Definição:** Gerencia a visualização de conteúdos globais baseados na atividade do usuário.
+- **POST** `/auth/sign-in`
+  - **Entrada:** `email`, `name`, `username`, `password`, `twofacauth` (body)
+  - **Definição:** Inicia o processo de criação de uma nova conta de usuário. Dispara um código de confirmação.
+  - **Retorno:** `{ message, username, signupToken }`
 
-- **GET** `/page/:page_num`
-    
-    - **Entrada:** `page_num` (params), `user_id` (jwt)
-        
-    - **Definição:** Retorna as postagens do feed personalizado do usuário de forma paginada.
-        
-    - **Retorno:** `{ rows }`
-        
+- **POST** `/auth/verify-sign-in`
+  - **Entrada:** `signupToken` (body), `pin_input` (body)
+  - **Definição:** Confirma o cadastro inserindo o PIN enviado ao email. Efetiva a criação da conta.
+  - **Retorno:** `{ message, success: true }`
 
----
+- **POST** `/auth/login`
+  - **Entrada:** `userEmail` (body), `password` (body)
+  - **Definição:** Autentica o usuário no sistema. Se o 2FA estiver ativado, retorna um token temporário de 2FA.
+  - **Retorno (Sem 2FA):** `{ message, user, token }`
+  - **Retorno (Com 2FA):** `{ message, twoFacToken, requireTwoFactor: true }`
 
-##  /forums
+- **POST** `/auth/verify-login`
+  - **Entrada:** `twoFacToken` (body), `pin_input` (body)
+  - **Definição:** Valida o PIN de segundo fator (2FA) inserido pelo usuário durante o fluxo de login.
+  - **Retorno:** `{ message, user, token }`
 
-**Definição:** Gerencia a criação, moderação e listagem de fóruns e seus arquivos.
+- **POST** `/auth/change-password`
+  - **Entrada:** `password`, `new_password`, `confirm` (body), `user_id` (jwt)
+  - **Definição:** Altera a senha do usuário logado mediante validação da senha atual.
+  - **Retorno:** `{ message: "success" }`
 
-- **GET** `/print/forums`
-    
-    - **Definição:** Lista todos os fóruns cadastrados no banco de dados.
-        
-    - **Retorno:** `{ rows }`
-        
-- **PATCH** `/:forum_id/update`
-    
-    - **Entrada:** `forum_id` (params), `description` (body), `user_id` (jwt)
-        
-    - **Definição:** Atualiza a descrição de um fórum existente.
-        
-    - **Retorno:** `{ message: "success" }`
-        
-- **POST** `/create`
-    
-    - **Entrada:** `name`, `description` (body), `user_id` (jwt)
-        
-    - **Definição:** Solicita a criação de um novo fórum.
-        
-    - **Retorno:** `{ message, name, description, user_id }`
-        
-- **PATCH** `/:forum_id/validate`
-    
-    - **Entrada:** `forum_id` (params), `forumState` (body: 0 para RECUSADO, 1 para ATIVO), `validator_id` (jwt)
-        
-    - **Definição:** Permite que um validador aprove ou recuse a existência de um fórum.
-        
-    - **Retorno:** `{ message: "success" }`
+- **POST** `/auth/forgot-send-email`
+  - **Entrada:** `email` (body)
+  - **Definição:** Inicia o fluxo de recuperação de senha, enviando um token PIN para o email informado.
+  - **Retorno:** `{ message, pinToken }`
 
+- **POST** `/auth/forgot-password`
+  - **Entrada:** `pinToken`, `pin`, `new_password`, `confirm` (body)
+  - **Definição:** Consome o token de recuperação e o PIN para redefinir a senha do usuário.
+  - **Retorno:** `{ message: "success" }`
 
-        
-- **POST** `/:forum_id/follow`
-    
-    - **Entrada:** `forum_id` (params), `user_id` (jwt)
-        
-    - **Definição:** Alterna (follow/unfollow) o estado de seguimento de um fórum pelo usuário.
-        
-    - **Retorno:** `{ message: "success" }`
-        
-- **GET** `/:forum_id/list`
-    
-    - **Entrada:** `forum_id` (params)
-        
-    - **Definição:** Lista os seguidores de um fórum específico.
-        
-    - **Retorno:** `{ message: "success" }`
+- **POST** `/auth/logout`
+  - **Entrada:** `user_id` (jwt)
+  - **Definição:** Invalida a sessão atual do usuário autenticado no servidor.
+  - **Retorno:** `{ message: "success" }`
 
-        (faltando impressao dos foruns de arquivos por pagina)
-
-- **GET** `/:forum_id/files/year`
-    
-    - **Entrada:** `forum_id` (params)
-        
-    - **Definição:** Lista os anos que possuem arquivos/posts vinculados naquele fórum.
-        
-    - **Retorno:** `{ rows }`
-        
-- **GET** `/:forum_id/files/year/:year`
-    
-    - **Entrada:** `forum_id`, `year` (params)
-        
-    - **Definição:** Lista as tags que possuem arquivos no fórum em um ano específico.
-        
-    - **Retorno:** `{ rows }`
-        
-- **GET** `/:forum_id/files/year/:year/tag/:tag`
-    
-    - **Entrada:** `forum_id`, `year`, `tag` (params)
-        
-    - **Definição:** Lista os arquivos/posts filtrados por fórum, ano e tag.
-        
-    - **Retorno:** `{ message: "success", results }`
-        
-- **GET** `/:forum_id`
-    
-    - **Entrada:** `forum_id` (params), `user_id` (jwt opcional)
-        
-    - **Definição:** Retorna os detalhes de um único fórum, incluindo total de seguidores e se o usuário logado o segue.
-        
-    - **Retorno:** `{ response }`
-        
+- **GET** `/auth/print/logins`
+  - **Definição:** Rota administrativa/debug para listagem rápida de logins cadastrados.
+  - **Retorno:** `{ rows }`
 
 ---
 
-##  /images
+## 👤 /user
+**Definição:** Gerencia perfis de usuários, biografia, permissões e interações sociais.
 
-**Definição:** Gerencia o upload e recuperação de imagens de perfil e banner via Cloudinary.
+- **GET** `/user/me`
+  - **Entrada:** `user_id` (jwt)
+  - **Definição:** Retorna as informações completas do perfil do usuário atualmente autenticado.
+  - **Retorno:** `{ info }`
 
-- **PATCH** `/upload/:location`
-    
-    - **Entrada:** `location` (params: 'perfil' ou 'banner'), `file` (multermemory), `user_id` (jwt)
-        
-    - **Definição:** Faz o upload de uma imagem, remove a antiga do Cloudinary e atualiza o banco de dados.
-        
-    - **Retorno:** `{ message: "success", imageId }`
-        
-- **GET** `/get/:user_id`
-    
-    - **Entrada:** `user_id` (params)
-        
-    - **Definição:** Retorna as URLs formatadas (crop/resize) do perfil e banner de um usuário.
-        
-    - **Retorno:** `{ img_perfil, img_banner }`
-        
+- **GET** `/user/:id`
+  - **Entrada:** `id` (params)
+  - **Definição:** Retorna informações públicas detalhadas de um usuário específico.
+  - **Retorno:** `{ info }`
 
----
+- **PATCH** `/user/:id/follow`
+  - **Entrada:** `id` (params), `user_id` (jwt)
+  - **Definição:** Alterna o estado de seguimento (follow/unfollow) em relação a outro usuário.
+  - **Retorno:** `{ message: "success" }`
 
-##  /posts
+- **PATCH** `/user/:id/change_role`
+  - **Entrada:** `id` (params), `roleNum` (body: 1-USUARIO, 2-VALIDADOR, 3-ADMIN), `user_id` (jwt administrativo)
+  - **Definição:** Altera o nível de cargo/permissão de um usuário específico no sistema.
+  - **Retorno:** `{ message: "success" }`
 
-**Definição:** Gerencia a criação de conteúdo, anexos e interação por comentários.
+- **PATCH** `/user/:id/description`
+  - **Entrada:** `id` (params), `description` (body), `user_id` (jwt)
+  - **Definição:** Altera o texto de biografia/descrição do perfil do próprio usuário.
+  - **Retorno:** `{ description }`
 
-- **POST** `/:forum_id/create`
-    
-    - **Entrada:** `forum_id` (params), `title`, `content`, `tags` (body), `file` (multer)
-        
-    - **Definição:** Cria uma nova postagem em um fórum, podendo incluir um anexo.
-        
-    - **Retorno:** `{ message: "success", file_id }`
-        
-- **GET** `/:forum_id/page/:page_num`
-    
-    - **Entrada:** `forum_id`, `page_num` (params)
-        
-    - **Definição:** Lista as postagens de um fórum específico com paginação.
-        
-    - **Retorno:** `{ rows , total }`
-        
-- **POST** `/:father_id/comments/create`
-    
-    - **Entrada:** `father_id` (params), `content`, `parentId` (body opcional)
-        
-    - **Definição:** Cria um comentário em um post ou uma resposta a outro comentário.
-        
-    - **Retorno:** `{ message: "success" }`
-        
-- **GET** `/:post_id/files`
-    
-    - **Entrada:** `post_id` (params)
-        
-    - **Definição:** Busca o anexo de um post no Cloudinary e força o download no navegador.
-        
-    - **Retorno:** `Buffer (Stream de arquivo)`
-        
-- **GET** `/:post_id/comments`
-    
-    - **Entrada:** `post_id` (params)
-        
-    - **Definição:** Lista todos os comentários associados a um post.
-        
-    - **Retorno:** `{ rows }`
-        
-- **GET** `/user/:user_id`
-    
-    - **Entrada:** `user_id`, `page_num` (params)
-        
-    - **Definição:** Recupera todas as postagens feitas por um usuário específico.
-        
-    - **Retorno:** `{ message: "success", result }`
-        
+- **PATCH** `/user/:id/toggle-2fa`
+  - **Entrada:** `id` (params), `user_id` (jwt)
+  - **Definição:** Ativa ou desativa a exigência de Autenticação de Dois Fatores (2FA) para a conta.
+  - **Retorno:** `{ message, twoFactorEnabled: boolean }`
+
+- **DELETE** `/user/delete`
+  - **Entrada:** `user_id` (jwt)
+  - **Definição:** Remove permanentemente a conta do usuário logado (Operação protegida para evitar colisões com palavras reservadas).
+  - **Retorno:** `{ message: "success" }`
 
 ---
 
-##  /tags
+## 🏛️ /forums
+**Definição:** Gerencia a criação, moderação, seguidores e indexação cronológica/taxonômica de anexos dos fóruns.
 
-**Definição:** Gerencia a taxonomia do sistema (categorias de posts).
+- **POST** `/forums/create`
+  - **Entrada:** `name`, `description` (body), `user_id` (jwt)
+  - **Definição:** Solicita a criação de um novo fórum na plataforma.
+  - **Retorno:** `{ message, id, name, description }`
 
-- **POST** `/create`
-    
-    - **Entrada:** `name` (body), `user_id` (jwt)
-        
-    - **Definição:** Sugere/Cria uma nova tag no sistema.
-        
-    - **Retorno:** `{ message: "success" }`
-        
-- **PATCH** `/:tag_id/validate`
-    
-    - **Entrada:** `tag_id` (params), `tagState` (body), `user_id` (jwt)
-        
-    - **Definição:** Aprova ou recusa uma tag (ação de moderador/validador).
-        
-    - **Retorno:** `{ message: "success" }`
-        
-- **GET** `/:user_id/print`
-    
-    - **Entrada:** `user_id` (params)
-        
-    - **Definição:** Lista as tags criadas ou associadas a um usuário.
-        
-    - **Retorno:** `{ rows }`
-        
-- **GET** `/search`
-    
-    - **Entrada:** `q` (query string)
-        
-    - **Definição:** Busca tags por nome (Autocomplete).
-        
-    - **Retorno:** `{ rows }`
-        
+- **GET** `/forums/print/forums`
+  - **Definição:** Retorna todos os fóruns do banco de dados estruturados para exibição.
+  - **Retorno:** `[ ...forums ]` ou `{ rows }`
+
+- **GET** `/forums/:id`
+  - **Entrada:** `id` (params), `user_id` (jwt opcional)
+  - **Definição:** Retorna os metadados de um único fórum, estatísticas de seguidores e se o usuário atual o segue.
+  - **Retorno:** `{ forum, followers_count, is_following }`
+
+- **GET** `/forums/by-name/:name`
+  - **Entrada:** `name` (params codificado via URL)
+  - **Definição:** Busca as informações detalhadas de um fórum através de seu nome exato.
+  - **Retorno:** `{ id, name, description, criado_em }`
+
+- **POST** `/forums/:id/follow`
+  - **Entrada:** `id` (params), `user_id` (jwt)
+  - **Definição:** Segue ou deixa de seguir o fórum especificado pelo ID.
+  - **Retorno:** `{ message: "success" }`
+
+- **GET** `/forums/:id/list`
+  - **Entrada:** `id` (params)
+  - **Definição:** Lista a relação completa de usuários que seguem o fórum.
+  - **Retorno:** `{ rows }`
+
+- **GET** `/forums/:forum_id/files/page/:page_num`
+  - **Entrada:** `forum_id`, `page_num` (params)
+  - **Definição:** Lista todos os arquivos anexados a postagens dentro daquele fórum usando paginação.
+  - **Retorno:** `[ ...arquivos ]` ou `{ rows }`
+
+- **GET** `/forums/:forum_id/files/year`
+  - **Entrada:** `forum_id` (params)
+  - **Definição:** Retorna uma listagem distinta de anos que possuem arquivos indexados naquele fórum.
+  - **Retorno:** `[ ...anos ]` ou `{ rows }`
+
+- **GET** `/forums/:forum_id/files/year/:year`
+  - **Entrada:** `forum_id`, `year` (params)
+  - **Definição:** Lista as tags associadas a arquivos postados no fórum durante o ano especificado.
+  - **Retorno:** `[ ...tags ]` or `{ rows }`
+
+- **GET** `/forums/:forum_id/files/year/:year/tag/:tag`
+  - **Entrada:** `forum_id`, `year`, `tag` (params)
+  - **Definição:** Filtra de forma profunda as postagens contendo arquivos com base no ano e na tag passados.
+  - **Retorno:** `{ results }` ou `{ rows }`
+
+- **PATCH** `/forums/:forum_id/validate`
+  - **Entrada:** `forum_id` (params), `status` (body), `user_id` (jwt de moderador)
+  - **Definição:** Valida o status de ativação ou recusa de um fórum proposto.
+  - **Retorno:** `{ message: "success" }`
 
 ---
 
-##  /user
+## 📝 /posts
+**Definição:** Centraliza a criação de conteúdos textuais, mídias integradas, comentários e avaliação em lote.
 
-**Definição:** Gerencia perfis, permissões e interações sociais entre usuários.
+- **POST** `/posts/:forum_id/create`
+  - **Entrada:** `forum_id` (params), `title`, `content`, `tags` (body opcional), `file` (multer multipart)
+  - **Definição:** Publica uma postagem em um fórum, aceitando opcionalmente arrays de tags e um arquivo físico como anexo.
+  - **Retorno:** `{ message: "success", file_id }`
 
-- **PATCH** `/:user_id/change_role`
-    
-    - **Entrada:** `user_id` (params), `roleNum` (body: 1-USUARIO, 2-VALIDADOR, 3-ADMIN)
-        
-    - **Definição:** Altera o nível de permissão de um usuário.
-        
-    - **Retorno:** `{ message: "success" }`
-        
-- **PATCH** `/:target_id/follow`
-    
-    - **Entrada:** `target_id` (params), `user_id` (jwt)
-        
-    - **Definição:** Segue ou deixa de seguir outro usuário.
-        
-    - **Retorno:** `{ message: "success" }`
-        
-- **GET** `/me`
-    
-    - **Entrada:** `user_id` (jwt)
-        
-    - **Definição:** Retorna as informações do perfil do usuário logado (exceto a senha).
-        
-    - **Retorno:** `{ info }`
-        
-- **GET** `/:user_id`
-    
-    - **Entrada:** `user_id` (params)
-        
-    - **Definição:** Retorna informações públicas de um usuário específico.
-        
-    - **Retorno:** `{ info }`
-        
-- **PATCH** `/:user_id/description`
-    
-    - **Entrada:** `user_id` (params), `description` (body)
-        
-    - **Definição:** Atualiza a biografia/descrição do perfil do usuário.
-        
-    - **Retorno:** `{ description }`
+- **GET** `/posts/:forum_id/page/:page_num`
+  - **Entrada:** `forum_id`, `page_num` (params)
+  - **Definição:** Retorna o feed de postagens de um fórum ordenadas de forma paginada.
+  - **Retorno:** `{ rows, total }`
+
+- **GET** `/posts/:post_id`
+  - **Entrada:** `post_id` (params)
+  - **Definição:** Obtém a estrutura e o conteúdo completo de um post específico.
+  - **Retorno:** `{ post }`
+
+- **DELETE** `/posts/:post_id/delete`
+  - **Entrada:** `post_id` (params), `user_id` (jwt)
+  - **Definição:** Remove uma postagem ativa do sistema (Permissão do autor ou moderação).
+  - **Retorno:** `{ message: "success" }`
+
+- **POST** `/posts/:post_id/comments/create`
+  - **Entrada:** `post_id` (params), `content` (body), `parentId` (body opcional para subcomentários)
+  - **Definição:** Cria um comentário ou uma resposta encadeada a outro comentário existente.
+  - **Retorno:** `{ message: "success" }`
+
+- **GET** `/posts/:post_id/comments`
+  - **Entrada:** `post_id` (params)
+  - **Definição:** Recupera a árvore completa de comentários vinculados a uma postagem.
+  - **Retorno:** `{ rows }`
+
+- **PATCH** `/posts/rate-content`
+  - **Entrada:** `rate_vector` (body: array de objetos contendo `{ conteudo_id, tipo_avaliacao }`), `user_id` (jwt)
+  - **Definição:** Processa de forma atômica e em lote as avaliações (upvote/downvote) dadas pelo usuário.
+  - **Retorno:** `{ message: "success" }`
+
+---
+
+## 🖼️ /image
+**Definição:** Gerencia uploads físicos e geração dinâmica de mídias de perfil e customizações de fórum.
+
+- **PATCH** `/image/upload/:location`
+  - **Entrada:** `location` (params: 'perfil' ou 'banner'), `file` (multer multipart), `user_id` (jwt)
+  - **Definição:** Sincroniza uma imagem com o Cloudinary e atualiza os caminhos no registro do usuário autenticado.
+  - **Retorno:** `{ message: "success", imageId }`
+
+- **PATCH** `/image/:forum_id/upload/:location`
+  - **Entrada:** `forum_id` (params), `location` (params), `file` (multer multipart), `user_id` (jwt)
+  - **Definição:** Realiza o upload e vinculação da logo ou banner de um fórum específico.
+  - **Retorno:** `{ message: "success", imageId }`
+
+- **GET** `/image/get/user/:user_id`
+  - **Entrada:** `user_id` (params)
+  - **Definição:** Consolida as URLs otimizadas do Cloudinary para o perfil e banner do usuário indicado.
+  - **Retorno:** `{ img_perfil, img_banner }`
+
+- **GET** `/image/get/forum/:forum_id`
+  - **Entrada:** `forum_id` (params)
+  - **Definição:** Consolida as URLs ativas das mídias estruturadas de um fórum.
+  - **Retorno:** `{ img_logo, img_banner }`
+
+---
+
+## 🚨 /denuncias
+**Definição:** Sistema de auditoria e moderação de conduta para usuários e postagens.
+
+- **POST** `/denuncias/usuario`
+  - **Entrada:** `tipo` (body), `usuario_denunciado_id` (body), `user_id` (jwt)
+  - **Definição:** Registra uma denúncia contra o perfil de um usuário específico do ecossistema.
+  - **Retorno:** `{ message: "success" }`
+
+- **POST** `/denuncias/conteudo`
+  - **Entrada:** `tipo` (body), `conteudo_id` (body), `user_id` (jwt)
+  - **Definição:** Abre uma denúncia direcionada contra uma postagem ou comentário inadequado.
+  - **Retorno:** `{ message: "success" }`
+
+- **GET** `/denuncias/`
+  - **Entrada:** `user_id` (jwt de moderador)
+  - **Definição:** Recupera a fila global de todas as denúncias pendentes e abertas no banco.
+  - **Retorno:** `{ rows }`
+
+- **PATCH** `/denuncias/:denuncia_id/resolver`
+  - **Entrada:** `denuncia_id` (params), `novo_status` (body: 'RESOLVIDA' ou 'IGNORADA'), `punicao` (body opcional: 0-Exclui Post, 1-Exclui Post + Silencia, 2-Exclui User), `tempo_silencio` (body opcional INTERVAL: '1 hour', '1 day', etc.), `user_id` (jwt executor)
+  - **Definição:** Executa a resolução atômica e aplicação de penalidades através da procedure interna do PostgreSQL, com tratamento limpo e higienizado para chaves condicionais/nulas e validação Zod Schema.
+  - **Retorno:** `{ message: "success" }`
+
+---
+
+## 🏷️ /tags (Auxiliares)
+- **POST** `/tags/create` | Entrada: `{ name }` (body) | Retorno: `{ message: "success" }`
+- **PATCH** `/tags/:tag_id/validate` | Entrada: `{ tagState }` (body) | Retorno: `{ message: "success" }`
+- **GET** `/tags/:user_id/print` | Retorno: `{ rows }`
+- **GET** `/tags/search?q=...` | Retorno: `{ rows }`
+
+---
+
+## 🌐 /feed (Auxiliares)
+- **GET** `/feed/page/:page_num` | Retorno: `{ rows }`
