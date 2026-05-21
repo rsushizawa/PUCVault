@@ -1,11 +1,10 @@
-const forumService = require('../services/forumServices');
-const { z } = require('zod');
-
-const { ok, paginated, fail } = require('../helpers/response');
+const forumService = require("../services/forumServices");
+const { ok, fail } = require("../helpers/response");
+const { z } = require("zod");
 
 const forumSchema = z.object({
   name: z.string().min(8, "Título(mínimo 8 caracteres)").max(20),
-  description: z.string().min(8, "Descrição(mínimo 8 caracteres)").max(100)
+  description: z.string().min(8, "Descrição(mínimo 8 caracteres)").max(100),
 });
 
 exports.print = async (req, res) => {
@@ -26,11 +25,10 @@ exports.files = async (req, res) => {
     console.table(forumResults.rows);
     return ok(res, forumResults.rows);
   } catch (error) {
-    console.log('internal server error: ', error.message);
+    console.log("internal server error: ", error.message);
     return fail(res, 500, error.message);
   }
 };
-
 
 exports.getForumId = async (req, res) => {
   const { name } = req.body;
@@ -38,7 +36,6 @@ exports.getForumId = async (req, res) => {
     const returnvalue = await forumService.searchForums(name);
     const forum_id = returnvalue.rows[0].id;
     return ok(res, { forum_id });
-
   } catch (error) {
     console.error("CRITICAL ERROR IN /forums: ", error);
     return fail(res, 500, error.message);
@@ -49,11 +46,15 @@ exports.listForumFilesYear = async (req, res) => {
   const { forum_id } = req.params;
   try {
     const result = await forumService.listForumFilesYear(forum_id);
-    const rows = result.rows ? result.rows[0] : (Array.isArray(result) ? result[0] : result);
+    const rows = result.rows
+      ? result.rows[0]
+      : Array.isArray(result)
+        ? result[0]
+        : result;
     console.table(rows);
     return ok(res, rows);
   } catch (error) {
-    console.error('listForumFilesYear:', error.message);
+    console.error("listForumFilesYear:", error.message);
     return ok(res, []);
   }
 };
@@ -62,10 +63,16 @@ exports.listPostFilesYear = async (req, res) => {
   const { forum_id, year, tag } = req.params;
   try {
     const result = await forumService.listPostFilesYear(forum_id, year, tag);
-    const content = result.rows ? result.rows : (Array.isArray(result) ? result : []);
+    const content = result.rows
+      ? result.rows
+      : Array.isArray(result)
+        ? result
+        : [];
     console.table(content);
 
-    const array_names = content.map(linha => linha.arquivo_nome || "Sem Nome");
+    const array_names = content.map(
+      (linha) => linha.arquivo_nome || "Sem Nome",
+    );
 
     console.log(array_names);
 
@@ -87,9 +94,7 @@ exports.listTagsFilesYear = async (req, res) => {
   }
 };
 
-
 exports.createForum = async (req, res) => {
-
   const validation = forumSchema.safeParse(req.body);
   if (!validation.success) {
     return fail(res, 406, "Invalid data");
@@ -100,20 +105,20 @@ exports.createForum = async (req, res) => {
 
   try {
     await forumService.createForum(name, description, user_id);
-    console.log('forum created');
+    console.log("forum created");
     return ok(res, { name, description, user_id });
-
   } catch (error) {
-    if (error.code === '23505') {
-      return fail(res, 409, 'forum with this name already exists');
+    if (error.code === "23505") {
+      return fail(res, 409, "forum with this name already exists");
     }
     console.error("Error creating forum: ", error);
-    return fail(res, 500, 'error in server');
+    return fail(res, 500, "error in server");
   }
 };
 
-const descriptionSchema = z.object({ description: z.string().min(8, "Descrição(mínimo 8 caracteres)").max(100) });
-
+const descriptionSchema = z.object({
+  description: z.string().min(8, "Descrição(mínimo 8 caracteres)").max(100),
+});
 
 exports.updateForumDescription = (req, res) => {
   try {
@@ -128,25 +133,22 @@ exports.updateForumDescription = (req, res) => {
     forumService.updateForumDescription(forum_id, user_id, description);
 
     return ok(res, null);
-
   } catch (error) {
     return fail(res, 500, "server error");
   }
 };
 
-exports.listForumFollowers = (req, res) => {
+exports.listForumFollowers = async (req, res) => {
   try {
     const { forum_id } = req.params;
 
-    forumService.listForumFollowers(forum_id);
+    const result = await forumService.listForumFollowers(forum_id);
 
-    return ok(res, null);
-
+    return ok(res, result?.rows ?? []);
   } catch (error) {
     return fail(res, 500, "server error");
   }
 };
-
 
 exports.validateForum = (req, res) => {
   try {
@@ -154,24 +156,21 @@ exports.validateForum = (req, res) => {
     const { forum_id } = req.params;
     const { forumState } = req.body;
     let status;
-    if (forumState === 1) status = 'ATIVO';
-    else if (forumState === 0) status = 'RECUSADO';
+    if (forumState === 1) status = "ATIVO";
+    else if (forumState === 0) status = "RECUSADO";
     else {
-      return fail(res, 400, 'invalid input');
+      return fail(res, 400, "invalid input");
     }
 
     forumService.validateForum(forum_id, validator_id, status);
 
     return ok(res, null);
-
   } catch (error) {
     return fail(res, 500, "server error");
   }
 };
 
-
 exports.follow = async (req, res) => {
-
   const user_id = req.user.id;
   const { forum_id } = req.params;
 
@@ -188,11 +187,11 @@ exports.getForumByName = async (req, res) => {
   try {
     const result = await forumService.searchForums(decodeURIComponent(name));
     if (!result || !result.rows || result.rows.length === 0) {
-      return fail(res, 404, 'forum not found');
+      return fail(res, 404, "forum not found");
     }
     return ok(res, result.rows[0]);
   } catch (error) {
-    return fail(res, 500, 'server error');
+    return fail(res, 500, "server error");
   }
 };
 
@@ -204,7 +203,7 @@ exports.getSingleForum = async (req, res) => {
     const forum_followers = await forumService.listForumFollowers(forum_id);
     let response = {
       ...forum.rows[0],
-      ...forum_followers.rows
+      ...forum_followers.rows,
     };
 
     if (user_id) {

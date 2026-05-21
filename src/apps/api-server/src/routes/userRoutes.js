@@ -23,6 +23,9 @@ router.get('/me',
   userController.me
 );
 
+// TODO: PATCH /user/me to edit own nome/nome_usuario — frontend updateMe() needs it.
+// Blocked on a publico profile-update function (see TO-DO.md ### DB).
+
 router.get('/by-username/:username',
   userController.userByUsername
 );
