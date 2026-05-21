@@ -21,10 +21,6 @@ export default function ForumConfigPage() {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
-    if (!localStorage.getItem("auth_token")) {
-      router.replace("/login");
-      return;
-    }
     Promise.all([getMe(), getForumByName(decodedName)])
       .then(([user, forum]) => {
         const elevated = isAtLeast(user.cargo ?? "", Cargo.ADMIN);

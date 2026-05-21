@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import NavBar from "@/components/navbar";
-import { getMe, updateMe } from "@/lib/api/auth";
+import { getMe, updateMe, changePassword } from "@/lib/api/auth";
 import { uploadProfileImage } from "@/lib/api/images";
 import { Camera, User } from "lucide-react";
 
@@ -35,10 +35,6 @@ export default function ConfigPage() {
   } | null>(null);
 
   useEffect(() => {
-    if (!localStorage.getItem("auth_token")) {
-      router.replace("/login");
-      return;
-    }
     getMe()
       .then((user) => {
         setName(user.nome ?? "");
@@ -46,9 +42,7 @@ export default function ConfigPage() {
         setAvatarUrl(user.img_perfil ?? "");
         setOriginalAvatar(user.img_perfil ?? "");
       })
-      .catch(() => {
-        // Endpoint not yet available — show empty form, let user fill in
-      })
+      .catch(() => router.replace("/login"))
       .finally(() => setLoading(false));
   }, [router]);
 
@@ -92,7 +86,7 @@ export default function ConfigPage() {
     setPasswordSaving(true);
     setPasswordMsg(null);
     try {
-      await updateMe({ password: newPassword });
+      await changePassword(currentPassword, newPassword);
       setPasswordMsg({ ok: true, text: "Senha alterada com sucesso." });
       setCurrentPassword("");
       setNewPassword("");

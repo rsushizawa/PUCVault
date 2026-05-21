@@ -21,10 +21,6 @@ export function CurrentUserProvider({ children }: { children: React.ReactNode })
   const [loading, setLoading] = useState(true);
 
   function fetchMe() {
-    if (!localStorage.getItem("auth_token")) {
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     getMe()
       .then(setUser)

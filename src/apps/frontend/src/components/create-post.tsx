@@ -6,6 +6,7 @@ import MarkdownEditor from "@/components/markdown-editor";
 import AuthModal from "@/components/auth-modal";
 import { getTagColor } from "@/lib/tag-colors";
 import { getTags, searchTags } from "@/lib/api/tags";
+import { getMe } from "@/lib/api/auth";
 import type { Tag } from "@/types/tag";
 
 interface CreatePostProps {
@@ -17,6 +18,7 @@ interface CreatePostProps {
 
 export default function CreatePost({ forumId, mode = "post", onPost, onComment }: CreatePostProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -31,6 +33,12 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    getMe()
+      .then(() => setIsLoggedIn(true))
+      .catch(() => setIsLoggedIn(false));
+  }, []);
 
   // Load initial tag list once when the form expands
   useEffect(() => {
@@ -74,7 +82,7 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
   }, [tagSearch, tagMenuOpen]);
 
   function handleExpandClick() {
-    if (!localStorage.getItem("auth_token")) {
+    if (!isLoggedIn) {
       setShowAuthModal(true);
     } else {
       setIsExpanded(true);
