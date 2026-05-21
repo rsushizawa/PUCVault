@@ -55,8 +55,6 @@ export function createComment(
 }
 
 export function voteComment(id: string, value: 1 | -1): Promise<void> {
-  return apiFetch(`/comments/${id}/vote`, {
-    method: "POST",
-    body: JSON.stringify({ value }),
-  })
+  const action = value === 1 ? "upvote" : "downvote"
+  return apiFetch(`/posts/${id}/${action}`, { method: "PATCH" })
 }

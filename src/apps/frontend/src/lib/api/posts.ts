@@ -8,11 +8,8 @@ export async function getFeed(page = 1): Promise<{ posts: Post[]; total: number 
 }
 
 export async function getPost(id: string): Promise<Post> {
-  const raw = await apiFetch<any>(`/posts/${id}`)
-  if (!raw.arquivo && raw.arquivo_nome && raw.arquivo_caminho) {
-    raw.arquivo = `${raw.arquivo_nome} ${raw.arquivo_caminho}`
-  }
-  return raw as Post
+  const raw = await apiFetch<RawPostRow>(`/posts/${id}`)
+  return mapPostRow(raw)
 }
 
 export function createPost(
@@ -30,8 +27,6 @@ export function createPost(
 }
 
 export function votePost(id: string, value: 1 | -1): Promise<void> {
-  return apiFetch(`/posts/${id}/vote`, {
-    method: "POST",
-    body: JSON.stringify({ value }),
-  })
+  const action = value === 1 ? "upvote" : "downvote"
+  return apiFetch(`/posts/${id}/${action}`, { method: "PATCH" })
 }
