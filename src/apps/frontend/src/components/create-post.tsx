@@ -12,11 +12,21 @@ import type { Tag } from "@/types/tag";
 interface CreatePostProps {
   forumId?: string;
   mode?: "post" | "comment";
-  onPost?: (data: { title: string; content: string; tags: Tag[]; file?: File }) => Promise<void>;
+  onPost?: (data: {
+    title: string;
+    content: string;
+    tags: Tag[];
+    file?: File;
+  }) => Promise<void>;
   onComment?: (content: string) => void;
 }
 
-export default function CreatePost({ forumId, mode = "post", onPost, onComment }: CreatePostProps) {
+export default function CreatePost({
+  forumId,
+  mode = "post",
+  onPost,
+  onComment,
+}: CreatePostProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -56,7 +66,9 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
       }
     };
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [isExpanded, availableTags.length]);
 
   // Fetch search results while the user is typing
@@ -78,7 +90,9 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
       }
     };
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [tagSearch, tagMenuOpen]);
 
   function handleExpandClick() {
@@ -106,7 +120,12 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
     setIsSubmitting(true);
     setSubmitError(null);
     try {
-      await onPost?.({ title: title.trim(), content, tags: resolvedTags, file: file ?? undefined });
+      await onPost?.({
+        title: title.trim(),
+        content,
+        tags: resolvedTags,
+        file: file ?? undefined,
+      });
       reset();
     } catch {
       setSubmitError("Erro ao publicar. Tente novamente.");
@@ -129,12 +148,14 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
     setSearchResults([]);
     setFile(null);
     setSubmitError(null);
-    if (mode !== "comment") setIsExpanded(false);
+    setIsExpanded(false);
   }
 
   function handleTagToggle(tagName: string, sourceTag?: Tag) {
     setSelectedTags((prev) =>
-      prev.includes(tagName) ? prev.filter((t) => t !== tagName) : [...prev, tagName],
+      prev.includes(tagName)
+        ? prev.filter((t) => t !== tagName)
+        : [...prev, tagName],
     );
     if (sourceTag && !availableTags.some((t) => t.tag === tagName)) {
       setAvailableTags((prev) => [...prev, sourceTag]);
@@ -157,10 +178,14 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
             role="button"
             tabIndex={0}
             onClick={handleExpandClick}
-            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleExpandClick(); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") handleExpandClick();
+            }}
             className="bg-surface-input w-full px-4 py-2.5 rounded-lg text-sm text-text-muted cursor-pointer hover:bg-surface-overlay transition-colors duration-150 select-none"
           >
-            {mode === "comment" ? "Adicionar um comentário..." : "Faça uma pergunta ou compartilhe um insight..."}
+            {mode === "comment"
+              ? "Adicionar um comentário..."
+              : "Faça uma pergunta ou compartilhe um insight..."}
           </div>
         </div>
       ) : (
@@ -179,14 +204,20 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
           <MarkdownEditor
             value={content}
             onChange={setContent}
-            placeholder={mode === "comment" ? "Escreva um comentário..." : "Detalhe sua pergunta ou insight..."}
+            placeholder={
+              mode === "comment"
+                ? "Escreva um comentário..."
+                : "Detalhe sua pergunta ou insight..."
+            }
             minHeight={mode === "comment" ? "100px" : "160px"}
           />
 
           {/* Tags — post mode only */}
           {mode === "post" && (
             <div className="flex flex-col gap-2">
-              <span className="text-text-muted text-xs font-medium uppercase tracking-wider">Tags</span>
+              <span className="text-text-muted text-xs font-medium uppercase tracking-wider">
+                Tags
+              </span>
               <div className="flex gap-2 items-center flex-wrap">
                 {availableTags.map((t) => {
                   const isSelected = selectedTags.includes(t.tag);
@@ -228,7 +259,10 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
                           value={tagSearch}
                           onChange={(e) => setTagSearch(e.target.value)}
                           onKeyDown={(e) => {
-                            if (e.key === "Escape") { setTagMenuOpen(false); setTagSearch(""); }
+                            if (e.key === "Escape") {
+                              setTagMenuOpen(false);
+                              setTagSearch("");
+                            }
                           }}
                           placeholder="Buscar tag..."
                           className="w-full bg-surface-input text-sm text-text-primary px-2 py-1 rounded outline-none border border-surface-overlay focus:border-accent/50 placeholder:text-text-muted"
@@ -237,26 +271,41 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
 
                       <div className="max-h-40 overflow-y-auto py-1">
                         {tagMenuLoading ? (
-                          <p className="text-xs text-text-muted px-3 py-2">Carregando...</p>
-                        ) : (() => {
-                          const list = tagSearch.length >= 2 ? searchResults : availableTags;
-                          return list.length === 0 ? (
-                            <p className="text-xs text-text-muted px-3 py-2">Nenhuma tag encontrada</p>
-                          ) : (
-                            list.map((tag) => (
-                              <button
-                                key={tag.id}
-                                type="button"
-                                onClick={() => { handleTagToggle(tag.tag, tag); setTagMenuOpen(false); setTagSearch(""); }}
-                                className={`w-full text-left px-3 py-1.5 text-sm hover:bg-surface-overlay transition-colors ${
-                                  selectedTags.includes(tag.tag) ? "text-accent font-medium" : "text-text-secondary"
-                                }`}
-                              >
-                                {tag.tag}
-                              </button>
-                            ))
-                          );
-                        })()}
+                          <p className="text-xs text-text-muted px-3 py-2">
+                            Carregando...
+                          </p>
+                        ) : (
+                          (() => {
+                            const list =
+                              tagSearch.length >= 2
+                                ? searchResults
+                                : availableTags;
+                            return list.length === 0 ? (
+                              <p className="text-xs text-text-muted px-3 py-2">
+                                Nenhuma tag encontrada
+                              </p>
+                            ) : (
+                              list.map((tag) => (
+                                <button
+                                  key={tag.id}
+                                  type="button"
+                                  onClick={() => {
+                                    handleTagToggle(tag.tag, tag);
+                                    setTagMenuOpen(false);
+                                    setTagSearch("");
+                                  }}
+                                  className={`w-full text-left px-3 py-1.5 text-sm hover:bg-surface-overlay transition-colors ${
+                                    selectedTags.includes(tag.tag)
+                                      ? "text-accent font-medium"
+                                      : "text-text-secondary"
+                                  }`}
+                                >
+                                  {tag.tag}
+                                </button>
+                              ))
+                            );
+                          })()
+                        )}
                       </div>
                     </div>
                   )}
@@ -316,10 +365,17 @@ export default function CreatePost({ forumId, mode = "post", onPost, onComment }
             <button
               type="button"
               onClick={handlePost}
-              disabled={isSubmitting || (mode === "comment" ? !content.trim() : !title.trim())}
+              disabled={
+                isSubmitting ||
+                (mode === "comment" ? !content.trim() : !title.trim())
+              }
               className="px-5 py-2 rounded-lg text-sm bg-accent text-surface-base font-semibold hover:opacity-90 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             >
-              {isSubmitting ? "Publicando..." : mode === "comment" ? "Comentar" : "Publicar"}
+              {isSubmitting
+                ? "Publicando..."
+                : mode === "comment"
+                  ? "Comentar"
+                  : "Publicar"}
             </button>
           </div>
           {submitError && (
