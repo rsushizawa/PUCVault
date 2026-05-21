@@ -4,13 +4,15 @@ export type Forum = {
   descricao: string
   status: "ESPERA" | "ATIVO" | "RECUSADO"
   criado_em: string
-  excluido_em: string | null
-  status_modificado_em: string | null
-  criador: number
-  validador: number | null
-  identidade_visual: number
-  total_posts?: number
-  // Extended fields present only on getSingleForum response
+  // Not returned by listar_foruns()/getSingleForum — only present on richer queries
+  excluido_em?: string | null
+  status_modificado_em?: string | null
+  criador?: number
+  validador?: number | null
+  identidade_visual?: number
+  total_posts?: number | string
+  // Extended fields present on listing / getSingleForum responses
+  nome_usuario?: string
   seguidores?: string
   img_perfil?: string | null
   img_banner?: string | null
@@ -66,7 +68,7 @@ export type User = {
 export type Tag = {
   id: number
   tag: string
-  status: string
+  status?: string
   total_usos: string
   relevancia: number
 }

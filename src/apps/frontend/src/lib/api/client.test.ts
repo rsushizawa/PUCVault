@@ -1,29 +1,13 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
-import { apiFetch, apiFetchPaginated, apiFormData, setToken, clearToken } from "./client"
+import { describe, it, expect, vi, afterEach } from "vitest"
+import { apiFetch, apiFetchPaginated, apiFormData } from "./client"
 
 const BASE_URL = "http://localhost:8000"
-
-// localStorage is not available in this jsdom environment — stub it
-const localStorageMock = (() => {
-  let store: Record<string, string> = {}
-  return {
-    getItem: (key: string) => store[key] ?? null,
-    setItem: (key: string, value: string) => { store[key] = value },
-    removeItem: (key: string) => { delete store[key] },
-    clear: () => { store = {} },
-  }
-})()
-vi.stubGlobal("localStorage", localStorageMock)
 
 function mockFetch(data: unknown, status = 200) {
   return vi.spyOn(global, "fetch").mockResolvedValueOnce(
     new Response(JSON.stringify(data), { status }),
   )
 }
-
-beforeEach(() => {
-  localStorageMock.clear()
-})
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -49,20 +33,10 @@ describe("apiFetch", () => {
     expect(headers["Content-Type"]).toBe("application/json")
   })
 
-  it("includes Authorization header when token is set", async () => {
-    setToken("tok123")
+  it("sends credentials so the auth cookie is included", async () => {
     const spy = mockFetch({ data: null })
     await apiFetch("/test")
-    const headers = spy.mock.calls[0][1]?.headers as Record<string, string>
-    expect(headers["Authorization"]).toBe("Bearer tok123")
-  })
-
-  it("omits Authorization header when no token", async () => {
-    clearToken()
-    const spy = mockFetch({ data: null })
-    await apiFetch("/test")
-    const headers = spy.mock.calls[0][1]?.headers as Record<string, string>
-    expect(headers["Authorization"]).toBeUndefined()
+    expect(spy.mock.calls[0][1]).toMatchObject({ credentials: "include" })
   })
 
   it("throws on non-ok response", async () => {
@@ -89,12 +63,10 @@ describe("apiFetchPaginated", () => {
     expect(result).toEqual({ data: ["a", "b"], total: 42 })
   })
 
-  it("includes Authorization header when token is set", async () => {
-    setToken("tok456")
+  it("sends credentials so the auth cookie is included", async () => {
     const spy = mockFetch({ data: [], total: 0 })
     await apiFetchPaginated("/test")
-    const headers = spy.mock.calls[0][1]?.headers as Record<string, string>
-    expect(headers["Authorization"]).toBe("Bearer tok456")
+    expect(spy.mock.calls[0][1]).toMatchObject({ credentials: "include" })
   })
 
   it("throws on non-ok response", async () => {

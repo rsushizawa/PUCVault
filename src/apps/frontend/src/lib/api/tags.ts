@@ -5,6 +5,8 @@ export function getTags(): Promise<Tag[]> {
   return apiFetch(`/tags`);
 }
 
+// FIX: no backend route for forum-scoped tags yet — blocked on publico functions
+// + /tags/forum routes (see TO-DO.md ### DB).
 export function getForumTags(forumId: string): Promise<Tag[]> {
   return apiFetch(`/tags/forum/${forumId}`);
 }
@@ -22,6 +24,7 @@ export async function createTag(name: string): Promise<Tag> {
   return { id: 0, tag: name, status: "ATIVO", total_usos: "0", relevancia: 0 };
 }
 
+// FIX: no backend route for forum-scoped tags yet (see TO-DO.md ### DB).
 export function deleteForumTag(forumId: string, tagId: number): Promise<void> {
   return apiFetch(`/tags/forum/${forumId}/${tagId}`, { method: "DELETE" });
 }

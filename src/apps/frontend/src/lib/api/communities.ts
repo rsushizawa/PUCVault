@@ -8,7 +8,13 @@ export type ForumSummary = Forum
 export type FileTag   = { id: number; name: string; count: number }
 export type FileEntry = { post_id: number; title: string; file_url: string; uploaded_at: string }
 
-export type ForumFollower = { id: number; username: string; nome: string }
+export type ForumFollower = {
+  id: number
+  nome: string
+  nome_usuario: string
+  cargo?: string
+  img_perfil?: string | null
+}
 
 export function getForumByName(name: string): Promise<ForumSummary> {
   return apiFetch(`/forums/by-name/${encodeURIComponent(name)}`)
@@ -18,14 +24,17 @@ export function getForums(): Promise<ForumSummary[]> {
   return apiFetch<ForumSummary[]>("/forums/print/forums")
 }
 
-export function getFollowedForums(): Promise<ForumSummary[]> {
-  return apiFetch("/forums/following")
+export function getFollowedForums(userId: string): Promise<ForumSummary[]> {
+  return apiFetch(`/user/${userId}/forums`)
 }
 
 export async function getCommunity(id: string): Promise<ForumSummary> {
   const raw = await apiFetch<Record<string, unknown>>(`/forums/${id}`)
-  // The endpoint returns forum props mixed with indexed follower objects — extract only named fields
-  return raw as unknown as ForumSummary
+  // The endpoint returns forum props mixed with indexed follower objects keyed 0,1,2…
+  const named = Object.fromEntries(
+    Object.entries(raw).filter(([k]) => !/^\d+$/.test(k)),
+  )
+  return named as unknown as ForumSummary
 }
 
 export function updateForumDescription(id: string, descricao: string): Promise<void> {

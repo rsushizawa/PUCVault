@@ -7,5 +7,5 @@ export function uploadProfileImage(location: "perfil" | "banner", file: File): P
 }
 
 export function getProfileImageUrls(userId: string): Promise<{ img_perfil: string; img_banner: string }> {
-  return apiFetch(`/image/get/${userId}`)
+  return apiFetch(`/image/get/user/${userId}`)
 }
