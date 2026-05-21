@@ -1,9 +1,13 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-export async function DELETE(req: Request) {
-  const cookiesStore = await cookies();
-  cookiesStore.delete("token");
+const EXPRESS = process.env.NEXT_PUBLIC_API ?? "http://localhost:8000";
 
-  return NextResponse.json({ ok: true });
+export async function POST() {
+  const upstream = await fetch(`${EXPRESS}/auth/logout`, { method: "POST" });
+  const data = await upstream.json();
+
+  const response = NextResponse.json(data);
+  const setCookie = upstream.headers.get("set-cookie");
+  if (setCookie) response.headers.set("set-cookie", setCookie);
+  return response;
 }
