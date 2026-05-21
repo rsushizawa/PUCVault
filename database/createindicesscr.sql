@@ -108,16 +108,11 @@ CREATE INDEX IF NOT EXISTS idx_denuncia_usuario_denunciante_denunciado ON privad
 CREATE INDEX IF NOT EXISTS idx_denuncia_conteudo_denunciado ON privado.denuncia_conteudo(conteudo_denunciado);
 CREATE INDEX IF NOT EXISTS idx_denuncia_conteudo_id_conteudo ON privado.denuncia_conteudo(id, conteudo_denunciado);
 
--- indices para tabela historico_penalidade
--- utilizado em : perfil.usuario( e por consultas de moderação)
-CREATE INDEX IF NOT EXISTS idx_historico_penalidade_usuario ON privado.historico_penalidade(usuario_id);
-CREATE INDEX IF NOT EXISTS idx_historico_penalidade_aplicado_em ON privado.historico_penalidade(aplicado_em DESC);
- 
--- indice para tabela tipo_denuncia
--- utilizado em: inserir_denuncia_usuario, inserir_denuncia_conteudo (busca de tipo por nome)
-CREATE INDEX IF NOT EXISTS idx_tipo_denuncia_nome ON privado.tipo_denuncia(nome);
+--- Verificação de duração para strike ainda ATIVO
+CREATE INDEX idx_penalidade_strikes_vigentes ON privado.penalidade (usuario_id, strike_valido_ate DESC);
+-- Penalidades ativas (não removidas) de um usuário
+CREATE INDEX idx_penalidade_ativas_usuario ON privado.penalidade (usuario_id, aplicado_em, duracao) WHERE removido_em IS NULL;
 
--- indices para tabela tipo_denuncia
--- indice para queries de moderação para verificar usuarios abaixo de um limite
-CREATE INDEX IF NOT EXISTS idx_usuario_score_comportamento ON privado.usuario(score_comportamento);
- 
+-- Consultar todo histórico de um usuário, ordenado por data
+CREATE INDEX idx_penalidade_historico ON privado.penalidade (usuario_id, aplicado_em DESC);
+
