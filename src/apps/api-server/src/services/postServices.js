@@ -43,11 +43,11 @@ module.exports = {
 
 
 
-  async getPost(forum_id, page_num) {
+  async getPost(forum_id, page_num, logged_id) {
     try {
       console.log('conexão sucedida getPost');
 
-      const res = await db.query('SELECT * FROM publico.listar_postagens_forum($1::int, $2::int)', [forum_id, page_num]);
+      const res = await db.query('SELECT * FROM publico.listar_postagens_forum($1::int, $2::int, $3::int)', [forum_id, page_num, logged_id]);
 
       return res.rows;
 
@@ -56,11 +56,11 @@ module.exports = {
     }
   },
 
-  async getUserPosts(user_id, page_num) {
+  async getUserPosts(user_id, page_num, user_id) {
     try {
       console.log('conexão sucedida getUserPosts');
 
-      const res = await db.query('SELECT * FROM publico.listar_postagens_usuario( $1, $2 )', [user_id, page_num]);
+      const res = await db.query('SELECT * FROM publico.listar_postagens_usuario( $1, $2, $3 )', [user_id, page_num, user_id]);
 
       return res.rows;
     } catch (error) {

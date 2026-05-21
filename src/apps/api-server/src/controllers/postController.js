@@ -18,9 +18,12 @@ const postSchema = z.object({
 
 exports.getPosts = async (req, res) => {
   const { forum_id, page_num } = req.params;
+
+  const user_id = req.user ? req.user.id : null;
+
   try {
     const [rows, total] = await Promise.all([
-      postService.getPost(forum_id, page_num),
+      postService.getPost(forum_id, page_num, user_id),
       forumService.getForumPostCount(forum_id),
     ]);
     console.table(rows);
