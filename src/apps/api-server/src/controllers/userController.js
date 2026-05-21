@@ -2,6 +2,7 @@ const userService = require('../services/userServices');
 const { z } = require('zod');
 const jwt = require('jsonwebtoken');
 
+const { ok, paginated, fail } = require('../helpers/response');
 //reportUser(type, reportee_id, reported_id)
 
 exports.changeRole = async (req, res) => {
@@ -135,6 +136,20 @@ exports.toggle2FA = async (req, res) => {
     const twofactorStatus = user.a2f;
     res.status(200).json({ messsage: `2fa toggled to ${twofactorStatus}` });
   } catch (error) {
-    res.status(500).json({ message: 'server error', error });
+    res.status(500).json({ error: 'server error', error });
+  }
+};
+
+exports.deleteAccount = async (req, res) => {
+  try {
+    const user_id = req.user.id;
+
+    if (!user_id) {
+      return res.status(400).json({ error: "User not logged in" });
+    }
+    await userService.deleteUser(user_id);
+    res.status(200).json({ message: `User with id ${user_id} was deleted` });
+  } catch (error) {
+    res.status(500).json({ error: 'server error ', error });
   }
 }

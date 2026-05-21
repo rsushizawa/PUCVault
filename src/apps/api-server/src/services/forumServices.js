@@ -1,5 +1,6 @@
 const db = require('../config/database');
 const { error, log } = require('console');
+const { listPostFilesYear } = require('../controllers/forumController');
 
 
 function errorMsg(error) {
@@ -53,6 +54,16 @@ module.exports = {
     try {
       console.log('conexão sucedida listTagsFilesYear');
       const res = await db.query('SELECT * FROM publico.listar_tags_arquivo_por_ano( $1, $2 )', [forum_id, year]);
+      return res;
+    } catch (error) {
+      errorMsg(error);
+    }
+  },
+
+  async listPostFilesYear(forum_id, year, tag) {
+    try {
+      console.log('conexão sucedida listPostFilesYear');
+      const res = await db.query('SELECT * FROM publico.listar_postagens_arquivo ($1, $2, $3)', [forum_id, year, tag]);
       return res.rows;
     } catch (error) {
       errorMsg(error);
@@ -140,18 +151,14 @@ module.exports = {
   },
 
   async getForumPostCount(forum_id) {
-    let client;
     try {
-      client = await pool.connect();
-      const res = await pool.query(
+      const res = await db.query(
         'SELECT total_posts FROM publico.listar_foruns() WHERE id = $1',
         [forum_id]
       );
       return Number(res.rows[0]?.total_posts ?? 0);
     } catch (error) {
       errorMsg(error);
-    } finally {
-      client.release();
     }
   }
 

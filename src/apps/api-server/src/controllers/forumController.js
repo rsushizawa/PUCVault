@@ -1,6 +1,7 @@
 const forumService = require('../services/forumServices');
 const { z } = require('zod');
 
+const { ok, paginated, fail } = require('../helpers/response');
 
 const forumSchema = z.object({
   name: z.string().min(8, "Título(mínimo 8 caracteres)").max(20),
@@ -47,8 +48,8 @@ exports.getForumId = async (req, res) => {
 exports.listForumFilesYear = async (req, res) => {
   const { forum_id } = req.params;
   try {
-    const forumResults = await forumService.listForumFilesYear(forum_id);
-    const rows = forumResults.rows;
+    const result = await forumService.listForumFilesYear(forum_id);
+    const rows = result.rows ? result.rows[0] : (Array.isArray(result) ? result[0] : result);
     console.table(rows);
     return ok(res, rows);
   } catch (error) {
@@ -60,10 +61,10 @@ exports.listForumFilesYear = async (req, res) => {
 exports.listPostFilesYear = async (req, res) => {
   const { forum_id, year, tag } = req.params;
   try {
-    const forumResults = await forumService.listPostFilesYear(forum_id, year, tag);
-    const results = forumResults.rows;
-    console.table(results);
-    return ok(res, results);
+    const result = await forumService.listPostFilesYear(forum_id, year, tag);
+    const content = result.rows ? result.rows[0] : (Array.isArray(result) ? result[0] : result);
+    console.table(content);
+    return ok(res, content);
   } catch (error) {
     return fail(res, 500, "internal server error");
   }

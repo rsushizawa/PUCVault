@@ -53,4 +53,8 @@ router.patch('/toggle-2fa',
   userController.toggle2FA
 );
 
+router.delete('/delete',
+  authMiddleware,
+  userController.deleteAccount
+);
 module.exports = router;

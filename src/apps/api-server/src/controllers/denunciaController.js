@@ -1,6 +1,7 @@
 const denunciaService = require('../services/denunciaServices');
 const { z } = require('zod');
 
+const { ok, paginated, fail } = require('../helpers/response');
 // Tipos válidos de denúncia 
 const TIPOS_VALIDOS = [
   'CONTEUDO_INADEQUADO',
@@ -18,13 +19,15 @@ const denunciaUsuarioSchema = z.object({
 
 const denunciaConteudoSchema = z.object({
   tipo: z.enum(TIPOS_VALIDOS, { errorMap: () => ({ message: `Tipo inválido. Use: ${TIPOS_VALIDOS.join(', ')}` }) }),
-  conteudo_id: z.number().int().positive('ID do conteúdo deve ser um inteiro positivo')
+  conteudo_id: z.number().int().positive('ID do conteúdo deve ser um inteiro positivo'),
 });
 
 const resolverDenunciaSchema = z.object({
   novo_status: z.enum(['RESOLVIDA', 'IGNORADA'], {
     errorMap: () => ({ message: "Status inválido. Use 'RESOLVIDA' ou 'IGNORADA'" })
-  })
+  }),
+  punicao: z.number().int("O valor deve ser um inteiro").min(0, 'O valor deve ser no minimo 0').max(2, 'O valor deve ser no maximo 2'),
+  tempo_silencio: z.string().nullable().optional()
 });
 
 /**
@@ -42,8 +45,18 @@ exports.denunciarUsuario = async (req, res) => {
 
   try {
     await denunciaService.denunciarUsuario(tipo, denunciante_id, usuario_denunciado_id);
+
+
+
     return res.status(201).json({ message: 'success' });
   } catch (error) {
+    if (error.code === '23503') {
+      return res.status(400).json({
+        error: 'Bad request',
+        message: 'The id does not exist',
+        detail: error.detail
+      });
+    }
     console.error('Erro ao denunciar usuário:', error.message);
 
     if (error.message?.includes('não pode denunciar a si mesmo')) {
@@ -77,6 +90,13 @@ exports.denunciarConteudo = async (req, res) => {
     await denunciaService.denunciarConteudo(tipo, denunciante_id, conteudo_id);
     return res.status(201).json({ message: 'success' });
   } catch (error) {
+    if (error.code === '23503') {
+      return res.status(400).json({
+        error: 'Bad request',
+        message: 'The id does not exist',
+        detail: error.detail
+      });
+    }
     console.error('Erro ao denunciar conteúdo:', error.message);
 
     if (error.message?.includes('próprio conteúdo')) {
@@ -103,7 +123,7 @@ exports.resolverDenuncia = async (req, res) => {
     return res.status(400).json({ error: 'Dados inválidos', detail: validation.error.format() });
   }
 
-  const { novo_status } = validation.data;
+  const { novo_status, punicao, tempo_silencio } = validation.data;
   const executor_id = req.user.id;
   const denuncia_id = parseInt(req.params.denuncia_id);
 
@@ -112,7 +132,7 @@ exports.resolverDenuncia = async (req, res) => {
   }
 
   try {
-    await denunciaService.resolverDenuncia(denuncia_id, executor_id, novo_status);
+    await denunciaService.resolverDenuncia(denuncia_id, executor_id, novo_status, punicao, tempo_silencio);
     return res.status(200).json({ message: "success" });
   } catch (error) {
     console.error('Erro ao resolver denúncia:', error.message);
@@ -131,7 +151,9 @@ exports.resolverDenuncia = async (req, res) => {
  */
 exports.listarDenuncias = async (req, res) => {
   try {
+
     const result = await denunciaService.listarDenunciasAbertas();
+    console.table(result.rows);
     return res.status(200).json({ message: 'success', denuncias: result.rows });
   } catch (error) {
     console.error('Erro ao listar denúncias:', error.message);

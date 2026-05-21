@@ -6,13 +6,14 @@ const authMiddleware = require('../middlewares/authMiddleware.js');
 router.get('/print/logins',
   authController.print
 );
+
 router.post('/login',
   authController.login
 );
+
 router.post('/verify-login',
   authController.verifyLogin
 );
-
 
 router.post('/sign-in',
   authController.signin
@@ -30,7 +31,14 @@ router.patch('/change-password',
 router.post('/forgot-send-email',
   authController.forgotPasswordSendEmail
 );
+
 router.patch('/forgot-password',
   authController.forgotChangePassword
 );
+
+router.post('/logout',
+  authMiddleware,
+  authController.logout
+);
+
 module.exports = router;

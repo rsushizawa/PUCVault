@@ -42,14 +42,10 @@ router.delete('/:post_id/delete',
 );
 
 
-router.patch('/:content_id/upvote',
+router.patch('/rate-content',
   authMiddleware,
-  postController.upvoteContent
+  postController.rateContent
 );
 
-router.patch('/:content_id/downvote',
-  authMiddleware,
-  postController.downvoteContent
-);
 
 module.exports = router;

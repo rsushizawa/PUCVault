@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const forumController = require('../controllers/forumController');
-
+const roleMiddleware = require('../middlewares/roleMiddleware')
 const authMiddleware = require('../middlewares/authMiddleware');
 const optionalauthMiddleware = require('../middlewares/optionalauthMiddleware');
 
@@ -19,6 +19,7 @@ router.post('/create',
 
 router.patch('/:forum_id/validate',
   authMiddleware,
+  roleMiddleware(['VALIDADOR', 'ADMIN', 'SUPERADMIN']),
   forumController.validateForum
 );
 
@@ -35,7 +36,7 @@ router.get('/:forum_id/list',
   forumController.listForumFollowers
 );
 
-router.patch('/:forum_id/files/page/:page_num',
+router.get('/:forum_id/files/page/:page_num',
   forumController.files
 );
 
@@ -51,7 +52,9 @@ router.get('/:forum_id/files/year/:year/tag/:tag',
   forumController.listPostFilesYear
 );
 
-router.get('/by-name/:name', forumController.getForumByName);
+router.get('/by-name/:name',
+  forumController.getForumByName
+);
 
 router.get('/:forum_id',
   optionalauthMiddleware,

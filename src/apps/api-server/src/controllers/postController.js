@@ -1,9 +1,12 @@
 const postService = require("../services/postServices");
+
+const forumService = require("../services/forumServices");
 const contentService = require("../services/contentServices");
 const tagService = require("../services/tagServices");
 const { z, success } = require("zod");
 const { uploadToCloudinary } = require("../utils/cloudinaryUtil");
 
+const { ok, paginated, fail } = require('../helpers/response');
 const cloudinary = require("cloudinary").v2;
 
 const postSchema = z.object({
@@ -33,6 +36,9 @@ exports.getSinglePost = async (req, res) => {
 
   try {
     const result = await postService.getSinglePost(post_id);
+
+    const content = result.rows ? result.rows[0] : (Array.isArray(result) ? result[0] : result);
+    console.table([content]);
     return ok(res, result[0]);
   } catch (error) {
     console.error("Error in getSinglePost:", error);
@@ -97,9 +103,11 @@ exports.createPosts = async (req, res) => {
   try {
     const file = req.files?.[0] ?? null;
     let file_id = null;
+    let original_name = null;
     if (file) {
       try {
         file_id = await uploadToCloudinary(file, null);
+        original_name = file.originalname;
       } catch (cloudinaryErr) {
         console.error("cloudinary error:", cloudinaryErr);
         return fail(res, 500, cloudinaryErr.message);
@@ -205,27 +213,31 @@ exports.listComments = async (req, res) => {
   }
 };
 
-exports.upvoteContent = async (req, res) => {
+exports.rateContent = async (req, res) => {
   try {
 
     const user_id = req.user.id;
-    const { content_id } = req.params;
+    const { rate_vector } = req.body;
 
-    await postService.toggleUpvoteContent(user_id, content_id);
+    const n = rate_vector[0].length;
+    if (!rate_vector || !rate_vector[0] || rate_vector[0].length === 0) {
+      return res.status(400).json({ error: 'Matriz de avaliação vazia ou inválida' });
+    }
+    for (let i = 0; i < n; i++) {
+      let content_id = rate_vector[0][i];
+      let rating = rate_vector[1][i];
+
+      await postService.reviewContent(user_id, content_id, rating);
+
+    }
+
     return res.status(200).json({ message: 'post rated successfully' });
   } catch (error) {
-    return res.status(500).json({ error: 'internal server error', error });
+    console.error("Erro detectado no rateContent:", error.message);
+    return res.status(500).json({
+      error: 'internal server error',
+      details: error.message
+    });
   }
 };
-exports.downvoteContent = async (req, res) => {
-  try {
 
-    const user_id = req.user.id;
-    const { content_id } = req.params;
-
-    await postService.toggleDownvoteContent(user_id, content_id);
-    return res.status(200).json({ message: 'post rated successfully' });
-  } catch (error) {
-    return res.status(500).json({ error: 'internal server error', error });
-  }
-};
