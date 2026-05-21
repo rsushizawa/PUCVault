@@ -61,9 +61,7 @@ export default function VaultPage() {
 
   // Fetch current user silently
   useEffect(() => {
-    if (localStorage.getItem("auth_token")) {
-      getMe().then(setUser).catch(() => {});
-    }
+    getMe().then(setUser).catch(() => {});
   }, []);
 
   useEffect(() => {

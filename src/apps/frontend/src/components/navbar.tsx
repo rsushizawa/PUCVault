@@ -14,13 +14,12 @@ const NavBar = () => {
   const profileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const loggedIn = !!localStorage.getItem("auth_token");
-    setIsLoggedIn(loggedIn);
-    if (loggedIn) {
-      getMe()
-        .then((user) => setAvatarUrl(user.img_perfil))
-        .catch(() => {});
-    }
+    getMe()
+      .then((user) => {
+        setIsLoggedIn(true);
+        setAvatarUrl(user.img_perfil);
+      })
+      .catch(() => setIsLoggedIn(false));
   }, []);
 
   useEffect(() => {

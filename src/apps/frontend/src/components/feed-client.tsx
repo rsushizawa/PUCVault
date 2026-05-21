@@ -1,30 +1,20 @@
-// TODO: (FE-SC-1 Step 3): Convert this file to an async server component:
-//   1. Delete "use client" below.
-//   2. Change `export default function Home()` to `export default async function Home()`.
-//   3. Check auth: import { cookies } from 'next/headers'; const isLoggedIn = !!cookies().get('auth_token');
-//   4. Fetch forums: const forums = await serverFetch<ForumSummary[]>('/forum') — import serverFetch from '@/lib/api/server'.
-//   5. Fetch first feed page if isLoggedIn: const { data: posts, total } = await serverFetch<...>('/post/feed?page=1').
-//   6. Render <FeedClient initialPosts={posts} initialTotal={total} isLoggedIn={isLoggedIn} forums={forums} />.
 "use client";
 
-// TODO: (FE-SC-1 Step 3): Delete this import — useState, useEffect, useRef are not used in server components.
-// TODO: (FE-SC-1 Step 4): Create src/components/feed-client.tsx ("use client"). Move all state, useEffect, useRef,
-//   intersection observer, and vote logic there. Props interface:
-//   { initialPosts: Post[]; initialTotal: number; isLoggedIn: boolean; forums: ForumSummary[] }
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Users } from "lucide-react";
 import NavBar from "@/components/navbar";
 import PostCard from "@/components/post-card";
-// TODO: (FE-SC-1 Step 3): Delete this import — forums are fetched server-side via serverFetch('/forum').
-//   Keep `import type { ForumSummary }` if needed for prop typing on FeedClient.
-import { getForums } from "@/lib/api/communities";
-import type { ForumSummary } from "@/lib/api/communities";
-// TODO: (FE-SC-1 Step 4): Delete this import. getFeed moves to the server component (serverFetch('/post/feed?page=1')).
-//   votePost moves to FeedClient — it's a user action and must stay in a client component.
 import { getFeed, votePost } from "@/lib/api/posts";
-import { getMe } from "@/lib/api/auth";
 import type { Post } from "@/types/api";
+import type { ForumSummary } from "@/lib/api/communities";
+
+interface FeedClientProps {
+  initialPosts: Post[];
+  initialTotal: number;
+  isLoggedIn: boolean;
+  forums: ForumSummary[];
+}
 
 function formatTimestamp(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -35,43 +25,20 @@ function formatTimestamp(iso: string): string {
   return new Date(iso).toLocaleDateString("pt-BR");
 }
 
-export default function Home() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [forums, setForums] = useState<ForumSummary[]>([]);
-
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [total, setTotal] = useState(0);
-  const [feedLoading, setFeedLoading] = useState(true);
-  const [feedError, setFeedError] = useState<string | null>(null);
+export default function FeedClient({
+  initialPosts,
+  initialTotal,
+  isLoggedIn,
+  forums,
+}: FeedClientProps) {
+  const [posts, setPosts] = useState<Post[]>(initialPosts);
+  const [total, setTotal] = useState(initialTotal);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  const pageRef = useRef(0);
+  const pageRef = useRef(initialPosts.length > 0 ? 1 : 0);
   const loadingMoreRef = useRef(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const loadMoreFnRef = useRef<() => Promise<void>>(async () => {});
-
-  // TODO: (FE-SC-1 Step 3): Delete this entire useEffect block (lines below through the closing `}, [])`).
-  //   isLoggedIn, forums, and initial feed are all resolved server-side before the page renders.
-  //   In the server component: const isLoggedIn = !!cookies().get('auth_token') from 'next/headers'.
-  useEffect(() => {
-    getForums()
-      .then((f) => setForums(f.filter((x) => x.status === "ATIVO")))
-      .catch(() => {});
-
-    getMe()
-      .then(() => {
-        setIsLoggedIn(true);
-        return getFeed(1)
-          .then(({ posts: p, total: t }) => {
-            setPosts(p);
-            setTotal(t);
-            pageRef.current = 1;
-          })
-          .catch(() => setFeedError("Erro ao carregar feed."));
-      })
-      .catch(() => setIsLoggedIn(false))
-      .finally(() => setFeedLoading(false));
-  }, []);
 
   useEffect(() => {
     loadMoreFnRef.current = async () => {
@@ -86,7 +53,6 @@ export default function Home() {
         setTotal(t);
         pageRef.current = nextPage;
       } catch {
-        // silently ignore load-more errors
       } finally {
         loadingMoreRef.current = false;
         setLoadingMore(false);
@@ -119,12 +85,6 @@ export default function Home() {
             <p className="text-text-muted text-center py-16 text-sm">
               Faça login para ver seu feed personalizado.
             </p>
-          ) : feedLoading ? (
-            <p className="text-text-muted text-center py-16 text-sm animate-fade-in">
-              Carregando feed...
-            </p>
-          ) : feedError ? (
-            <p className="text-sm text-red-400 text-center py-8">{feedError}</p>
           ) : posts.length === 0 ? (
             <p className="text-text-muted text-center py-16 text-sm">
               Nenhuma postagem no feed. Siga um vault para começar.
@@ -163,7 +123,7 @@ export default function Home() {
                     Carregando mais...
                   </span>
                 )}
-                {!hasMore && !feedLoading && posts.length > 0 && (
+                {!hasMore && posts.length > 0 && (
                   <span className="text-text-muted text-xs">
                     Você viu todos os posts.
                   </span>
@@ -180,7 +140,9 @@ export default function Home() {
               Vaults
             </h2>
             {forums.length === 0 ? (
-              <p className="text-text-muted text-xs">Carregando...</p>
+              <p className="text-text-muted text-xs">
+                Nenhum vault encontrado.
+              </p>
             ) : (
               <ul className="flex flex-col gap-0.5">
                 {forums.map((forum) => (
