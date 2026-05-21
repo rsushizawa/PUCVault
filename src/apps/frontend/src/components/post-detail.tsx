@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronUp, ChevronDown, FileText, MessageSquare, Flag } from "lucide-react";
+import {
+  ChevronUp,
+  ChevronDown,
+  FileText,
+  MessageSquare,
+  Flag,
+} from "lucide-react";
 import PostTag from "@/components/post-tag";
 import MarkdownBody from "@/components/markdown-body";
 import DenunciaModal from "@/components/denuncia-modal";
@@ -50,7 +56,11 @@ export default function PostDetail({
   onVote,
 }: PostDetailProps) {
   const [vote, setVote] = useState<1 | -1 | null>(null);
-  const [reportTarget, setReportTarget] = useState<{ type: "usuario" | "conteudo"; id: number; label: string } | null>(null);
+  const [reportTarget, setReportTarget] = useState<{
+    type: "usuario" | "conteudo";
+    id: number;
+    label: string;
+  } | null>(null);
 
   function handleVote(value: 1 | -1) {
     const next = vote === value ? null : value;
@@ -68,117 +78,116 @@ export default function PostDetail({
           onClose={() => setReportTarget(null)}
         />
       )}
-    <article className="bg-surface-raised flex gap-5 p-5 items-start rounded-sm w-full">
-      {/* Vote column */}
-      <div className="w-[30px] bg-[#0e0e0e] flex flex-col items-center p-1 rounded-sm shrink-0">
-        <button
-          className="p-1 flex items-center justify-center"
-          aria-label="upvote"
-          onClick={() => handleVote(1)}
-        >
-          <ChevronUp
-            size={14}
-            className={vote === 1 ? "text-accent" : "text-text-secondary"}
-          />
-        </button>
-        <span className="font-bold text-xs text-text-secondary text-center w-full">
-          {Number(post.engajamento) + (vote ?? 0)}
-        </span>
-        <button
-          className="p-1 flex items-center justify-center"
-          aria-label="downvote"
-          onClick={() => handleVote(-1)}
-        >
-          <ChevronDown
-            size={14}
-            className={vote === -1 ? "text-[#f97316]" : "text-text-secondary"}
-          />
-        </button>
-      </div>
-
-      {/* Content */}
-      <div className="flex flex-col gap-3 flex-1 min-w-0">
-        {/* Meta row */}
-        <div className="flex gap-2 items-center flex-wrap">
-          {(post.tags ?? []).map((tag) => (
-            <PostTag key={tag} tag={tag} />
-          ))}
-          <span className="text-xs text-text-muted">
-            Postado por{" "}
-            <UserHoverCard username={post.nome_usuario} userId={String(post.criador)}>
-              <Link
-                href={`/u/${post.nome_usuario}`}
-                className="hover:text-text-secondary"
-              >
-                u/{post.nome_usuario}
-              </Link>
-            </UserHoverCard>{" "}
-            · {formatDate(post.criado_em)}
+      <article className="bg-surface-raised flex gap-5 p-5 items-start rounded-sm w-full">
+        {/* Vote column */}
+        <div className="w-[30px] bg-[#0e0e0e] flex flex-col items-center p-1 rounded-sm shrink-0">
+          <button
+            className="p-1 flex items-center justify-center"
+            aria-label="upvote"
+            onClick={() => handleVote(1)}
+          >
+            <ChevronUp
+              size={14}
+              className={vote === 1 ? "text-accent" : "text-text-secondary"}
+            />
+          </button>
+          <span className="font-bold text-xs text-text-secondary text-center w-full">
+            {Number(post.engajamento) + (vote ?? 0)}
           </span>
+          <button
+            className="p-1 flex items-center justify-center"
+            aria-label="downvote"
+            onClick={() => handleVote(-1)}
+          >
+            <ChevronDown
+              size={14}
+              className={vote === -1 ? "text-[#f97316]" : "text-text-secondary"}
+            />
+          </button>
         </div>
 
-        {/* Title */}
-        <h1 className="font-semibold text-2xl text-text-primary leading-tight">
-          {post.titulo}
-        </h1>
-
-        {/* Body — rendered as markdown */}
-        <MarkdownBody>{post.conteudo}</MarkdownBody>
-
-        {/* File attachment / preview */}
-        {post.arquivo && (
-          <div className="flex flex-col gap-2">
-            {isImage(post.arquivo) ? (
-              <img
-                src={fileUrl(post.id)}
-                alt="Anexo"
-                className="max-w-full max-h-[400px] rounded-lg object-contain border border-surface-overlay"
-              />
-            ) : isPdf(post.arquivo) ? (
-              <embed
-                src={fileUrl(post.id)}
-                type="application/pdf"
-                className="w-full h-[500px] rounded-lg border border-surface-overlay"
-              />
-            ) : null}
-            <a
-              href={fileUrl(post.id, true)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-accent text-sm hover:underline w-fit"
-            >
-              <FileText size={15} aria-hidden />
-              {isPdf(post.arquivo) ? "Abrir PDF" : "Download"}
-            </a>
+        {/* Content */}
+        <div className="flex flex-col gap-3 flex-1 min-w-0">
+          {/* Meta row */}
+          <div className="flex gap-2 items-center flex-wrap">
+            {(post.tags ?? []).map((tag) => (
+              <PostTag key={tag} tag={tag} />
+            ))}
+            <span className="text-xs text-text-muted">
+              Postado por{" "}
+              <UserHoverCard
+                username={post.nome_usuario}
+                userId={String(post.criador)}
+              >
+                <Link
+                  href={`/u/${post.nome_usuario}`}
+                  className="hover:text-text-secondary"
+                >
+                  u/{post.nome_usuario}
+                </Link>
+              </UserHoverCard>{" "}
+              · {formatDate(post.criado_em)}
+            </span>
           </div>
-        )}
 
-        {/* Footer */}
-        <div className="flex items-center gap-3 text-xs text-text-muted pt-3 border-t border-surface-overlay">
-          <MessageSquare size={13} aria-hidden />
-          <span>{Number(post.comentarios)} comments</span>
-          <div className="flex-1" />
-          <button
-            type="button"
-            onClick={() => setReportTarget({ type: "conteudo", id: post.id, label: post.titulo })}
-            className="flex items-center gap-1 hover:text-red-400 transition-colors cursor-pointer"
-            title="Denunciar post"
-          >
-            <Flag size={12} /> Denunciar post
-          </button>
-          {post.criador > 0 && (
+          {/* Title */}
+          <h1 className="font-semibold text-2xl text-text-primary leading-tight">
+            {post.titulo}
+          </h1>
+
+          {/* Body — rendered as markdown */}
+          <MarkdownBody>{post.conteudo}</MarkdownBody>
+
+          {/* File attachment / preview */}
+          {post.arquivo && (
+            <div className="flex flex-col gap-2">
+              {isImage(post.arquivo) ? (
+                <img
+                  src={fileUrl(post.id)}
+                  alt="Anexo"
+                  className="max-w-full max-h-[400px] rounded-lg object-contain border border-surface-overlay"
+                />
+              ) : isPdf(post.arquivo) ? (
+                <embed
+                  src={fileUrl(post.id)}
+                  type="application/pdf"
+                  className="w-full h-[500px] rounded-lg border border-surface-overlay"
+                />
+              ) : null}
+              <a
+                href={fileUrl(post.id, true)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-accent text-sm hover:underline w-fit"
+              >
+                <FileText size={15} aria-hidden />
+                {isPdf(post.arquivo) ? "Abrir PDF" : "Download"}
+              </a>
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className="flex items-center gap-3 text-xs text-text-muted pt-3 border-t border-surface-overlay">
+            <MessageSquare size={13} aria-hidden />
+            <span>{Number(post.comentarios)} comments</span>
+            <div className="flex-1" />
             <button
               type="button"
-              onClick={() => setReportTarget({ type: "usuario", id: post.criador, label: `u/${post.nome_usuario}` })}
+              onClick={() =>
+                setReportTarget({
+                  type: "conteudo",
+                  id: post.id,
+                  label: post.titulo,
+                })
+              }
               className="flex items-center gap-1 hover:text-red-400 transition-colors cursor-pointer"
-              title="Denunciar autor"
+              title="Denunciar post"
             >
-              <Flag size={12} /> Denunciar autor
+              <Flag size={12} />
             </button>
-          )}
+          </div>
         </div>
-      </div>
-    </article>
+      </article>
     </>
   );
 }
