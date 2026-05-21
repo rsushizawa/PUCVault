@@ -175,7 +175,7 @@ exports.login = async (req, res) => {
           pinHash: pinHash
         }, '2fa');
 
-        await emailServices.sendEmail(user.email, pin, '2fa');
+        emailServices.sendEmail(user.email, pin, '2fa').catch(err => console.error("Erro envio email:", err));
 
         return res.status(200).json({
           message: 'PIN sent to email successfully',
@@ -364,5 +364,18 @@ exports.forgotChangePassword = async (req, res) => {
   }
 };
 
+exports.logout = async (req, res) => {
+  try {
+    console.log('conexao sucedida logout');
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(400).json({ error: 'No token provided for logout' });
+    }
+    const [, token] = authHeader.split(' ');
 
+    return res.status(200).json({ message: 'logged out successfully' });
 
+  } catch (error) {
+    return res.status(500).json({ error: 'internal server error' });
+  }
+}

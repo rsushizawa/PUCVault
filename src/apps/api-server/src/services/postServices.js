@@ -1,7 +1,7 @@
 const db = require('../config/database');
 const path = require('path');
 
-
+const { ok, paginated, fail } = require('../helpers/response');
 function errorMsg(error) {
   console.error('--- DETALHES DO ERRO ---');
   console.error('Mensagem:', error.message);
@@ -26,11 +26,13 @@ module.exports = {
     }
   },
 
-  async getSinglePost(forum_id) {
+  async getSinglePost(forum_id, user_id) {
     try {
       console.log('conexão sucedida getSinglePost');
 
-      const res = await db.query('SELECT * FROM publico.buscar_postagem( $1 )', [forum_id]);
+      const res = await db.query('SELECT * FROM publico.buscar_postagem( $1, $2 )', [forum_id, user_id]);
+
+      console.table(res);
 
       return res.rows
     } catch (error) {
@@ -56,7 +58,7 @@ module.exports = {
 
   async getUserPosts(user_id, page_num) {
     try {
-      log('conexão sucedida getUserPosts');
+      console.log('conexão sucedida getUserPosts');
 
       const res = await db.query('SELECT * FROM publico.listar_postagens_usuario( $1, $2 )', [user_id, page_num]);
 
@@ -76,32 +78,23 @@ module.exports = {
     }
   },
 
-  async listComments(post_id) {
+  async listComments(post_id, user_id) {
     try {
       console.log('conexão sucedida listComments');
 
-      const res = await db.query('SELECT * FROM publico.listar_comentarios_postagem( $1 )', [post_id]);
+
+      const res = await db.query('SELECT * FROM publico.listar_comentarios_postagem( $1, $2 )', [post_id, user_id]);
 
       return res;
     } catch (error) {
       errorMsg(error);
     }
   },
-  async toggleUpvoteContent(user_id, content_id) {
+  async reviewContent(user_id, content_id, review) {
     try {
-      console.log('conexão sucedida rateContent');
+      console.log('conexão sucedida reviewContent');
 
-      await db.query('CALL publico.avaliar_conteudo( $1, $2, $3 )', [user_id, content_id, 1]);
-
-    } catch (error) {
-      errorMsg(error);
-    }
-  },
-  async toggleDownvoteContent(user_id, content_id) {
-    try {
-      console.log('conexão sucedida rateContent');
-
-      await db.query('CALL publico.avaliar_conteudo( $1, $2, $3 )', [user_id, content_id, -1]);
+      await db.query('CALL publico.avaliar_conteudo($1, $2, $3)', [user_id, content_id, review]);
 
     } catch (error) {
       errorMsg(error);

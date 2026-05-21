@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const tagController = require('../controllers/tagController');
 const authMiddleware = require('../middlewares/authMiddleware');
+const roleMiddleware = require('../middlewares/roleMiddleware');
 
 
 
@@ -11,7 +12,9 @@ router.post('/create',
 );
 
 router.patch('/:tag_id/validate',
-  authMiddleware, tagController.validateTags
+  authMiddleware,
+  roleMiddleware(['VALIDADOR', 'ADMIN', 'SUPERADMIN']),
+  tagController.validateTags
 );
 
 router.get('/:user_id/print',

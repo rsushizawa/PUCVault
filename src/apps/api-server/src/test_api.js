@@ -3,10 +3,13 @@ const { stdin: input, stdout: output } = require('process');
 const fs = require('fs');
 const path = require('path');
 
+const envPath = path.resolve(__dirname, '../src/.env');
 const BASE_URL = "http://localhost:8000";
 const TOKEN_FILE = path.join(__dirname, '.token_cache');
 let globalToken = "";
+require('dotenv').config({ path: envPath });
 
+const passAccess = process.env.JWT_SECRET;
 // Caches temporários em memória para facilitar os testes das rotas stateless de PIN
 let lastSignupToken = "";
 let lastTwoFacToken = "";
@@ -16,6 +19,7 @@ let lastPinToken = "";
 if (fs.existsSync(TOKEN_FILE)) {
   globalToken = fs.readFileSync(TOKEN_FILE, 'utf8');
 }
+
 
 const rl = readline.createInterface({ input, output });
 
@@ -84,29 +88,33 @@ const testRoute = async (desc, urlPath, method = 'GET', body = null, useAuth = f
     } else {
       console.log("   Resposta:", JSON.stringify(data).substring(0, 700) + "...");
 
-      // --- CAPTURA AUTOMÁTICA DE TOKENS PARA O CACHE EM MEMÓRIA ---
+      // --- CAPTURA SEGURA DE TOKEN DE ACESSO ---
       if (data.token) {
         globalToken = data.token;
         fs.writeFileSync(TOKEN_FILE, globalToken);
         console.log("   💾 Token de acesso final salvo localmente.");
       }
-      if (data.signupToken) {
-        lastSignupToken = data.signupToken;
-        console.log("   💾 signupToken temporário interceptado e guardado na memória.");
-      }
-      if (data.twoFacToken) {
-        lastTwoFacToken = data.twoFacToken;
-        console.log("   💾 twoFacToken temporário interceptado e guardado na memória.");
-      }
-      if (data.pinToken) {
-        lastPinToken = data.pinToken;
-        console.log("   💾 pinToken de recuperação interceptado e guardado na memória.");
-      }
     }
+
+    // --- CAPTURA AUTOMÁTICA DE TOKENS TEMPORÁRIOS ---
+    if (data.signupToken) {
+      lastSignupToken = data.signupToken;
+      console.log("   💾 signupToken temporário interceptado e guardado na memória.");
+    }
+    if (data.twoFacToken) {
+      lastTwoFacToken = data.twoFacToken;
+      console.log("   💾 twoFacToken temporário interceptado e guardado na memória.");
+    }
+    if (data.pinToken) {
+      lastPinToken = data.pinToken;
+      console.log("   💾 pinToken de recuperação interceptado e guardado na memória.");
+    }
+
     return { status: res.status, data };
+
   } catch (err) {
     console.log(`❌ Erro na conexão: ${err.message}`);
-    return { status: 500 };
+    return { status: 500, data: { error: err.message } };
   }
 };
 
@@ -122,6 +130,7 @@ async function menuAuth() {
     console.log(" 5. Mudar Senha (Logado)");
     console.log(" 6. Recuperar Senha (Solicitar PIN por E-mail)");
     console.log(" 7. Confirmar Recuperação (Alterar Senha com PIN)");
+    console.log(" 8. Logout");
     console.log(" 0. Voltar");
 
     const opt = await ask("Escolha: ");
@@ -199,6 +208,30 @@ async function menuAuth() {
         confirm
       });
     }
+    else if (opt === '8') {
+      console.log("\n🔄 Solicitando logout ao servidor...");
+
+      // 1. Dispara o POST para o servidor invalidar o token lá
+      const resultado = await testRoute("Logout no Servidor", "/auth/logout", "POST", null, true);
+
+      // 2. Se o servidor respondeu com sucesso (status entre 200 e 299)
+      if (resultado && resultado.status >= 200 && resultado.status < 300) {
+        console.log("🧹 Limpando credenciais locais do cache...");
+
+        // Apaga a variável na memória do terminal
+        globalToken = "";
+
+        // Limpa o arquivo físico de cache para deslogar definitivamente
+        if (fs.existsSync(TOKEN_FILE)) {
+          fs.writeFileSync(TOKEN_FILE, "");
+        }
+
+        console.log("✅ Perfeito! Você foi deslogado do Servidor e do Cliente.");
+      } else {
+        console.log("❌ O servidor rejeitou o logout ou ocorreu um erro.");
+      }
+    }
+
     await pause();
   }
 }
@@ -234,7 +267,10 @@ async function menuUser() {
       const description = await ask("Nova Descrição: ");
       await testRoute("Change Description", `/user/${id}/description`, "PATCH", { description }, true);
     } else if (opt === '6') {
-      await testRoute("Alternar 2FA", `/user/toggle-2fa`, "PATCH", null, true);
+      const id = await ask("User ID para alternar 2FA: ");
+      await testRoute("Alternar 2FA", `/user/${id}/toggle-2fa`, "PATCH", null, true);
+    } else if (opt === '7') {
+      await testRoute("Deletar Conta", `/user/delete`, "DELETE", null, true);
     }
     await pause();
   }
@@ -245,30 +281,69 @@ async function menuForum() {
     console.log("\n--- [3] FÓRUNS ---");
     console.log(" 1. Criar Fórum");
     console.log(" 2. Imprimir Fóruns");
-    console.log(" 3. Ver Fórum Único");
-    console.log(" 4. Seguir Fórum");
+    console.log(" 3. Ver Fórum Único (Por ID)");
+    console.log(" 4. Buscar Fórum por Nome");
+    console.log(" 5. Seguir Fórum");
+    console.log(" 6. Listar Seguidores do Fórum");
+    console.log(" 7. Listar Arquivos do Fórum (Paginado)");
+    console.log(" 8. Listar Anos com Arquivos no Fórum");
+    console.log(" 9. Listar Tags de Arquivos por Ano");
+    console.log(" 10. Listar Posts com Arquivos por Ano e Tag");
     console.log(" 0. Voltar");
 
     const opt = await ask("Escolha: ");
     if (opt === '0') break;
 
     if (opt === '1') {
-      const name = await ask("Nome: ");
+      const name = await ask("Nome do Fórum: ");
       const description = await ask("Descrição: ");
       await testRoute("Criar Fórum", "/forums/create", "POST", { name, description }, true);
-    } else if (opt === '2') {
+    }
+    else if (opt === '2') {
       await testRoute("Imprimir Fóruns", "/forums/print/forums");
-    } else if (opt === '3') {
-      const id = await ask("ID do Fórum: ");
+    }
+    else if (opt === '3') {
+      const id = parseInt(await ask("ID do Fórum: "), 10);
       await testRoute("Ver Fórum", `/forums/${id}`, "GET", null, true);
-    } else if (opt === '4') {
-      const id = await ask("Forum ID para seguir: ");
+    }
+    else if (opt === '4') {
+      const name = await ask("Digite o nome exato do Fórum: ");
+      await testRoute("Buscar Fórum por Nome", `/forums/by-name/${encodeURIComponent(name)}`, "GET");
+    }
+    else if (opt === '5') {
+      const id = parseInt(await ask("Forum ID para seguir: "), 10);
       await testRoute("Seguir Fórum", `/forums/${id}/follow`, "POST", null, true);
+    }
+    else if (opt === '6') {
+      const id = parseInt(await ask("Forum ID para listar seguidores: "), 10);
+      await testRoute("Listar Seguidores do Fórum", `/forums/${id}/list`, "GET");
+    }
+    else if (opt === '7') {
+      const id = parseInt(await ask("Forum ID: "), 10);
+      const pageNum = parseInt(await ask("Número da Página de arquivos: "), 10);
+      await testRoute("Listar Arquivos Paginados", `/forums/${id}/files/page/${pageNum}`, "GET");
+    }
+    else if (opt === '8') {
+      const id = parseInt(await ask("Forum ID: "), 10);
+      await testRoute("Listar Anos com Arquivos", `/forums/${id}/files/year`, "GET");
+    }
+    else if (opt === '9') {
+      const id = parseInt(await ask("Forum ID: "), 10);
+      const year = await ask("Digite o ano (ex: 2026): ");
+      await testRoute("Listar Tags por Ano", `/forums/${id}/files/year/${year}`, "GET");
+    }
+    else if (opt === '10') {
+      const id = parseInt(await ask("Forum ID: "), 10);
+      const year = await ask("Digite o ano (ex: 2026): ");
+      const tag = await ask("Digite a tag do arquivo: ");
+      await testRoute("Listar Posts por Ano e Tag", `/forums/${id}/files/year/${year}/tag/${encodeURIComponent(tag)}`, "GET");
+    }
+    else {
+      console.log("   ❌ Opção inválida.");
     }
     await pause();
   }
 }
-
 async function menuPosts() {
   while (true) {
     console.log("\n--- [4] POSTS & COMENTÁRIOS ---");
@@ -278,7 +353,7 @@ async function menuPosts() {
     console.log(" 4. Deletar Post");
     console.log(" 5. Criar Comentário");
     console.log(" 6. Listar Comentários do Post");
-    console.log(" 7. Avaliar Conteúdo (Like/Dislike)");
+    console.log(" 7. Avaliar Conteúdo (Matriz em Lote)");
     console.log(" 0. Voltar");
 
     const opt = await ask("Escolha: ");
@@ -308,25 +383,57 @@ async function menuPosts() {
       const pId = await ask("Post ID: ");
       await testRoute("Listar Comentários", `/posts/${pId}/comments`, "GET");
     } else if (opt === '7') {
-      const cId = await ask("Content ID: ");
+      console.log("\n--- AVALIAR CONTEÚDO EM LOTE ---");
 
-      console.log("     1) Dar Like (Upvote)");
-      console.log("     2) Dar Dislike (Downvote)");
-      const tipoAvaliacao = await ask("Escolha a opção (1 ou 2): ");
+      // Criamos as duas linhas da matriz m[2][n]
+      const idsRow = [];
+      const ratingsRow = [];
 
-      if (tipoAvaliacao === '1') {
-        // Dispara o PATCH para a rota de upvote sem passar body, usando a autenticação (true)
-        await testRoute("Upvote Content", `/posts/${cId}/upvote`, "PATCH", null, true);
-      } else if (tipoAvaliacao === '2') {
-        // Dispara o PATCH para a rota de downvote sem passar body, usando a autenticação (true)
-        await testRoute("Downvote Content", `/posts/${cId}/downvote`, "PATCH", null, true);
-      } else {
-        console.log("   ❌ Opção inválida. Operação cancelada.");
+      while (true) {
+        const cIdInput = await ask("Content ID (ou digite 'fim' para encerrar e enviar): ");
+        if (cIdInput.toLowerCase() === 'fim') break;
+
+        const cId = parseInt(cIdInput, 10);
+        if (isNaN(cId)) {
+          console.log("   ❌ ID Inválido. Digite um número inteiro.");
+          continue;
+        }
+
+        console.log("     1) Like (Upvote = 1)");
+        console.log("     0) Tirar voto");
+        console.log("     -1) Dislike (Downvote = -1)");
+        const voto = await ask("Escolha a avaliação: ");
+
+        let valorRating = 0;
+        if (voto === '1') valorRating = 1;
+        else if (voto === '-1') valorRating = -1;
+        else if (voto === '0') valorRating = 0;
+        else {
+          console.log("   ❌ Opção de voto inválida. Este item não foi adicionado.");
+          continue;
+        }
+
+        // Insere em paralelo nas linhas correspondentes para manter o alinhamento de índices
+        idsRow.push(cId);
+        ratingsRow.push(valorRating);
+        console.log(`   📌 Adicionado à matriz: ID ${cId} com peso [${valorRating}]`);
+        console.log("---------------------------------------------------------");
       }
-    } await pause();
+
+      // Valida se o usuário montou pelo menos um item na matriz antes de disparar a rota
+      if (idsRow.length === 0) {
+        console.log("   ⚠️ Nenhuma avaliação foi inserida. Operação cancelada.");
+      } else {
+        // Monta a estrutura final m[2][n] esperada pelo req.body.rate_vector
+        const rate_vector = [idsRow, ratingsRow];
+
+        // Dispara a requisição em lote usando PATCH para o novo endpoint centralizado
+        await testRoute("Rate Content Batch", "/posts/rate-content", "PATCH", { rate_vector }, true);
+      }
+    }
+    await pause();
   }
 }
-
 async function menuImages() {
   while (true) {
     console.log("\n--- [5] IMAGENS & UPLOADS ---");
@@ -366,6 +473,142 @@ async function menuImages() {
   }
 }
 
+// --- AUXILIAR DE DENÚNCIAS ---
+function printReportTypes() {
+  console.log('Escolha o tipo de denúncia: ');
+  console.log("  1. CONTEUDO_INADEQUADO");
+  console.log("  2. SPAM");
+  console.log("  3. PLÁGIO");
+  console.log("  4. ASSÉDIO");
+  console.log("  5. INFORMACAO_FALSA");
+  console.log("  6. OUTRO");
+}
+
+async function menuReport() {
+  while (true) {
+    console.log("\n--- [6] DENÚNCIAS (REPORT) ---");
+    console.log(" 1. Denunciar Usuário");
+    console.log(" 2. Denunciar Conteúdo");
+    console.log(" 3. Resolver Denúncias (Validator/Admin)");
+    console.log(" 4. Listar Denúncias Abertas");
+    console.log(" 0. Voltar");
+
+    const opt = await ask("Escolha: ");
+    if (opt === '0') break;
+
+    if (opt === '1') {
+      printReportTypes();
+      const tipoReportMap = {
+        '1': "CONTEUDO_INADEQUADO",
+        '2': "SPAM",
+        '3': "PLÁGIO",
+        '4': "ASSÉDIO",
+        '5': "INFORMACAO_FALSA",
+        '6': "OUTRO"
+      };
+      const tipoReport = await ask('Escolha a opção do tipo: ');
+      const tipo = tipoReportMap[tipoReport];
+      const usuario_denunciado_id = parseInt(await ask("User ID do Denunciado: "), 10);
+      await testRoute("Report User", `/denuncias/usuario`, "POST", { tipo, usuario_denunciado_id }, true);
+    }
+    else if (opt === '2') {
+      printReportTypes();
+      const tipoReportMap = {
+        '1': "CONTEUDO_INADEQUADO",
+        '2': "SPAM",
+        '3': "PLÁGIO",
+        '4': "ASSÉDIO",
+        '5': "INFORMACAO_FALSA",
+        '6': "OUTRO"
+      };
+      const tipoReport = await ask('Escolha a opção do tipo: ');
+      const tipo = tipoReportMap[tipoReport];
+      const conteudo_id = parseInt(await ask("ID do Conteúdo Denunciado: "), 10);
+      await testRoute("Report Content", `/denuncias/conteudo`, "POST", { tipo, conteudo_id }, true);
+    }
+    else if (opt === '3') {
+      console.log("\n--- RESOLVER DENÚNCIA ---");
+      const denuncia_id = parseInt(await ask("ID da Denúncia que deseja resolver: "), 10);
+
+      console.log("\nDefina o Novo Status:");
+      console.log(" 1. RESOLVIDA");
+      console.log(" 2. IGNORADA");
+      const escolhaStatus = await ask('Escolha o status (1 ou 2): ');
+      const statusMap = { '1': "RESOLVIDA", '2': "IGNORADA" };
+      const novo_status = statusMap[escolhaStatus];
+
+      if (!novo_status) {
+        console.log("   ❌ Opção de status inválida. Operação cancelada.");
+        await pause();
+        continue;
+      }
+
+      let punicao = null;
+      let tempo_silencio = null;
+
+      // Se a denúncia for aplicada/resolvida, abre o menu de punições
+      if (novo_status === "RESOLVIDA") {
+        console.log("\nDefina a Punição do Infrator:");
+        console.log(" 0. Excluir Postagem");
+        console.log(" 1. Excluir Postagem + Silenciar Usuário");
+        console.log(" 2. Excluir Usuário permanentemente");
+        console.log(" N. Nenhuma punição (Apenas fechar)");
+        const escolhaPunicao = await ask('Escolha a opção (0, 1, 2 ou N): ');
+
+        if (['0', '1', '2'].includes(escolhaPunicao)) {
+          punicao = parseInt(escolhaPunicao, 10);
+        }
+
+        // Se a opção envolver silenciamento, configura o INTERVAL do Postgres
+        if (punicao === 1) {
+          console.log("\nDefina o Tempo de Silenciamento:");
+          console.log(" 1. 1 Hora ('1 hour')");
+          console.log(" 2. 3 Horas ('3 hours')");
+          console.log(" 3. 6 Horas ('6 hours')");
+          console.log(" 4. 12 Horas ('12 hours')");
+          console.log(" 5. 1 Dia ('1 day')");
+          console.log(" 6. 3 Dias ('3 days')");
+          console.log(" 7. 7 Dias ('7 days')");
+          const escolhaTempo = await ask('Escolha a opção (1-7): ');
+
+          const tempoMap = {
+            '1': '1 hour',
+            '2': '3 hours',
+            '3': '6 hours',
+            '4': '12 hours',
+            '5': '1 day',
+            '6': '3 days',
+            '7': '7 days'
+          };
+          tempo_silencio = tempoMap[escolhaTempo] || null;
+        }
+      }
+
+      // Monta o payload exatamente como o schema do Zod espera no req.body
+      const payload = {
+        novo_status,
+        punicao,
+        tempo_silencio
+      };
+
+      // Dispara o PATCH passando o denuncia_id na URL rota: /denuncias/:denuncia_id/resolver
+      await testRoute(
+        "Resolve Report",
+        `/denuncias/${denuncia_id}/resolver`,
+        "PATCH",
+        payload,
+        true
+      );
+    }
+    else if (opt === '4') {
+      await testRoute("Listar Denúncias", `/denuncias/`, "GET", null, true);
+    }
+
+    await pause();
+  }
+}
+const jwt = require('jsonwebtoken');
+
 // --- MENU PRINCIPAL ---
 async function showMainMenu() {
   while (true) {
@@ -373,12 +616,30 @@ async function showMainMenu() {
     console.log("=================================");
     console.log("     PUC-VAULT API TESTER v4     ");
     console.log("=================================");
-    console.log(globalToken ? " 🔑 STATUS: LOGADO" : " 🔒 STATUS: DESLOGADO");
+
+    // 🛠️ DECODIFICAÇÃO SEGURA E DINÂMICA DENTRO DO WHILE
+    let infoUsuarioHeader = "🔒 STATUS: DESLOGADO";
+
+    if (globalToken) {
+      try {
+        // Se o token existir e for válido, extrai os dados em tempo real
+        const user = jwt.verify(globalToken, passAccess);
+        infoUsuarioHeader = `🔑 ID: ${user.id} | CARGO: ${user.cargo || 'N/A'}`;
+      } catch (err) {
+        // Se o token estiver expirado ou corrompido, limpa o cache para não travar o script
+        infoUsuarioHeader = "❌ STATUS: TOKEN EXPIRADO / INVÁLIDO";
+      }
+    }
+
+    console.log(`STATUS: ${infoUsuarioHeader}`);
+    console.log("=================================");
+
     console.log("\n 1. Autenticação & Senhas (PIN / 2FA)");
     console.log(" 2. Usuários (Perfil/Follow/Cargos)");
     console.log(" 3. Fóruns (Criação/Listagem)");
     console.log(" 4. Posts & Comentários");
     console.log(" 5. Imagens & Uploads");
+    console.log(" 6. Denúncias");
     console.log(" 0. Sair");
 
     const choice = await ask("\nEscolha: ");
@@ -389,7 +650,11 @@ async function showMainMenu() {
     else if (choice === '3') await menuForum();
     else if (choice === '4') await menuPosts();
     else if (choice === '5') await menuImages();
-    else console.log("   ❌ Opção inválida.");
+    else if (choice === '6') await menuReport();
+    else {
+      console.log("   ❌ Opção inválida.");
+      await pause();
+    }
   }
   rl.close();
 }

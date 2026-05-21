@@ -4,6 +4,7 @@ const imgController = require('../controllers/imageController');
 
 const { onlyImage } = require('../middlewares/uploadMiddleware');
 const authMiddleware = require('../middlewares/authMiddleware');
+const roleMiddleware = require('../middlewares/roleMiddleware');
 
 router.patch('/upload/:location',
   authMiddleware,
@@ -17,6 +18,7 @@ router.get('/get/user/:user_id',
 
 router.patch('/:forum_id/upload/:location',
   authMiddleware,
+  roleMiddleware(['SUPERADMIN']),
   onlyImage.single('file'),
   imgController.uploadImageForum
 );

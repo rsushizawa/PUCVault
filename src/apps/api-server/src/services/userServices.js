@@ -32,7 +32,7 @@ module.exports = {
 
   async getHashById(user_id) {
     try {
-      console.log('conexão sucedida deleteUser');
+      console.log('conexão sucedida getHashById');
       const returnvalue = await db.query('SELECT * FROM publico.dados_login_usuario( $1, $2, $3 )', [user_id, null, null]);
       return returnvalue.rows[0];
     } catch (error) {

@@ -26,17 +26,7 @@ module.exports = {
 
   },
 
-  async reviewContent(user_id, content_id, review) {
-    try {
-      console.log('conexão sucedida reviewContent');
 
-      await db.query('CALL publico.avaliar_conteudo($1, $2, $3)', [user_id, content_id, review]);
-
-    } catch (error) {
-      errorMsg(error);
-    }
-
-  },
 
   async reportContent(type, user_id, content_id) {
     try {
