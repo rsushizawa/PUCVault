@@ -7,6 +7,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
+const { ok, fail } = require('../helpers/response');
 const path = require('path');
 const { is } = require('zod/v4/locales');
 const { maxHeaderSize } = require('http');
@@ -73,7 +74,7 @@ exports.signin = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     const signupToken = generateJWTToken({ email, name, username, hashedPassword, twofacauth, pinHash: pinHash }, 'email_verification');
 
-    await emailServices.sendEmail(email, pin, 'email_verification');
+    emailServices.sendEmail(email, pin, 'email_verification').catch(err => console.error("Erro envio email:", err));
 
     return res.status(200).json({ message: 'PIN sent to email', signupToken });
 

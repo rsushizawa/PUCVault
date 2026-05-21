@@ -166,8 +166,11 @@ exports.userPosts = async (req, res) => {
   try {
     const { user_id, page_num } = req.params;
 
+
+    const logged_id = req.user ? req.user.id : null;
+
     console.log("conexão sucedida userPosts");
-    const result = await postService.getUserPosts(user_id, page_num);
+    const result = await postService.getUserPosts(user_id, page_num, logged_id);
 
     console.table(result);
 

@@ -130,9 +130,11 @@ exports.resolverDenuncia = async (req, res) => {
   if (isNaN(denuncia_id)) {
     return res.status(400).json({ error: 'ID da denúncia inválido' });
   }
-
+  const tempoSilencioFinal = (tempo_silencio && tempo_silencio.trim() !== "")
+    ? tempo_silencio
+    : null;
   try {
-    await denunciaService.resolverDenuncia(denuncia_id, executor_id, novo_status, punicao, tempo_silencio);
+    await denunciaService.resolverDenuncia(denuncia_id, executor_id, novo_status, punicao, tempoSilencioFinal);
     return res.status(200).json({ message: "success" });
   } catch (error) {
     console.error('Erro ao resolver denúncia:', error.message);

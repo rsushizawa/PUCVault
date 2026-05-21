@@ -56,11 +56,11 @@ module.exports = {
     }
   },
 
-  async getUserPosts(user_id, page_num, user_id) {
+  async getUserPosts(user_id, page_num, logged_id) {
     try {
       console.log('conexão sucedida getUserPosts');
 
-      const res = await db.query('SELECT * FROM publico.listar_postagens_usuario( $1, $2, $3 )', [user_id, page_num, user_id]);
+      const res = await db.query('SELECT * FROM publico.listar_postagens_usuario( $1, $2, $3 )', [user_id, page_num, logged_id]);
 
       return res.rows;
     } catch (error) {

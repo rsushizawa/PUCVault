@@ -20,6 +20,9 @@ exports.changeRole = async (req, res) => {
     await userService.changeUserRole(executor_id, user_id, newRole);
     return ok(res, null);
   } catch (error) {
+    if (error.code === 'P0001') {
+      return paginated(res, 400, error.message);
+    }
     return fail(res, 500, "server error");
   }
 };
@@ -33,6 +36,9 @@ exports.follow = async (req, res) => {
     await userService.toggleFollowUser(user_id, target_id);
     return ok(res, null);
   } catch (error) {
+    if (error.code === '23514') {
+      return paginated(res, 400, "user cant follow himself");
+    }
     return fail(res, 500, "server error");
   }
 };

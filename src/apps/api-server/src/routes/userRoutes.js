@@ -3,10 +3,12 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 
 const authMiddleware = require('../middlewares/authMiddleware');
+const roleMiddleware = require('../middlewares/roleMiddleware');
 const optionalauthMiddleware = require('../middlewares/optionalauthMiddleware');
 
 router.patch('/:user_id/change_role',
   authMiddleware,
+  roleMiddleware(['ADMIN', 'SUPERADMIN']),
   userController.changeRole
 );
 
