@@ -26,7 +26,7 @@ const resolverDenunciaSchema = z.object({
   novo_status: z.enum(['RESOLVIDA', 'IGNORADA'], {
     errorMap: () => ({ message: "Status inválido. Use 'RESOLVIDA' ou 'IGNORADA'" })
   }),
-  punicao: z.number().int("O valor deve ser um inteiro").min(0, 'O valor deve ser no minimo 0').max(2, 'O valor deve ser no maximo 2'),
+  punicao: z.number().int().min(0, 'O valor deve ser no minimo 0').max(2, 'O valor deve ser no maximo 2').nullable().optional(),
   tempo_silencio: z.string().nullable().optional()
 });
 
