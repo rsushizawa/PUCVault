@@ -18,8 +18,8 @@ module.exports = {
     try {
       console.log("conexão sucedida searchLogins");
       let returnvalue = await pool.query(
-        "SELECT * FROM publico.dados_login_usuario( $1, $2 )",
-        [email, username],
+        "SELECT * FROM publico.dados_login_usuario( $1, $2, $3 )",
+        [null, email, username],
       );
       if (returnvalue.rowCount === 0) {
         return false;
@@ -32,8 +32,6 @@ module.exports = {
 
   },
 
-  // FIX: dados_login_usuario($1, $2) takes (email, username) — no user_id lookup supported yet.
-  // Add publico.buscar_hash_por_id(user_id) to replace this.
   async getHashById(user_id) {
     try {
       console.log("conexão sucedida getHashById");
@@ -51,13 +49,13 @@ module.exports = {
     try {
       console.log("conexão sucedida validateLoginCredentials");
       let returnvalue = await pool.query(
-        "SELECT * FROM publico.dados_login_usuario( $1, $2 )",
-        [userEmail, null],
+        "SELECT * FROM publico.dados_login_usuario( $1, $2, $3 )",
+        [null, userEmail, null],
       );
       if (returnvalue.rowCount === 0) {
         returnvalue = await pool.query(
-          "SELECT * FROM publico.dados_login_usuario( $1, $2 )",
-          [null, userEmail],
+          "SELECT * FROM publico.dados_login_usuario( $1, $2, $3 )",
+          [null, null, userEmail],
         );
       }
       if (returnvalue.rowCount === 0) {

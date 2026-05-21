@@ -1,6 +1,7 @@
 const authService = require("../services/userServices");
 const userServices = require("../services/userServices");
 const emailServices = require("../services/emailServices");
+const { ok, fail } = require("../helpers/response.js");
 const { z } = require("zod");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -89,7 +90,13 @@ exports.signin = async (req, res) => {
 
     await emailServices.sendEmail(email, pin, "email_verification");
 
-    return res.status(200).json({ message: "PIN sent to email", signupToken });
+    res.cookie("signup_token", signupToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 15 * 60 * 1000,
+    });
+    return res.status(200).json({ message: "PIN sent to email" });
   } catch (error) {
     console.error("CRITICAL ERROR IN /sign-in:", error);
 
@@ -101,7 +108,11 @@ exports.signin = async (req, res) => {
 };
 
 exports.verifySignup = async (req, res) => {
-  const { signupToken, pin_input } = req.body;
+  const { pin_input } = req.body;
+  const signupToken = req.cookies?.signup_token;
+  if (!signupToken) {
+    return res.status(401).json({ error: "missing signup token" });
+  }
   try {
     const payload = jwt.verify(signupToken, passAccess);
     if (payload.purpose !== "email_verification") {
@@ -130,6 +141,7 @@ exports.verifySignup = async (req, res) => {
       const user_id = user.id;
       await authService.toggle2FA(user_id);
     }
+    res.clearCookie("signup_token", { httpOnly: true, sameSite: "strict" });
     return res.status(201).json({ message: "user created with success" });
   } catch (error) {
     if (error.name === "TokenExpiredError") {

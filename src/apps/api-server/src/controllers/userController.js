@@ -1,20 +1,17 @@
-const userService = require('../services/userServices');
-const { z } = require('zod');
-const jwt = require('jsonwebtoken');
-
-const { ok, paginated, fail } = require('../helpers/response');
-//reportUser(type, reportee_id, reported_id)
+const userService = require("../services/userServices");
+const { z } = require("zod");
+const jwt = require("jsonwebtoken");
+const { ok, fail } = require("../helpers/response.js");
 
 exports.changeRole = async (req, res) => {
-
   const { roleNum } = req.body;
   const executor_id = req.user.id;
   const { user_id } = req.params;
 
   let newRole;
-  if (roleNum === 1) newRole = 'USUARIO';
-  else if (roleNum === 2) newRole = 'VALIDADOR';
-  else if (roleNum === 3) newRole = 'ADMIN';
+  if (roleNum === 1) newRole = "USUARIO";
+  else if (roleNum === 2) newRole = "VALIDADOR";
+  else if (roleNum === 3) newRole = "ADMIN";
 
   try {
     await userService.changeUserRole(executor_id, user_id, newRole);
@@ -28,7 +25,6 @@ exports.changeRole = async (req, res) => {
 };
 
 exports.follow = async (req, res) => {
-
   const user_id = req.user.id;
   const { target_id } = req.params;
 
@@ -44,7 +40,6 @@ exports.follow = async (req, res) => {
 };
 
 exports.me = async (req, res) => {
-
   const user_id = req.user.id;
 
   try {
@@ -114,7 +109,7 @@ exports.checkForumFollow = async (req, res) => {
 };
 
 const descriptionSchema = z.object({
-  description: z.any()
+  description: z.any(),
 });
 
 exports.changeDescription = async (req, res) => {
@@ -138,11 +133,15 @@ exports.toggle2FA = async (req, res) => {
     }
     await userService.toggle2FA(user_id);
     const result = await userService.getUserInfo(user_id, null);
-    const user = result.rows ? result.rows[0] : (Array.isArray(result) ? result[0] : result);
+    const user = result.rows
+      ? result.rows[0]
+      : Array.isArray(result)
+        ? result[0]
+        : result;
     const twofactorStatus = user.a2f;
     res.status(200).json({ messsage: `2fa toggled to ${twofactorStatus}` });
   } catch (error) {
-    res.status(500).json({ error: 'server error', error });
+    res.status(500).json({ error: "server error", error });
   }
 };
 
@@ -156,6 +155,6 @@ exports.deleteAccount = async (req, res) => {
     await userService.deleteUser(user_id);
     res.status(200).json({ message: `User with id ${user_id} was deleted` });
   } catch (error) {
-    res.status(500).json({ error: 'server error ', error });
+    res.status(500).json({ error: "server error ", error });
   }
-}
+};

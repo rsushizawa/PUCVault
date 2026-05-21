@@ -3,6 +3,8 @@ const path = require('path');
 const forumService = require("../services/forumServices");
 const contentService = require("../services/contentServices");
 const tagService = require("../services/tagServices");
+const forumService = require("../services/forumServices");
+const { ok, fail, paginated } = require("../helpers/response");
 const { z, success } = require("zod");
 const { uploadToCloudinary } = require("../utils/cloudinaryUtil");
 
@@ -220,10 +222,10 @@ exports.listComments = async (req, res) => {
     const rows = commentResults.rows;
     console.table(rows);
 
-    res.status(200).json({ rows });
+    return ok(res, rows);
 
   } catch (error) {
-    res.status(500).json({ error: "internal server error" });
+    return fail(res, 500, "internal server error");
   }
 };
 
