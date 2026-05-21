@@ -1,21 +1,33 @@
--- uso: SELECT * FROM publico.dados_login_usuario(p_email := 'usuario@email.com');
--- uso: SELECT * FROM publico.dados_login_usuario(p_nome_usuario := 'joao123');
--- uso: SELECT * FROM publico.listar_usuarios();
--- uso: SELECT * FROM publico.buscar_usuario_por_id(1);
--- uso: SELECT * FROM publico.buscar_usuario_por_nome_usuario('joao123');
--- uso: SELECT * FROM publico.buscar_usuario_por_email('usuario@email.com');
--- uso: SELECT * FROM publico.buscar_forum_por_nome('tecnologia');
--- uso: SELECT * FROM publico.listar_foruns();
--- uso: SELECT * FROM publico.listar_seguidores_forum(1);
--- uso: SELECT * FROM publico.buscar_tags_por_criador(1);
--- uso: SELECT * FROM publico.listar_postagens_forum(1, p_pagina := 1);
--- uso: SELECT * FROM publico.listar_arquivos_forum(1, p_pagina := 1);
--- uso: SELECT * FROM publico.listar_comentarios_postagem(1);
--- uso: SELECT * FROM publico.listar_tags();
--- uso: SELECT * FROM publico.buscar_postagem(1);
--- uso: SELECT * FROM publico.buscar_tags_relevantes('tec', p_limite := 5);
+-- SELECT * FROM publico.dados_login_usuario(p_email := 'usuario@email.com');
+-- SELECT * FROM publico.dados_login_usuario(p_nome_usuario := 'joao123');
+-- SELECT * FROM publico.listar_usuarios();
+-- SELECT * FROM publico.buscar_usuario_por_id(<id>, <id usuario logado>);
+-- SELECT * FROM publico.buscar_usuario_por_nome_usuario(<nome_usuario>);
+-- SELECT * FROM publico.buscar_usuario_por_email(<email>);
+-- SELECT * FROM publico.buscar_forum_por_nome(<nome>);
+-- SELECT * FROM publico.buscar_forum_por_id(<id>);
+-- SELECT * FROM publico.listar_foruns();
+-- SELECT * FROM publico.listar_seguidores_forum(<id forum>);
+-- SELECT * FROM publico.buscar_tags_por_criador(<id criador>);
+-- SELECT * FROM publico.listar_postagens_forum(<id forum>, <pagina | default 1>, <id usuario logado>);
+-- SELECT * FROM publico.listar_arquivos_forum(<id forum>, <pagina | default 1>, <id usuario logado>);
+-- SELECT * FROM publico.listar_comentarios_postagem(<id postagem>, <id usuario logado>);
+-- SELECT * FROM publico.listar_tags();
+-- SELECT * FROM publico.buscar_postagem(<id postagem>, <id usuario logado>);
+-- SELECT * FROM publico.buscar_tags_relevantes(<chars>, <limite | default 5>);
+-- SELECT * FROM publico.listar_tags_relacionadas_forum(<id forum>);
+-- SELECT * FROM publico.listar_postagens_feed(<id usuario>, <pagina | default 1>);
+-- SELECT * FROM publico.listar_anos_com_arquivo(<id forum>);
+-- SELECT * FROM publico.listar_tags_arquivo_por_ano(<id forum>, <ano>);
+-- SELECT * FROM publico.listar_postagens_arquivo(<id forum>, <ano>, <id tag>, <id usuario logado>);
+-- SELECT * FROM publico.checar_se_usuario_segue_forum(<id usuario>, <id forum>);
+-- SELECT * FROM publico.listar_postagens_usuario(<id usuario>, <pagina | default 1>, <id usuario logado>);
+-- SELECT * FROM publico.listar_denuncias();
+-- SELECT * FROM publico.listar_penalidades_usuario(<id usuario>);
 
+-- retorna dados para autenticação e remove silêncio expirado automaticamente
 CREATE OR REPLACE FUNCTION publico.dados_login_usuario(
+	p_id INT DEFAULT NULL,
 	p_email VARCHAR DEFAULT NULL,
 	p_nome_usuario VARCHAR DEFAULT NULL
 )
@@ -24,22 +36,47 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
+DECLARE
+	v_usuario_id INT;
 BEGIN
-	-- Validar: pelo menos um parâmetro deve ser fornecido
-	IF p_email IS NULL AND p_nome_usuario IS NULL THEN
-		RAISE EXCEPTION 'É necessário fornecer email ou nome_usuario';
+	-- 1. Validar parâmetros
+	IF p_id IS NULL AND p_email IS NULL AND p_nome_usuario IS NULL THEN
+		RAISE EXCEPTION 'É necessário fornecer id, email ou nome_usuario.';
 	END IF;
-	
-	-- Prioridade para email se ambos forem fornecidos
-	IF p_email IS NOT NULL THEN
-		RETURN QUERY
-		SELECT * FROM privado.login_usuario
+
+	-- 2. Descobrir o ID do usuário
+	IF p_id IS NOT NULL THEN
+		v_usuario_id := p_id;
+	ELSIF p_email IS NOT NULL THEN
+		SELECT id INTO v_usuario_id
+		FROM privado.usuario
 		WHERE email = p_email;
 	ELSE
-		RETURN QUERY
-		SELECT * FROM privado.login_usuario
+		SELECT id INTO v_usuario_id
+		FROM privado.usuario
 		WHERE nome_usuario = p_nome_usuario;
 	END IF;
+
+	-- 3. Verificar se o silêncio expirou
+	UPDATE privado.penalidade
+	SET removido_em = CURRENT_TIMESTAMP
+	WHERE usuario_id = v_usuario_id
+	  AND removido_em IS NULL
+	  AND (aplicado_em + duracao) < CURRENT_TIMESTAMP;
+
+	-- 4. Se algum silêncio expirou, reativar usuário
+	IF FOUND THEN
+		UPDATE privado.usuario
+		SET status = 'ATIVO',
+		    ultima_mudanca_status = CURRENT_TIMESTAMP
+		WHERE id = v_usuario_id
+		  AND status = 'SILENCIADO';
+	END IF;
+
+	-- 5. Retornar dados de login
+	RETURN QUERY
+	SELECT * FROM privado.login_usuario
+	WHERE id = v_usuario_id;
 END;
 $$;
 
@@ -56,17 +93,45 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION publico.buscar_usuario_por_id (
-	p_id INT
+	p_id INT,
+	p_usuario_logado_id INT DEFAULT NULL
 )
-RETURNS SETOF privado.perfil_usuario
+RETURNS TABLE (
+	id INT,
+	nome VARCHAR,
+	nome_usuario VARCHAR,
+	cargo VARCHAR,
+	descricao VARCHAR,
+	status VARCHAR,
+	criado_em TIMESTAMPTZ,
+	identidade_visual INT,
+	a2f boolean,
+	img_perfil TEXT,
+	img_banner TEXT,
+	seguidores BIGINT,
+	segue BIGINT,
+	karma BIGINT,
+	usuario_logado_segue BOOLEAN
+)
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
 BEGIN
 	RETURN QUERY
-	SELECT * FROM privado.perfil_usuario
-	WHERE id = p_id;
+	SELECT
+		perfil.*,
+		CASE
+			WHEN p_usuario_logado_id IS NULL THEN FALSE
+			ELSE EXISTS (
+				SELECT 1
+				FROM privado.seguir_usuario AS seguir_usuario
+				WHERE seguir_usuario.seguidor = p_usuario_logado_id
+				AND seguir_usuario.seguido = p_id
+			)
+		END AS usuario_logado_segue
+	FROM privado.perfil_usuario AS perfil
+	WHERE perfil.id = p_id;
 END;
 $$;
 
@@ -184,19 +249,48 @@ $$;
 
 CREATE OR REPLACE FUNCTION publico.listar_postagens_forum (
 	p_forum_id INT,
-	p_pagina INT DEFAULT 1
+	p_pagina INT DEFAULT 1,
+	p_usuario_logado_id INT DEFAULT NULL
 )
-RETURNS SETOF privado.visualizar_postagem
+RETURNS TABLE (
+	id INT,
+	titulo VARCHAR,
+	arquivo_nome TEXT,
+	arquivo_caminho TEXT,
+	forum INT,
+	conteudo TEXT,
+	status VARCHAR,
+	criado_em TIMESTAMPTZ,
+	tempo_de_vida INTERVAL,
+	criador INT,
+	nome_usuario VARCHAR,
+	cargo VARCHAR,
+	img_perfil TEXT,
+	tags VARCHAR[],
+	engajamento BIGINT,
+	comentarios BIGINT,
+	avaliacao_usuario_logado SMALLINT
+)
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
 BEGIN
 	RETURN QUERY
-	SELECT *
-	FROM privado.visualizar_postagem
-	WHERE forum = p_forum_id
-	ORDER BY criado_em DESC
+	SELECT
+		postagem.*,
+		COALESCE(
+			(
+				SELECT avaliacao.avaliacao
+				FROM privado.avaliacao AS avaliacao
+				WHERE avaliacao.usuario = p_usuario_logado_id
+				  AND avaliacao.conteudo = postagem.id
+			),
+			0
+		)::SMALLINT AS avaliacao_usuario_logado
+	FROM privado.visualizar_postagem AS postagem
+	WHERE postagem.forum = p_forum_id
+	ORDER BY postagem.criado_em DESC
 	LIMIT 20
 	OFFSET (p_pagina - 1) * 20;
 END;
@@ -215,7 +309,7 @@ BEGIN
 	RETURN QUERY
 	SELECT *
 	FROM privado.visualizar_postagem
-	WHERE forum = p_forum_id AND arquivo IS NOT NULL
+	WHERE forum = p_forum_id AND arquivo_nome IS NOT NULL
 	ORDER BY criado_em DESC
 	LIMIT 20
 	OFFSET (p_pagina - 1) * 20;
@@ -223,9 +317,24 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION publico.listar_comentarios_postagem (
-	p_postagem_id INT
+	p_postagem_id INT,
+	p_usuario_id INT DEFAULT NULL
 )
-RETURNS SETOF privado.exibir_comentarios
+RETURNS TABLE (
+	id INT,
+	conteudo_pai INT,
+	nivel SMALLINT,
+	conteudo_id INT,
+	conteudo TEXT,
+	status VARCHAR,
+	criado_em TIMESTAMPTZ,
+	tempo_de_vida INTERVAL,
+	nome_usuario VARCHAR,
+	cargo VARCHAR,
+	img_perfil TEXT,
+	engajamento BIGINT,
+	avaliacao_usuario_logado SMALLINT
+)
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
@@ -233,20 +342,29 @@ AS $$
 BEGIN
 	RETURN QUERY
 	WITH RECURSIVE arvore AS (
-		-- base: comentários diretos da postagem (nível 1)
 		SELECT comentario.*
 		FROM privado.exibir_comentarios AS comentario
 		WHERE comentario.conteudo_pai = p_postagem_id
 
 		UNION ALL
 
-		-- recursão: filhos de cada comentário
 		SELECT filho.*
 		FROM privado.exibir_comentarios AS filho
 		JOIN arvore AS pai
 			ON filho.conteudo_pai = pai.id
 	)
-	SELECT * FROM arvore
+	SELECT
+		arvore.*,
+		COALESCE(
+			(
+				SELECT avaliacao.avaliacao
+				FROM privado.avaliacao AS avaliacao
+				WHERE avaliacao.usuario = p_usuario_id
+				AND avaliacao.conteudo = arvore.id
+			),
+			0
+		)::SMALLINT AS avaliacao_usuario_logado
+	FROM arvore
 	ORDER BY nivel ASC, criado_em ASC;
 END;
 $$;
@@ -264,17 +382,47 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION publico.buscar_postagem (
-	p_id INT
+	p_id INT,
+	p_usuario_logado_id INT DEFAULT NULL
 )
-RETURNS SETOF privado.visualizar_postagem
+RETURNS TABLE (
+	id INT,
+	titulo VARCHAR,
+	arquivo_nome TEXT,
+	arquivo_caminho TEXT,
+	forum INT,
+	conteudo TEXT,
+	status VARCHAR,
+	criado_em TIMESTAMPTZ,
+	tempo_de_vida INTERVAL,
+	criador INT,
+	nome_usuario VARCHAR,
+	cargo VARCHAR,
+	img_perfil TEXT,
+	tags VARCHAR[],
+	engajamento BIGINT,
+	comentarios BIGINT,
+	avaliacao_usuario_logado SMALLINT
+)
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
 BEGIN
 	RETURN QUERY
-	SELECT * FROM privado.visualizar_postagem
-	WHERE id = p_id;
+	SELECT
+		postagem.*,
+		COALESCE(
+			(
+				SELECT avaliacao.avaliacao
+				FROM privado.avaliacao AS avaliacao
+				WHERE avaliacao.usuario = p_usuario_logado_id
+				AND avaliacao.conteudo = p_id
+			),
+			0
+		)::SMALLINT AS avaliacao_usuario_logado
+	FROM privado.visualizar_postagem AS postagem
+	WHERE postagem.id = p_id;
 END;
 $$;
 
@@ -336,8 +484,7 @@ BEGIN
 	RETURN QUERY
 	SELECT tag.*
 	FROM privado.tag AS tag
-	JOIN privado.incluir_tag AS incluir_tag
-		ON incluir_tag.tag = tag.id
+	JOIN privado.incluir_tag AS incluir_tag ON incluir_tag.tag = tag.id
 	WHERE incluir_tag.forum = p_forum
 	ORDER BY tag.tag ASC;
 END;
@@ -347,14 +494,42 @@ CREATE OR REPLACE FUNCTION publico.listar_postagens_feed (
 	p_usuario_id INT,
 	p_pagina INT DEFAULT 1
 )
-RETURNS SETOF privado.visualizar_postagem
+RETURNS TABLE (
+	id INT,
+	titulo VARCHAR,
+	arquivo_nome TEXT,
+	arquivo_caminho TEXT,
+	forum INT,
+	conteudo TEXT,
+	status VARCHAR,
+	criado_em TIMESTAMPTZ,
+	tempo_de_vida INTERVAL,
+	criador INT,
+	nome_usuario VARCHAR,
+	cargo VARCHAR,
+	img_perfil TEXT,
+	tags VARCHAR[],
+	engajamento BIGINT,
+	comentarios BIGINT,
+	avaliacao_usuario_logado SMALLINT
+)
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
 BEGIN
 	RETURN QUERY
-	SELECT *
+	SELECT
+		postagem.*,
+		COALESCE(
+			(
+				SELECT avaliacao.avaliacao
+				FROM privado.avaliacao AS avaliacao
+				WHERE avaliacao.usuario = p_usuario_id
+				  AND avaliacao.conteudo = postagem.id
+			),
+			0
+		)::SMALLINT AS avaliacao_usuario_logado
 	FROM privado.visualizar_postagem AS postagem
 	WHERE
 		postagem.forum IN (
@@ -376,8 +551,7 @@ BEGIN
 END;
 $$;
 
--- retorna os anos que possuem postagens com arquivo em um fórum
--- uso: SELECT * FROM publico.listar_anos_com_arquivo(<id do fórum>);
+-- retorna os anos com postagens com arquivo em um fórum
 CREATE OR REPLACE FUNCTION publico.listar_anos_com_arquivo (
 	p_forum_id INT
 )
@@ -390,16 +564,14 @@ BEGIN
 	RETURN QUERY
 	SELECT DISTINCT EXTRACT(YEAR FROM conteudo.criado_em)::INT AS ano
 	FROM privado.postagem AS postagem
-	JOIN privado.conteudo AS conteudo
-		ON conteudo.id = postagem.id
+	JOIN privado.conteudo AS conteudo ON conteudo.id = postagem.id
 	WHERE postagem.forum = p_forum_id
-	AND postagem.arquivo IS NOT NULL
+	AND postagem.arquivo_nome IS NOT NULL
 	ORDER BY ano DESC;
 END;
 $$;
 
--- retorna as tags que possuem postagens com arquivo em um fórum e ano específicos
--- uso: SELECT * FROM publico.listar_tags_arquivo_por_ano(<id do fórum>, <ano>);
+-- retorna as tags de postagens com arquivo em um fórum e ano específicos
 CREATE OR REPLACE FUNCTION publico.listar_tags_arquivo_por_ano (
 	p_forum_id INT,
 	p_ano INT
@@ -420,14 +592,13 @@ BEGIN
 	JOIN privado.conteudo AS conteudo
 		ON conteudo.id = postagem.id
 	WHERE postagem.forum = p_forum_id
-	AND postagem.arquivo IS NOT NULL
+	AND postagem.arquivo_nome IS NOT NULL
 	AND EXTRACT(YEAR FROM conteudo.criado_em)::INT = p_ano
 	ORDER BY tag.tag ASC;
 END;
 $$;
 
 -- retorna postagens com arquivo filtradas por fórum, ano e tag
--- uso: SELECT * FROM publico.listar_postagens_arquivo(<id do fórum>, <ano>, <id da tag>);
 CREATE OR REPLACE FUNCTION publico.listar_postagens_arquivo (
 	p_forum_id INT,
 	p_ano INT,
@@ -443,7 +614,7 @@ BEGIN
 	SELECT *
 	FROM privado.visualizar_postagem AS postagem
 	WHERE postagem.forum = p_forum_id
-	AND postagem.arquivo IS NOT NULL
+	AND postagem.arquivo_nome IS NOT NULL
 	AND EXTRACT(YEAR FROM postagem.criado_em)::INT = p_ano
 	AND p_tag_id IN (
 		SELECT classificacao.tag
@@ -471,5 +642,144 @@ BEGIN
 		WHERE usuario = p_usuario
 		AND forum = p_forum
 	) AS segue;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION publico.listar_postagens_usuario (
+	p_usuario_id INT,
+	p_pagina INT DEFAULT 1,
+	p_usuario_logado_id INT DEFAULT NULL
+)
+RETURNS TABLE (
+	id INT,
+	titulo VARCHAR,
+	arquivo_nome TEXT,
+	arquivo_caminho TEXT,
+	forum INT,
+	conteudo TEXT,
+	status VARCHAR,
+	criado_em TIMESTAMPTZ,
+	tempo_de_vida INTERVAL,
+	criador INT,
+	nome_usuario VARCHAR,
+	cargo VARCHAR,
+	img_perfil TEXT,
+	tags VARCHAR[],
+	engajamento BIGINT,
+	comentarios BIGINT,
+	avaliacao_usuario_logado SMALLINT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+	RETURN QUERY
+	SELECT
+		postagem.*,
+		COALESCE(
+			(
+				SELECT avaliacao.avaliacao
+				FROM privado.avaliacao AS avaliacao
+				WHERE avaliacao.usuario = p_usuario_logado_id
+				  AND avaliacao.conteudo = postagem.id
+			),
+			0
+		)::SMALLINT AS avaliacao_usuario_logado
+	FROM privado.visualizar_postagem AS postagem
+	WHERE postagem.criador = p_usuario_id
+	ORDER BY postagem.criado_em DESC
+	LIMIT 20
+	OFFSET (p_pagina - 1) * 20;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION publico.listar_denuncias ()
+RETURNS TABLE (
+	id INT,
+	tipo VARCHAR,
+	status VARCHAR,
+	criado_em TIMESTAMPTZ,
+	denunciante VARCHAR,
+	usuario_denunciado INT,
+	conteudo_denunciado INT,
+	denunciado_strikes BIGINT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+	RETURN QUERY
+	SELECT
+		denuncia.id,
+		denuncia.tipo,
+		denuncia.status,
+		denuncia.criado_em,
+		usuario.nome_usuario AS denunciante,
+		denuncia_usuario.usuario_denunciado,
+		denuncia_conteudo.conteudo_denunciado,
+		COALESCE(strikes.total, 0) AS denunciado_strikes
+
+	FROM privado.denuncia AS denuncia
+
+	JOIN privado.usuario AS usuario
+		ON usuario.id = denuncia.denunciante
+
+	LEFT JOIN privado.denuncia_usuario AS denuncia_usuario
+		ON denuncia_usuario.id = denuncia.id
+
+	LEFT JOIN privado.denuncia_conteudo AS denuncia_conteudo
+		ON denuncia_conteudo.id = denuncia.id
+
+	LEFT JOIN privado.conteudo AS conteudo
+		ON conteudo.id = denuncia_conteudo.conteudo_denunciado
+
+	LEFT JOIN (
+		SELECT usuario_id, COUNT(*) AS total
+		FROM privado.penalidade
+		WHERE removido_em IS NULL
+		AND strike_valido_ate > CURRENT_TIMESTAMP
+		GROUP BY usuario_id
+	) AS strikes ON strikes.usuario_id = COALESCE(
+		denuncia_usuario.usuario_denunciado,
+		conteudo.criador
+	)
+	WHERE denuncia.status = 'ABERTA'
+	ORDER BY denuncia.criado_em ASC;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION publico.listar_penalidades_usuario (
+	p_usuario_id INT
+)
+RETURNS TABLE (
+	id INT,
+	usuario_id INT,
+	denuncia_id INT,
+	duracao INTERVAL,
+	aplicado_em TIMESTAMPTZ,
+	strike_valido_ate TIMESTAMPTZ,
+	removido_em TIMESTAMPTZ,
+	strike_vigente BOOLEAN
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+	RETURN QUERY
+	SELECT
+		penalidade.id,
+		penalidade.usuario_id,
+		penalidade.denuncia_id,
+		penalidade.duracao,
+		penalidade.aplicado_em,
+		penalidade.strike_valido_ate,
+		penalidade.removido_em,
+		(penalidade.removido_em IS NULL AND penalidade.strike_valido_ate > CURRENT_TIMESTAMP) AS strike_vigente
+	FROM privado.penalidade AS penalidade
+	WHERE penalidade.usuario_id = p_usuario_id
+	ORDER BY penalidade.aplicado_em DESC;
 END;
 $$;
