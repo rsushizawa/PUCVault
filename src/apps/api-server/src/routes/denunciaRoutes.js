@@ -14,6 +14,21 @@ router.post('/conteudo',
   denunciaController.denunciarConteudo
 );
 
+router.get('/users',
+  authMiddleware,
+  roleMiddleware(['ADMIN', 'SUPERADMIN']),
+  denunciaController.listarUsuariosDenunciados
+);
+router.get('/posts',
+  authMiddleware,
+  roleMiddleware(['ADMIN', 'SUPERADMIN']),
+  denunciaController.listarPostagensDenunciados
+);
+router.get('/comentarios',
+  authMiddleware,
+  roleMiddleware(['ADMIN', 'SUPERADMIN']),
+  denunciaController.listarComentariosDenunciados
+);
 router.get('/',
   authMiddleware,
   roleMiddleware(['ADMIN', 'SUPERADMIN']),

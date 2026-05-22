@@ -8,13 +8,8 @@ const roleMiddleware = require('../middlewares/roleMiddleware');
 
 router.post('/create',
   authMiddleware,
-  tagController.createTags
-);
-
-router.patch('/:tag_id/validate',
-  authMiddleware,
   roleMiddleware(['VALIDADOR', 'ADMIN', 'SUPERADMIN']),
-  tagController.validateTags
+  tagController.createTags
 );
 
 router.get('/:user_id/print',

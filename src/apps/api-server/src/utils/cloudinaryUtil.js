@@ -26,8 +26,7 @@ const uploadToCloudinary = async (file, context = "") => {
     const folderDestiny = findFolder(file.mimetype);
 
     // CORREÇÃO: O public_id deve ser limpo, sem o ".extensao" no final
-    const publicIdSemExtensao = `file_${Date.now()}`;
-
+    const publicIdSemExtensao = `file_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     const directory = context ? `${folderDestiny}/${context}` : folderDestiny;
     const uploadStream = cloudinary.uploader.upload_stream(
       {

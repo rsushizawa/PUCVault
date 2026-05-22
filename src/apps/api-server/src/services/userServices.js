@@ -76,15 +76,6 @@ module.exports = {
     }
   },
 
-  async deleteUser(user_id) {
-    try {
-      console.log('conexão sucedida deleteUser');
-      await db.query('SELECT * FROM publico.deletar_usuario( $1 )', [user_id]);
-    } catch (error) {
-      errorMsg(error);
-    }
-  },
-
   async addLogin(name, username, email, hashedPassword) {
     try {
       console.log('conexão bem sucedida addLogin');

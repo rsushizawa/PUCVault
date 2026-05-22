@@ -89,11 +89,14 @@ exports.uploadImageForum = async (req, res) => {
       return res.status(400).json({ message: 'arquivo ausente' });
     }
 
-    // CORREÇÃO: Removido o [0] daqui pois forum já é o objeto da linha
     const currentImageId = location === 'perfil' ? forum.img_perfil : forum.img_banner;
 
     console.log("ID da imagem antiga do fórum:", currentImageId);
 
+
+
+    const context = `forum/${location}`;
+    const newImageId = await imgService.uploadImageForum(forum_id, user_id, location, imageFile, context);
     if (currentImageId && currentImageId != placeholder) {
       console.log(`Attempting to destroy: ${currentImageId}`);
       const deletionResult = await cloudinary.uploader.destroy(currentImageId, {
@@ -102,13 +105,12 @@ exports.uploadImageForum = async (req, res) => {
       });
       console.log('Cloudinary Deletion Result:', deletionResult);
     }
-
-    const context = `forum/${location}`;
-    const newImageId = await imgService.uploadImageForum(forum_id, user_id, location, imageFile, context);
-
     return ok(res, { imageId: newImageId });
 
   } catch (error) {
+    if (error.code === 'P0001') {
+      return fail(res, 500, error.message);
+    }
     console.error('--- CONTROLLER ERROR ---');
     console.error(error);
     return fail(res, 500, 'erro interno ao processar imagem');

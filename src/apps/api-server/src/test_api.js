@@ -344,6 +344,7 @@ async function menuForum() {
     await pause();
   }
 }
+
 async function menuPosts() {
   while (true) {
     console.log("\n--- [4] POSTS & COMENTÁRIOS ---");
@@ -363,8 +364,23 @@ async function menuPosts() {
       const fId = await ask("Forum ID: ");
       const title = await ask("Título: ");
       const content = await ask("Conteúdo: ");
+
+      const tagsInput = await ask("IDs das Tags do post (Separados por vírgula, ex: 1,2 ou deixe vazio): ");
+
+      const tags = tagsInput
+        ? tagsInput.split(',').map(t => parseInt(t.trim(), 10)).filter(t => !isNaN(t))
+        : [];
+
       const fileP = await ask("Caminho do anexo (Deixe vazio para nenhum): ");
-      await testRoute("Criar Post", `/posts/${fId}/create`, "POST", { title, content }, true, fileP || null);
+
+      await testRoute(
+        "Criar Post",
+        `/posts/${fId}/create`,
+        "POST",
+        { title, content, tags },
+        true,
+        fileP || null
+      );
     } else if (opt === '2') {
       const fId = await ask("Forum ID: ");
       const page = await ask("Página (ex: 1): ");
@@ -385,7 +401,6 @@ async function menuPosts() {
     } else if (opt === '7') {
       console.log("\n--- AVALIAR CONTEÚDO EM LOTE ---");
 
-      // Criamos as duas linhas da matriz m[2][n]
       const idsRow = [];
       const ratingsRow = [];
 
@@ -413,30 +428,58 @@ async function menuPosts() {
           continue;
         }
 
-        // Insere em paralelo nas linhas correspondentes para manter o alinhamento de índices
         idsRow.push(cId);
         ratingsRow.push(valorRating);
         console.log(`   📌 Adicionado à matriz: ID ${cId} com peso [${valorRating}]`);
         console.log("---------------------------------------------------------");
       }
 
-      // Valida se o usuário montou pelo menos um item na matriz antes de disparar a rota
       if (idsRow.length === 0) {
         console.log("   ⚠️ Nenhuma avaliação foi inserida. Operação cancelada.");
       } else {
-        // Monta a estrutura final m[2][n] esperada pelo req.body.rate_vector
         const rate_vector = [idsRow, ratingsRow];
-
-        // Dispara a requisição em lote usando PATCH para o novo endpoint centralizado
         await testRoute("Rate Content Batch", "/posts/rate-content", "PATCH", { rate_vector }, true);
       }
     }
     await pause();
   }
 }
+
+// --- 🏷️ NOVO SUBMENU DE TAGS ---
+async function menuTags() {
+  while (true) {
+    console.log("\n--- [5] CONTROLE DE TAGS ---");
+    console.log(" 1. Criar Nova Tag");
+    console.log(" 2. Listar Todas as Tags Ativas (Filtro vazio)");
+    console.log(" 3. Buscar/Filtrar Tags (Query Params)");
+    console.log(" 4. Imprimir Tags Criadas por um Usuário");
+    console.log(" 0. Voltar");
+
+    const opt = await ask("Escolha: ");
+    if (opt === '0') break;
+
+    if (opt === '1') {
+      const name = await ask("Nome da Tag (mínimo 2 caracteres): ");
+      await testRoute("Criar Tag", "/tags/create", "POST", { name }, true);
+    }
+    else if (opt === '2') {
+      await testRoute("Listar Tags Ativas", "/tags/", "GET");
+    }
+    else if (opt === '3') {
+      const q = await ask("Digite o termo de busca (q): ");
+      await testRoute("Buscar Tags", `/tags/search?q=${encodeURIComponent(q)}`, "GET");
+    }
+    else if (opt === '4') {
+      const user_id = await ask("ID do Usuário Criador: ");
+      await testRoute("Tags por Usuário", `/tags/${user_id}/print`, "GET");
+    }
+    await pause();
+  }
+}
+
 async function menuImages() {
   while (true) {
-    console.log("\n--- [5] IMAGENS & UPLOADS ---");
+    console.log("\n--- [6] IMAGENS & UPLOADS ---");
     console.log(" 1. Upload Perfil (Usuário)");
     console.log(" 2. Upload Banner (Usuário)");
     console.log(" 3. Upload Perfil (Fórum)");
@@ -473,7 +516,6 @@ async function menuImages() {
   }
 }
 
-// --- AUXILIAR DE DENÚNCIAS ---
 function printReportTypes() {
   console.log('Escolha o tipo de denúncia: ');
   console.log("  1. CONTEUDO_INADEQUADO");
@@ -484,28 +526,33 @@ function printReportTypes() {
   console.log("  6. OUTRO");
 }
 
+// --- 🚨 SUBMENU DE DENÚNCIAS TOTALMENTE ATUALIZADO COMS OS ENDPOINTS SOLICITADOS ---
 async function menuReport() {
   while (true) {
-    console.log("\n--- [6] DENÚNCIAS (REPORT) ---");
-    console.log(" 1. Denunciar Usuário");
-    console.log(" 2. Denunciar Conteúdo");
-    console.log(" 3. Resolver Denúncias (Validator/Admin)");
-    console.log(" 4. Listar Denúncias Abertas");
+    console.log("\n--- [7] DENÚNCIAS (REPORT) ---");
+    console.log(" 1. Denunciar Usuário (/denuncias/usuario)");
+    console.log(" 2. Denunciar Conteúdo (/denuncias/conteudo)");
+    console.log(" 3. Listar Usuários Denunciados (/denuncias/users) [ADMIN]");
+    console.log(" 4. Listar Postagens Denunciadas (/denuncias/posts) [ADMIN]");
+    console.log(" 5. Listar Comentários Denunciados (/denuncias/comentarios) [ADMIN]");
+    console.log(" 6. Listar Todas as Denúncias (/denuncias/) [ADMIN]");
+    console.log(" 7. Resolver Denúncia (/denuncias/:id/resolver) [ADMIN]");
     console.log(" 0. Voltar");
 
     const opt = await ask("Escolha: ");
     if (opt === '0') break;
 
+    const tipoReportMap = {
+      '1': "CONTEUDO_INADEQUADO",
+      '2': "SPAM",
+      '3': "PLÁGIO",
+      '4': "ASSÉDIO",
+      '5': "INFORMACAO_FALSA",
+      '6': "OUTRO"
+    };
+
     if (opt === '1') {
       printReportTypes();
-      const tipoReportMap = {
-        '1': "CONTEUDO_INADEQUADO",
-        '2': "SPAM",
-        '3': "PLÁGIO",
-        '4': "ASSÉDIO",
-        '5': "INFORMACAO_FALSA",
-        '6': "OUTRO"
-      };
       const tipoReport = await ask('Escolha a opção do tipo: ');
       const tipo = tipoReportMap[tipoReport];
       const usuario_denunciado_id = parseInt(await ask("User ID do Denunciado: "), 10);
@@ -513,20 +560,33 @@ async function menuReport() {
     }
     else if (opt === '2') {
       printReportTypes();
-      const tipoReportMap = {
-        '1': "CONTEUDO_INADEQUADO",
-        '2': "SPAM",
-        '3': "PLÁGIO",
-        '4': "ASSÉDIO",
-        '5': "INFORMACAO_FALSA",
-        '6': "OUTRO"
-      };
       const tipoReport = await ask('Escolha a opção do tipo: ');
       const tipo = tipoReportMap[tipoReport];
       const conteudo_id = parseInt(await ask("ID do Conteúdo Denunciado: "), 10);
       await testRoute("Report Content", `/denuncias/conteudo`, "POST", { tipo, conteudo_id }, true);
     }
     else if (opt === '3') {
+      console.log("\nFiltro de Status opcional (Deixe vazio para enviar NULL e usar o padrão):");
+      const statusInput = await ask("Status (RESOLVIDA ou IGNORADA): ");
+      const payload = statusInput ? { status: statusInput } : { status: null };
+      await testRoute("Listar Usuários Denunciados", `/denuncias/users`, "GET", payload, true);
+    }
+    else if (opt === '4') {
+      console.log("\nFiltro de Status opcional (Deixe vazio para enviar NULL e usar o padrão):");
+      const statusInput = await ask("Status (RESOLVIDA ou IGNORADA): ");
+      const payload = statusInput ? { status: statusInput } : { status: null };
+      await testRoute("Listar Postagens Denunciadas", `/denuncias/posts`, "GET", payload, true);
+    }
+    else if (opt === '5') {
+      console.log("\nFiltro de Status opcional (Deixe vazio para enviar NULL e usar o padrão):");
+      const statusInput = await ask("Status (RESOLVIDA ou IGNORADA): ");
+      const payload = statusInput ? { status: statusInput } : { status: null };
+      await testRoute("Listar Comentários Denunciados", `/denuncias/comentarios`, "GET", payload, true);
+    }
+    else if (opt === '6') {
+      await testRoute("Listar Todas as Denúncias", `/denuncias/`, "GET", null, true);
+    }
+    else if (opt === '7') {
       console.log("\n--- RESOLVER DENÚNCIA ---");
       const denuncia_id = parseInt(await ask("ID da Denúncia que deseja resolver: "), 10);
 
@@ -546,7 +606,6 @@ async function menuReport() {
       let punicao = null;
       let tempo_silencio = null;
 
-      // Se a denúncia for aplicada/resolvida, abre o menu de punições
       if (novo_status === "RESOLVIDA") {
         console.log("\nDefina a Punição do Infrator:");
         console.log(" 0. Excluir Postagem");
@@ -559,7 +618,6 @@ async function menuReport() {
           punicao = parseInt(escolhaPunicao, 10);
         }
 
-        // Se a opção envolver silenciamento, configura o INTERVAL do Postgres
         if (punicao === 1) {
           console.log("\nDefina o Tempo de Silenciamento:");
           console.log(" 1. 1 Hora ('1 hour')");
@@ -584,14 +642,12 @@ async function menuReport() {
         }
       }
 
-      // Monta o payload exatamente como o schema do Zod espera no req.body
       const payload = {
         novo_status,
         punicao,
         tempo_silencio
       };
 
-      // Dispara o PATCH passando o denuncia_id na URL rota: /denuncias/:denuncia_id/resolver
       await testRoute(
         "Resolve Report",
         `/denuncias/${denuncia_id}/resolver`,
@@ -600,13 +656,11 @@ async function menuReport() {
         true
       );
     }
-    else if (opt === '4') {
-      await testRoute("Listar Denúncias", `/denuncias/`, "GET", null, true);
-    }
 
     await pause();
   }
 }
+
 const jwt = require('jsonwebtoken');
 
 // --- MENU PRINCIPAL ---
@@ -617,16 +671,13 @@ async function showMainMenu() {
     console.log("     PUC-VAULT API TESTER v4     ");
     console.log("=================================");
 
-    // 🛠️ DECODIFICAÇÃO SEGURA E DINÂMICA DENTRO DO WHILE
     let infoUsuarioHeader = "🔒 STATUS: DESLOGADO";
 
     if (globalToken) {
       try {
-        // Se o token existir e for válido, extrai os dados em tempo real
         const user = jwt.verify(globalToken, passAccess);
         infoUsuarioHeader = `🔑 ID: ${user.id} | CARGO: ${user.cargo || 'N/A'}`;
       } catch (err) {
-        // Se o token estiver expirado ou corrompido, limpa o cache para não travar o script
         infoUsuarioHeader = "❌ STATUS: TOKEN EXPIRADO / INVÁLIDO";
       }
     }
@@ -638,8 +689,9 @@ async function showMainMenu() {
     console.log(" 2. Usuários (Perfil/Follow/Cargos)");
     console.log(" 3. Fóruns (Criação/Listagem)");
     console.log(" 4. Posts & Comentários");
-    console.log(" 5. Imagens & Uploads");
-    console.log(" 6. Denúncias");
+    console.log(" 5. Controle de Tags");
+    console.log(" 6. Imagens & Uploads");
+    console.log(" 7. Denúncias");
     console.log(" 0. Sair");
 
     const choice = await ask("\nEscolha: ");
@@ -649,8 +701,9 @@ async function showMainMenu() {
     else if (choice === '2') await menuUser();
     else if (choice === '3') await menuForum();
     else if (choice === '4') await menuPosts();
-    else if (choice === '5') await menuImages();
-    else if (choice === '6') await menuReport();
+    else if (choice === '5') await menuTags();
+    else if (choice === '6') await menuImages();
+    else if (choice === '7') await menuReport();
     else {
       console.log("   ❌ Opção inválida.");
       await pause();

@@ -72,21 +72,3 @@ exports.createTags = async (req, res) => {
   }
 };
 
-exports.validateTags = async (req, res) => {
-  const user_id = req.user.id;
-  const { tag_id } = req.params;
-  const { tagState } = req.body;
-  let status;
-  if (tagState === 1) status = 'ATIVO';
-  else if (tagState === 0) status = 'RECUSADO';
-  else {
-    return fail(res, 400, 'invalid input');
-  }
-  try {
-    await tagService.validateTag(tag_id, user_id, status);
-    return ok(res, null);
-  } catch (error) {
-    console.error(error);
-    return fail(res, 500, "server error");
-  }
-};

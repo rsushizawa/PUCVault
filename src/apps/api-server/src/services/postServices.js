@@ -99,6 +99,19 @@ module.exports = {
     } catch (error) {
       errorMsg(error);
     }
+  },
+  async verifyIfFileExists(file_name) {
+    try {
+      console.log('conexão sucedida verifyIfFileExists');
+
+      const result = await db.query('SELECT * FROM publico.quantidade_arquivos_por_nome($1)', [file_name]);
+
+      const quantidade = parseInt(result.rows[0].count, 10);
+
+      return quantidade > 0;
+    } catch (error) {
+      errorMsg(error);
+    }
   }
 };
 

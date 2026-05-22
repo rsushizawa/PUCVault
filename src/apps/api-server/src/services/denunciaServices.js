@@ -56,6 +56,36 @@ module.exports = {
     } catch (error) {
       errorMsg(error);
     }
+  },
+
+  async listarUsuariosDenunciados(status) {
+    try {
+      console.log('conexão sucedida listarUsuariosDenunciados');
+      const res = await db.query('SELECT * FROM publico.listar_denuncias_usuario($1)', [status]);
+      return res;
+    } catch (error) {
+      errorMsg(error);
+    }
+  },
+  async listarPostagemDenunciados(status) {
+    try {
+      console.log('conexão sucedida listarUsuariosDenunciados');
+      const res = await db.query('SELECT * FROM publico.listar_denuncias_postagem($1)', [status]);
+      return res;
+    } catch (error) {
+      errorMsg(error);
+    }
+  },
+
+  async listarComentariosDenunciados(status) {
+    try {
+      console.log('conexão sucedida listarUsuariosDenunciados');
+      const res = await db.query('SELECT * FROM publico.listar_denuncias_comentario($1)', [status]);
+      return res;
+    } catch (error) {
+      errorMsg(error);
+    }
   }
+
 };
 
