@@ -57,16 +57,8 @@ module.exports = {
     } catch (error) {
       errorMsg(error);
     }
-  },
-
-  async validateTag(tag_id, validator_id, tagState) {
-    try {
-      console.log('conexão sucedida validateTag');
-      await db.query('CALL publico.validar_tag($1,$2,$3)', [tag_id, validator_id, tagState]);
-    } catch (error) {
-      errorMsg(error);
-    }
   }
+
 };
 
 

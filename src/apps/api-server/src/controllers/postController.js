@@ -1,5 +1,5 @@
 const postService = require("../services/postServices");
-
+const path = require('path');
 const forumService = require("../services/forumServices");
 const contentService = require("../services/contentServices");
 const tagService = require("../services/tagServices");
@@ -112,8 +112,10 @@ exports.createPosts = async (req, res) => {
     let original_name = null;
     if (file) {
       try {
-        file_id = await uploadToCloudinary(file, null);
         original_name = file.originalname;
+        file.originalname = original_name;
+
+        file_id = await uploadToCloudinary(file, null);
       } catch (cloudinaryErr) {
         console.error("cloudinary error:", cloudinaryErr);
         return fail(res, 500, cloudinaryErr.message);

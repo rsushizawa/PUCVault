@@ -147,14 +147,67 @@ exports.resolverDenuncia = async (req, res) => {
   }
 };
 
-/**
- * GET /denuncias
- * Lista todas as denúncias abertas. Requer ADMIN ou SUPERADMIN.
- */
 exports.listarDenuncias = async (req, res) => {
   try {
 
     const result = await denunciaService.listarDenunciasAbertas();
+    console.table(result.rows);
+    return res.status(200).json({ message: 'success', denuncias: result.rows });
+  } catch (error) {
+    console.error('Erro ao listar denúncias:', error.message);
+    return res.status(500).json({ error: 'internal server error' });
+  }
+
+};
+
+const DenunciaSchema = z.object({
+  status: z.preprocess(
+    (val) => (val === null ? undefined : val), // Se for null, transforma em undefined
+    z.enum(['RESOLVIDA', 'IGNORADA', 'ABERTA']) // Adicione o status default aqui se necessário
+      .default('ABERTA') // 🚀 Define o valor default caso venha vazio/null
+  )
+});
+
+
+exports.listarUsuariosDenunciados = async (req, res) => {
+  try {
+    const validation = DenunciaSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({ error: 'incorrect data' });
+    }
+    const { status } = validation.data;
+    const result = await denunciaService.listarUsuariosDenunciados(status);
+    console.table(result.rows);
+    return res.status(200).json({ message: 'success', denuncias: result.rows });
+  } catch (error) {
+    console.error('Erro ao listar denúncias:', error.message);
+    return res.status(500).json({ error: 'internal server error' });
+  }
+};
+
+exports.listarPostagensDenunciados = async (req, res) => {
+  try {
+    const validation = DenunciaSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({ error: 'incorrect data' });
+    }
+    const { status } = validation.data;
+    const result = await denunciaService.listarPostagemDenunciados(status);
+    console.table(result.rows);
+    return res.status(200).json({ message: 'success', denuncias: result.rows });
+  } catch (error) {
+    console.error('Erro ao listar denúncias:', error.message);
+    return res.status(500).json({ error: 'internal server error' });
+  }
+};
+exports.listarComentariosDenunciados = async (req, res) => {
+  try {
+    const validation = DenunciaSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({ error: 'incorrect data' });
+    }
+    const { status } = validation.data;
+    const result = await denunciaService.listarComentariosDenunciados(status);
     console.table(result.rows);
     return res.status(200).json({ message: 'success', denuncias: result.rows });
   } catch (error) {

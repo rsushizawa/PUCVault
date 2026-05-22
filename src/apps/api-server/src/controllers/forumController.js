@@ -72,9 +72,14 @@ exports.listPostFilesYear = async (req, res) => {
   const { forum_id, year, tag } = req.params;
   try {
     const result = await forumService.listPostFilesYear(forum_id, year, tag);
-    const content = result.rows ? result.rows[0] : (Array.isArray(result) ? result[0] : result);
+    const content = result.rows ? result.rows : (Array.isArray(result) ? result : []);
     console.table(content);
-    return ok(res, content);
+
+    const array_names = content.map(linha => linha.arquivo_nome || "Sem Nome");
+
+    console.log(array_names);
+
+    return ok(res, { content, array_names });
   } catch (error) {
     return fail(res, 500, "internal server error");
   }

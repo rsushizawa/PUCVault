@@ -15,7 +15,8 @@ const envPath = path.resolve(__dirname, '../../src/.env');
 
 require("dotenv").config({ path: envPath });
 
-const passAccess = process.env.DB_PASS;
+const passAccess = process.env.JWT_SECRET;
+
 
 const saltRounds = 10;
 
@@ -135,6 +136,7 @@ const loginSchema = z.object({
     }),
 
   password: z.string().min(8, "Senha (mínimo 8 caracteres)"),
+  keep_connected: z.boolean().default(false)
 });
 
 
@@ -144,7 +146,7 @@ exports.login = async (req, res) => {
     return res.status(400).json({ error: "Invalid data", detail: validation.error.format() });
   }
 
-  const { userEmail, password } = validation.data;
+  const { userEmail, password, keep_connected } = validation.data;
   try {
     const isAuthenticated = await authService.validateLoginCredentials(userEmail, password);
 
@@ -158,7 +160,7 @@ exports.login = async (req, res) => {
             cargo: user.cargo
           },
           passAccess,
-          { expiresIn: '1d' }
+          keep_connected ? { expiresIn: '1m' } : { expiresIn: '1d' }
         );
         return res.status(200).json({
           message: "login success",
