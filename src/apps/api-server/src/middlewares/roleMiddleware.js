@@ -1,4 +1,4 @@
-const authMiddleware = (allowedRoles) => {
+const roleMiddleware = (allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) {
       return res
@@ -12,12 +12,6 @@ const authMiddleware = (allowedRoles) => {
       });
     }
 
-    if (!allowedRoles.includes(userRole)) {
-      return res.status(403).json({
-        error: "Access Denied",
-        message: `Your role ${userRole} doens't have permission to access this resource`,
-      });
-    }
     next();
   };
 };
