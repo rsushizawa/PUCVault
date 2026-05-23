@@ -20,6 +20,11 @@ vi.mock("@/lib/api/comments", () => ({
   voteComment: vi.fn().mockResolvedValue({}),
 }));
 
+vi.mock("@/lib/api/auth", () => ({
+  getMe: vi.fn().mockResolvedValue({ id: "u1", nome_usuario: "user", img_perfil: null }),
+  logout: vi.fn(),
+}));
+
 import { getComments, createComment, voteComment } from "@/lib/api/comments";
 
 describe("CommentSection", () => {

@@ -18,6 +18,7 @@ const mockPost: Post = {
   tags: ["Math"],
   engajamento: "10",
   comentarios: "3",
+  userVote: 0,
 };
 
 const defaultProps = {
@@ -47,7 +48,7 @@ describe("PostDetail", () => {
   test("author username links to profile page", () => {
     render(<PostDetail {...defaultProps} />);
     const link = screen.getByRole("link", { name: /u\/testuser/ });
-    expect(link).toHaveAttribute("href", "/user/testuser");
+    expect(link).toHaveAttribute("href", "/u/testuser");
   });
 
   test("renders the vote count", () => {
@@ -109,9 +110,8 @@ describe("PostDetail", () => {
   });
 
   test("renders file attachment link when arquivo is set", () => {
-    const post = { ...mockPost, arquivo: "https://example.com/file.pdf" };
+    const post = { ...mockPost, arquivo: "document.pdf cloudinary_id_abc" };
     render(<PostDetail post={post} communityId="comm-1" onVote={vi.fn()} />);
-    const link = screen.getByRole("link", { name: /download attachment/i });
-    expect(link).toHaveAttribute("href", "https://example.com/file.pdf");
+    expect(screen.getByRole("link", { name: /abrir pdf/i })).toBeInTheDocument();
   });
 });

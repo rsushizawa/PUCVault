@@ -47,7 +47,7 @@ function formatDate(iso: string): string {
 interface PostDetailProps {
   post: Post;
   communityId: string;
-  onVote: (value: 1 | -1) => void;
+  onVote: (value: 1 | 0 | -1) => void;
 }
 
 export default function PostDetail({
@@ -55,7 +55,7 @@ export default function PostDetail({
   communityId,
   onVote,
 }: PostDetailProps) {
-  const [vote, setVote] = useState<1 | -1 | null>(null);
+  const [vote, setVote] = useState<1 | 0 | -1>(post.userVote ?? 0);
   const [reportTarget, setReportTarget] = useState<{
     type: "usuario" | "conteudo";
     id: number;
@@ -63,9 +63,9 @@ export default function PostDetail({
   } | null>(null);
 
   function handleVote(value: 1 | -1) {
-    const next = vote === value ? null : value;
+    const next = vote === value ? 0 : value;
     setVote(next);
-    if (next !== null) onVote(value);
+    onVote(next);
   }
 
   return (
@@ -92,7 +92,7 @@ export default function PostDetail({
             />
           </button>
           <span className="font-bold text-xs text-text-secondary text-center w-full">
-            {Number(post.engajamento) + (vote ?? 0)}
+            {Number(post.engajamento) - (post.userVote ?? 0) + vote}
           </span>
           <button
             className="p-1 flex items-center justify-center"

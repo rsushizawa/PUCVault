@@ -26,7 +26,11 @@ export function createPost(
   return apiFormData(`/posts/${forumId}/create`, form, "POST")
 }
 
-export function votePost(id: string, value: 1 | -1): Promise<void> {
-  const action = value === 1 ? "upvote" : "downvote"
-  return apiFetch(`/posts/${id}/${action}`, { method: "PATCH" })
+// rate-content takes a column-oriented batch: rate_vector[0] is content ids,
+// rate_vector[1] is the matching ratings (-1 down, 0 neutral, 1 up).
+export function votePost(id: string, value: 1 | 0 | -1): Promise<void> {
+  return apiFetch(`/posts/rate-content`, {
+    method: "PATCH",
+    body: JSON.stringify({ rate_vector: [[Number(id)], [value]] }),
+  })
 }

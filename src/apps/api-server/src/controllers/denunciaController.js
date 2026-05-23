@@ -34,6 +34,7 @@ const resolverDenunciaSchema = z.object({
   }),
   punicao: z.number().int().min(0, 'O valor deve ser no minimo 0').max(2, 'O valor deve ser no maximo 2').nullable().optional(),
   tempo_silencio: z.string().nullable().optional()
+});
 
 /**
  * POST /denuncias/usuario
@@ -151,7 +152,7 @@ exports.resolverDenuncia = async (req, res) => {
     : null;
   try {
     await denunciaService.resolverDenuncia(denuncia_id, executor_id, novo_status, punicao, tempoSilencioFinal);
-    return res.status(200).json({ message: "success" });
+    return ok(res, null);
   } catch (error) {
     console.error("Erro ao resolver denúncia:", error.message);
 
@@ -170,7 +171,7 @@ exports.listarDenuncias = async (req, res) => {
 
     const result = await denunciaService.listarDenunciasAbertas();
     console.table(result.rows);
-    return res.status(200).json({ message: 'success', denuncias: result.rows });
+    return ok(res, result.rows);
   } catch (error) {
     console.error("Erro ao listar denúncias:", error.message);
     return res.status(500).json({ error: "internal server error" });

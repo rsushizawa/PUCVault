@@ -109,6 +109,13 @@ export default function LoginPage() {
             >
               {loading ? "Entrando..." : "Entrar"}
             </button>
+
+            <Link
+              href="/forgot-password"
+              className="text-text-muted text-sm text-center hover:text-text-secondary transition-colors"
+            >
+              Esqueceu a senha?
+            </Link>
           </form>
         ) : (
           <form onSubmit={handlePin} className="flex flex-col gap-4">

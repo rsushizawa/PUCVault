@@ -28,6 +28,7 @@ export type RawPostRow = {
   status?: string
   nome?: string
   forum_nome?: string
+  avaliacao_usuario_logado?: number | null
 }
 
 export function mapPostRow(row: RawPostRow): Post {
@@ -50,6 +51,9 @@ export function mapPostRow(row: RawPostRow): Post {
     comentarios: String(row.comentarios),
     nome: row.nome ?? row.forum_nome,
     forum_nome: row.forum_nome,
+    userVote: (row.avaliacao_usuario_logado === 1 || row.avaliacao_usuario_logado === -1
+      ? row.avaliacao_usuario_logado
+      : 0),
   }
 }
 

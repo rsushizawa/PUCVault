@@ -3,13 +3,17 @@ const path = require('path');
 const forumService = require("../services/forumServices");
 const contentService = require("../services/contentServices");
 const tagService = require("../services/tagServices");
-const forumService = require("../services/forumServices");
 const { ok, fail, paginated } = require("../helpers/response");
 const { z, success } = require("zod");
-const { uploadToCloudinary } = require("../utils/cloudinaryUtil");
-
-const { ok, paginated, fail } = require('../helpers/response');
+const { uploadToCloudinary, imageUrl } = require("../utils/cloudinaryUtil");
 const cloudinary = require("cloudinary").v2;
+
+// Replaces the author's stored Cloudinary public_id with a delivery URL so the
+// frontend can render the avatar directly.
+function resolvePostImages(post) {
+  if (post && "img_perfil" in post) post.img_perfil = imageUrl(post.img_perfil, "perfil");
+  return post;
+}
 
 const postSchema = z.object({
   title: z.string().min(3, "Título(mínimo 3 caracteres)").max(50),
@@ -28,6 +32,7 @@ exports.getPosts = async (req, res) => {
       postService.getPost(forum_id, page_num, user_id),
       forumService.getForumPostCount(forum_id),
     ]);
+    (rows ?? []).forEach(resolvePostImages);
     console.table(rows);
     return paginated(res, rows, total);
   } catch (error) {
@@ -43,8 +48,9 @@ exports.getSinglePost = async (req, res) => {
     const result = await postService.getSinglePost(post_id);
 
     const content = result.rows ? result.rows[0] : (Array.isArray(result) ? result[0] : result);
+    resolvePostImages(content);
     console.table([content]);
-    return ok(res, result[0]);
+    return ok(res, content);
   } catch (error) {
     console.error("Error in getSinglePost:", error);
     return fail(res, 500, "internal server error");
@@ -90,6 +96,8 @@ exports.getFileFromPost = async (req, res) => {
       throw new Error(`Cloudinary retornou erro: ${response.statusText}`);
     }
 
+    const contentType =
+      response.headers.get("content-type") || "application/octet-stream";
     res.setHeader("Content-Type", contentType);
     if (req.query.download === "1") {
       const safe_name = original_name.replace(/[^a-zA-Z0-9._\- ]/g, "_");
@@ -178,6 +186,7 @@ exports.userPosts = async (req, res) => {
 
     console.log("conexão sucedida userPosts");
     const result = await postService.getUserPosts(user_id, page_num, logged_id);
+    (result ?? []).forEach(resolvePostImages);
 
     console.table(result);
 

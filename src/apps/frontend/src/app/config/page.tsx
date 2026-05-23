@@ -3,13 +3,14 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import NavBar from "@/components/navbar";
-import { getMe, updateMe, changePassword } from "@/lib/api/auth";
+import { getMe, updateMe, changePassword, toggle2FA } from "@/lib/api/auth";
 import { uploadProfileImage } from "@/lib/api/images";
 import { Camera, User } from "lucide-react";
 
 export default function ConfigPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(true);
 
@@ -18,10 +19,15 @@ export default function ConfigPage() {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [originalAvatar, setOriginalAvatar] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [bannerUrl, setBannerUrl] = useState("");
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  const [twoFAEnabled, setTwoFAEnabled] = useState(false);
+  const [twoFASaving, setTwoFASaving] = useState(false);
 
   const [profileSaving, setProfileSaving] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
@@ -41,6 +47,8 @@ export default function ConfigPage() {
         setUsername(user.nome_usuario ?? "");
         setAvatarUrl(user.img_perfil ?? "");
         setOriginalAvatar(user.img_perfil ?? "");
+        setBannerUrl(user.img_banner ?? "");
+        setTwoFAEnabled(user.a2f ?? false);
       })
       .catch(() => router.replace("/login"))
       .finally(() => setLoading(false));
@@ -51,12 +59,15 @@ export default function ConfigPage() {
     setProfileSaving(true);
     setProfileMsg(null);
     try {
-      if (avatarFile) {
-        await uploadProfileImage("perfil", avatarFile);
+      if (avatarFile) await uploadProfileImage("perfil", avatarFile);
+      if (bannerFile) await uploadProfileImage("banner", bannerFile);
+      if (avatarFile || bannerFile) {
         const updated = await getMe();
         setAvatarUrl(updated.img_perfil ?? "");
         setOriginalAvatar(updated.img_perfil ?? "");
+        setBannerUrl(updated.img_banner ?? "");
         setAvatarFile(null);
+        setBannerFile(null);
       }
       await updateMe({
         name: name || undefined,
@@ -98,6 +109,22 @@ export default function ConfigPage() {
     }
   }
 
+  async function handleToggle2FA() {
+    if (twoFASaving) return;
+    const next = !twoFAEnabled;
+    setTwoFASaving(true);
+    setTwoFAEnabled(next);
+    try {
+      await toggle2FA();
+      const updated = await getMe();
+      setTwoFAEnabled(updated.a2f ?? next);
+    } catch {
+      setTwoFAEnabled(!next);
+    } finally {
+      setTwoFASaving(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="bg-surface-base min-h-screen flex flex-col">
@@ -118,6 +145,36 @@ export default function ConfigPage() {
         {/* Profile section */}
         <section className="bg-surface-raised rounded-xl p-6 border border-surface-overlay flex flex-col gap-5">
           <h2 className="text-text-primary font-semibold">Perfil</h2>
+
+          {/* Banner */}
+          <div className="relative w-full h-32 rounded-lg overflow-hidden bg-accent/10 border border-surface-overlay">
+            {bannerUrl ? (
+              <img src={bannerUrl} alt="Banner" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full" />
+            )}
+            <button
+              type="button"
+              onClick={() => bannerInputRef.current?.click()}
+              className="absolute bottom-2 right-2 flex items-center gap-1.5 bg-surface-base/80 text-text-primary text-xs font-medium px-2.5 py-1.5 rounded-lg hover:bg-surface-base transition-all duration-200 cursor-pointer"
+            >
+              <Camera size={12} />
+              Trocar banner
+            </button>
+            <input
+              ref={bannerInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setBannerFile(file);
+                  setBannerUrl(URL.createObjectURL(file));
+                }
+              }}
+            />
+          </div>
 
           {/* Avatar */}
           <div className="flex items-center gap-4">
@@ -243,6 +300,39 @@ export default function ConfigPage() {
               {passwordSaving ? "Alterando..." : "Alterar senha"}
             </button>
           </form>
+        </section>
+
+        {/* Security section */}
+        <section className="bg-surface-raised rounded-xl p-6 border border-surface-overlay flex flex-col gap-5">
+          <h2 className="text-text-primary font-semibold">Segurança</h2>
+
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col gap-0.5">
+              <p className="text-text-primary text-sm font-medium">
+                Verificação em duas etapas (2FA)
+              </p>
+              <p className="text-text-muted text-xs">
+                Exige um código enviado por email a cada login.
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={twoFAEnabled}
+              aria-label="Alternar verificação em duas etapas"
+              onClick={handleToggle2FA}
+              disabled={twoFASaving}
+              className={`relative shrink-0 w-11 h-6 rounded-full transition-colors duration-200 disabled:opacity-50 cursor-pointer ${
+                twoFAEnabled ? "bg-accent" : "bg-surface-overlay"
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-surface-base transition-transform duration-200 ${
+                  twoFAEnabled ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
         </section>
       </div>
     </div>
