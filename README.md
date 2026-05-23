@@ -82,8 +82,8 @@ database/createprocedurescr.sql
 
 | Name                           | Role                     |
 | ------------------------------ | ------------------------ |
-| Rodrigo Seiji Yugoshi Ushizawa | Full-stack               |
+| Carlos Eduardo A. Nascimento   | Database                 |
 | Daniel Wu                      | Backend                  |
-| Carlos Nascimento              | Database                 |
-| Guilherme                      | Database + Documentation |
-| Gabriel Catuzo                 | Backend                  |
+| Gabriel Cattuzo                | Backend                  |
+| Guilherme Dias Cavalheri       | Database + Documentation |
+| Rodrigo Seiji Yugoshi Ushizawa | Frontend                 |
