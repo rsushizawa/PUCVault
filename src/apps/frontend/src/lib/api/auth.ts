@@ -104,3 +104,42 @@ export async function logout(): Promise<void> {
     credentials: "include",
   });
 }
+
+const API_BASE = process.env.NEXT_PUBLIC_API ?? "http://localhost:8000";
+
+// Flips the caller's 2FA flag server-side. The backend reads the user from the
+// auth cookie, so no body is needed; refetch getMe afterwards for the new state.
+export async function toggle2FA(): Promise<void> {
+  await apiFetch("/user/toggle-2fa", { method: "PATCH" });
+}
+
+// Forgot-password endpoints set no cookies and return { message, pinToken }
+// (not the { data } envelope apiFetch expects), so they use raw fetch.
+export async function forgotSendEmail(email: string): Promise<string> {
+  const res = await fetch(`${API_BASE}/auth/forgot-send-email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) throw new Error(`forgot-send-email failed: ${res.status}`);
+  const json = (await res.json()) as { pinToken: string };
+  return json.pinToken;
+}
+
+export async function forgotResetPassword(data: {
+  pinToken: string;
+  pin: string;
+  newPassword: string;
+}): Promise<void> {
+  const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      pinToken: data.pinToken,
+      pin: data.pin,
+      new_password: data.newPassword,
+      confirm: data.newPassword,
+    }),
+  });
+  if (!res.ok) throw new Error(`forgot-password failed: ${res.status}`);
+}

@@ -8,6 +8,7 @@ describe("CommunityHero", () => {
     repositoryType: "PUC repositotyType",
     bannerSrc: "/banner.jpg",
     iconSrc: "/icon.png",
+    onFollow: vi.fn(),
   };
   test("renders the community name", () => {
     render(<CommunityHero {...defaultProps} />);
@@ -17,8 +18,8 @@ describe("CommunityHero", () => {
     render(<CommunityHero {...defaultProps} />);
     expect(screen.getByText(defaultProps.memberCount)).toBeInTheDocument();
   });
-  test("renders the join button", () => {
+  test("renders the follow button", () => {
     render(<CommunityHero {...defaultProps} />);
-    expect(screen.getByRole("button", { name: /join/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /seguir/i })).toBeInTheDocument();
   });
 });

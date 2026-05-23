@@ -78,7 +78,7 @@ function TagRow({
       } else {
         setLoading(true);
         try {
-          const data = await getFilesByYearAndTag(forumId, year, tag.name);
+          const data = await getFilesByYearAndTag(forumId, year, tag.id);
           filesCache.set(cacheKey, data);
           setFiles(data);
         } catch {
@@ -111,7 +111,6 @@ function TagRow({
         <span className="text-sm font-medium flex-1 text-left" style={{ color }}>
           {tag.name}
         </span>
-        <span className="text-xs text-text-muted">{tag.count}</span>
       </button>
 
       {open && (

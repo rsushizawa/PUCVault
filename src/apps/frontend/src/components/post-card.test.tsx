@@ -12,8 +12,7 @@ const defaultProps = {
   tags: ["Cálculo I"],
   voteCount: 142,
   commentCount: 24,
-  onUpvote: vi.fn(),
-  onDownvote: vi.fn(),
+  onVote: vi.fn(),
 };
 
 describe("PostCard", () => {
@@ -24,7 +23,7 @@ describe("PostCard", () => {
   test("renders the author and timestamp", () => {
     render(<PostCard {...defaultProps} />);
     expect(screen.getByText(defaultProps.author)).toBeInTheDocument();
-    expect(screen.getByText(defaultProps.timestamp)).toBeInTheDocument();
+    expect(screen.getByText(/4h ago/)).toBeInTheDocument();
   });
   test("renders the vote count", () => {
     render(<PostCard {...defaultProps} />);
@@ -39,17 +38,17 @@ describe("PostCard", () => {
     expect(screen.getByText(/cálculo i/i)).toBeInTheDocument();
     expect(screen.getByText(/prova/i)).toBeInTheDocument();
   });
-  test("calls onUpvote when upvote button is clicked", async () => {
+  test("calls onVote with 1 when upvote button is clicked", async () => {
     const user = userEvent.setup();
     render(<PostCard {...defaultProps} />);
     await user.click(screen.getByRole("button", { name: /upvote/i }));
-    expect(defaultProps.onUpvote).toHaveBeenCalled();
+    expect(defaultProps.onVote).toHaveBeenCalledWith(1);
   });
-  test("calls onDownvote when downvote button is clicked", async () => {
+  test("calls onVote with -1 when downvote button is clicked", async () => {
     const user = userEvent.setup();
     render(<PostCard {...defaultProps} />);
     await user.click(screen.getByRole("button", { name: /downvote/i }));
-    expect(defaultProps.onDownvote).toHaveBeenCalled();
+    expect(defaultProps.onVote).toHaveBeenCalledWith(-1);
   });
   test("content links to the post detail page", () => {
     render(<PostCard {...defaultProps} />);

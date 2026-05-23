@@ -41,13 +41,43 @@ export function denunciarConteudo(conteudoId: number, tipo: TipoDenuncia): Promi
   })
 }
 
-export function listarDenuncias(): Promise<Denuncia[]> {
-  return apiFetch("/denuncias/")
+export async function listarDenuncias(): Promise<Denuncia[]> {
+  return (await apiFetch<Denuncia[]>("/denuncias/")) ?? []
 }
 
-export function resolverDenuncia(denunciaId: number, novoStatus: "RESOLVIDA" | "IGNORADA" = "RESOLVIDA"): Promise<void> {
+// punicao: 0 = exclui postagem, 1 = exclui postagem + silencia, 2 = exclui usuário
+export type Punicao = 0 | 1 | 2
+
+export const PUNICOES: { value: Punicao; label: string }[] = [
+  { value: 0, label: "Excluir conteúdo" },
+  { value: 1, label: "Excluir conteúdo + silenciar autor" },
+  { value: 2, label: "Excluir usuário" },
+]
+
+// tempo_silencio is a Postgres INTERVAL string, only used when punicao === 1
+export const TEMPOS_SILENCIO: { value: string; label: string }[] = [
+  { value: "1 hour", label: "1 hora" },
+  { value: "12 hours", label: "12 horas" },
+  { value: "1 day", label: "1 dia" },
+  { value: "3 days", label: "3 dias" },
+  { value: "7 days", label: "7 dias" },
+]
+
+export function resolverDenuncia(
+  denunciaId: number,
+  opts: {
+    novoStatus?: "RESOLVIDA" | "IGNORADA"
+    punicao?: Punicao | null
+    tempoSilencio?: string | null
+  } = {},
+): Promise<void> {
+  const { novoStatus = "RESOLVIDA", punicao = null, tempoSilencio = null } = opts
   return apiFetch(`/denuncias/${denunciaId}/resolver`, {
     method: "PATCH",
-    body: JSON.stringify({ novo_status: novoStatus }),
+    body: JSON.stringify({
+      novo_status: novoStatus,
+      punicao,
+      tempo_silencio: punicao === 1 ? tempoSilencio : null,
+    }),
   })
 }

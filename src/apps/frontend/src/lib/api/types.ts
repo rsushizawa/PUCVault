@@ -36,6 +36,8 @@ export type Post = {
   tags: string[]
   engajamento: string
   comentarios: string
+  // Logged-in user's current rating on this post: -1, 0, or 1.
+  userVote: 1 | 0 | -1
 }
 
 export type Comment = {
@@ -56,6 +58,7 @@ export type User = {
   descricao?: string | null
   status: string
   criado_em: string
+  a2f?: boolean
   identidade_visual?: number
   img_perfil: string | null
   img_banner?: string | null

@@ -4,20 +4,28 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Search, User, Settings, LogOut } from "lucide-react";
 import { logout, getMe } from "@/lib/api/auth";
+import { searchForums } from "@/lib/api/communities";
+import type { ForumSummary } from "@/lib/api/communities";
 import { useRouter } from "next/navigation";
 
 const NavBar = () => {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<ForumSummary[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     getMe()
       .then((user) => {
         setIsLoggedIn(true);
         setAvatarUrl(user.img_perfil);
+        setUsername(user.nome_usuario);
       })
       .catch(() => setIsLoggedIn(false));
   }, []);
@@ -27,10 +35,28 @@ const NavBar = () => {
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
         setProfileOpen(false);
       }
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
     }
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      return;
+    }
+    const timer = setTimeout(() => {
+      searchForums(searchQuery).then((results) => {
+        setSearchResults(results);
+        setShowDropdown(results.length > 0);
+      });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   function handleLogout() {
     logout();
@@ -53,13 +79,36 @@ const NavBar = () => {
 
         {/* Centered search */}
         <div className="hidden md:flex flex-1 justify-center">
-          <div className="flex items-center gap-2 bg-surface-raised px-3 py-1.5 rounded-lg w-full max-w-sm border border-accent/20 focus-within:border-accent/60 transition-all duration-200">
-            <Search size={14} className="text-text-muted shrink-0" />
-            <input
-              type="search"
-              placeholder="Buscar vaults..."
-              className="bg-transparent text-sm text-text-secondary placeholder:text-text-muted outline-none w-full"
-            />
+          <div className="relative w-full max-w-sm" ref={searchRef}>
+            <div className="flex items-center gap-2 bg-surface-raised px-3 py-1.5 rounded-lg border border-accent/20 focus-within:border-accent/60 transition-all duration-200">
+              <Search size={14} className="text-text-muted shrink-0" />
+              <input
+                type="search"
+                placeholder="Buscar vaults..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-transparent text-sm text-text-secondary placeholder:text-text-muted outline-none w-full"
+              />
+            </div>
+            {showDropdown && (
+              <div className="absolute top-full mt-1 w-full bg-surface-overlay border border-surface-raised/60 rounded-xl py-1 shadow-2xl z-50">
+                {searchResults.map((forum) => (
+                  <Link
+                    key={forum.id}
+                    href={`/v/${forum.nome}`}
+                    onClick={() => { setSearchQuery(""); setShowDropdown(false); }}
+                    className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-text-secondary hover:text-text-primary hover:bg-surface-raised transition-colors duration-150"
+                  >
+                    {forum.img_perfil ? (
+                      <img src={forum.img_perfil} alt="" className="size-5 rounded-full object-cover shrink-0" />
+                    ) : (
+                      <div className="size-5 rounded-full bg-surface-base shrink-0" />
+                    )}
+                    {forum.nome}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -81,6 +130,16 @@ const NavBar = () => {
 
               {profileOpen && (
                 <div className="absolute right-0 top-full mt-2 w-44 bg-surface-overlay border border-surface-raised/60 rounded-xl py-1 shadow-2xl animate-slide-down">
+                  {username && (
+                    <Link
+                      href={`/u/${username}`}
+                      className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-text-secondary hover:text-text-primary hover:bg-surface-raised transition-colors duration-150 cursor-pointer"
+                      onClick={() => setProfileOpen(false)}
+                    >
+                      <User size={14} />
+                      Perfil
+                    </Link>
+                  )}
                   <Link
                     href="/config"
                     className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-text-secondary hover:text-text-primary hover:bg-surface-raised transition-colors duration-150 cursor-pointer"

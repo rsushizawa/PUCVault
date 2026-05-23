@@ -1,5 +1,6 @@
-const { pool } = require("../config/database");
 const { error, log } = require("console");
+const db = require("../config/database");
+const { pool } = require("../config/database");
 const bcrypt = require("bcryptjs");
 
 function errorMsg(error) {
@@ -251,39 +252,15 @@ module.exports = {
     }
   },
 
-  async getUserFollowedForums(user_id) {
-    // TODO: publico.listar_forums_seguidos_usuario(p_usuario_id INT) does not exist yet — see TO-DO.md.
-    let client;
+  async changeHandle(user_id, new_handle) {
     try {
-      client = await pool.connect();
-      console.log("conexão sucedida getUserFollowedForums");
-      const res = await pool.query(
-        "SELECT * FROM publico.listar_forums_seguidos_usuario($1)",
-        [user_id],
-      );
-      return res.rows;
+      console.log("conexão sucedida changeHandle");
+      await pool.query("CALL publico.atualizar_nome_de_usuario( $1, $2 )", [
+        user_id,
+        new_handle,
+      ]);
     } catch (error) {
-      return [];
-    } finally {
-      if (client) client.release();
-    }
-  },
-
-  async checkUserFollow(viewer_id, target_id) {
-    // TODO: publico.checar_se_usuario_segue_usuario(p_seguidor INT, p_seguido INT) does not exist yet — see TO-DO.md.
-    let client;
-    try {
-      client = await pool.connect();
-      const res = await pool.query(
-        "SELECT * FROM publico.checar_se_usuario_segue_usuario($1, $2)",
-        [viewer_id, target_id],
-      );
-      if (!res.rows || res.rows.length === 0) return { follows: false };
-      return { follows: !!res.rows[0].segue };
-    } catch (error) {
-      return { follows: false };
-    } finally {
-      if (client) client.release();
+      console.error("changeHandle (proc missing?):", error.message);
     }
   },
 

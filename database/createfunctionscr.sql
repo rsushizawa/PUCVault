@@ -96,7 +96,6 @@ $$;
 CREATE OR REPLACE FUNCTION publico.buscar_forum_por_nome (
   p_nome VARCHAR
 )
--- TODO: criar view de fórum
 RETURNS SETOF privado.forum
 LANGUAGE plpgsql
 SECURITY DEFINER

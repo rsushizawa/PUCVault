@@ -11,14 +11,7 @@ const path = require("path");
 const { is } = require("zod/v4/locales");
 const { maxHeaderSize } = require("http");
 
-<<<<<<< HEAD
-const { ok, fail } = require('../helpers/response');
-const path = require('path');
-const { is } = require('zod/v4/locales');
-const { maxHeaderSize } = require('http');
-=======
 const envPath = path.resolve(__dirname, "../../src/.env");
->>>>>>> 051b131 (fix: auth is now done with cookies)
 
 require("dotenv").config({ path: envPath });
 
@@ -73,20 +66,10 @@ exports.signin = async (req, res) => {
     const pinHash = await bcrypt.hash(pin, saltRounds);
 
     const hashedPassword = await bcrypt.hash(password, saltRounds);
-<<<<<<< HEAD
-    const signupToken = generateJWTToken({ email, name, username, hashedPassword, twofacauth, pinHash: pinHash }, 'email_verification');
-
-    emailServices.sendEmail(email, pin, 'email_verification').catch(err => console.error("Erro envio email:", err));
-
-    return res.status(200).json({ message: 'PIN sent to email', signupToken });
-
-
-=======
     const signupToken = generateJWTToken(
       { email, name, username, hashedPassword, twofacauth, pinHash: pinHash },
       "email_verification",
     );
->>>>>>> 051b131 (fix: auth is now done with cookies)
 
     await emailServices.sendEmail(email, pin, "email_verification");
 
@@ -356,9 +339,9 @@ exports.forgotPasswordSendEmail = async (req, res) => {
   }
 
   const pin = generateRandomPIN();
-  const pinHash = bcrypt.hash(pin, saltRounds);
+  const pinHash = await bcrypt.hash(pin, saltRounds);
 
-  const sent_token = generateJWTToken({ pin, pinHash }, "password_recovery");
+  const sent_token = generateJWTToken({ id: user.id, pinHash }, "password_recovery");
 
   try {
     await emailServices.sendEmail(email, pin, "password_recovery");
@@ -388,10 +371,6 @@ const forgotPasswordSchema = z
 
 exports.forgotChangePassword = async (req, res) => {
   try {
-    console.log("--- DEBUG RECUPERAÇÃO ---");
-    console.log("ID extraído do Token:", user_id);
-    console.log("-------------------------");
-
     const validation = forgotPasswordSchema.safeParse(req.body);
 
     if (!validation.success) {
@@ -427,20 +406,5 @@ exports.forgotChangePassword = async (req, res) => {
         .json({ error: "token has expired. create a new one" });
     }
     res.status(401).json({ error: "Invalid Token" });
-  }
-};
-
-exports.logout = async (req, res) => {
-  try {
-    console.log("conexao sucedida logout");
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(400).json({ error: "No token provided for logout" });
-    }
-    const [, token] = authHeader.split(" ");
-
-    return res.status(200).json({ message: "logged out successfully" });
-  } catch (error) {
-    return res.status(500).json({ error: "internal server error" });
   }
 };

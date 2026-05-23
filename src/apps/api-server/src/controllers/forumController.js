@@ -1,6 +1,15 @@
 const forumService = require("../services/forumServices");
 const { ok, fail } = require("../helpers/response");
+const { imageUrl, fileUrl } = require("../utils/cloudinaryUtil");
 const { z } = require("zod");
+
+// Replaces stored Cloudinary public_ids with delivery URLs in place.
+function resolveForumImages(forum) {
+  if (!forum) return forum;
+  if ("img_perfil" in forum) forum.img_perfil = imageUrl(forum.img_perfil, "perfil");
+  if ("img_banner" in forum) forum.img_banner = imageUrl(forum.img_banner, "banner");
+  return forum;
+}
 
 const forumSchema = z.object({
   name: z.string().min(8, "Título(mínimo 8 caracteres)").max(20),
@@ -10,8 +19,7 @@ const forumSchema = z.object({
 exports.print = async (req, res) => {
   try {
     const result = await forumService.printForums();
-    const rows = result.rows;
-    console.table(rows);
+    const rows = (result.rows ?? []).map(resolveForumImages);
     return ok(res, rows);
   } catch (error) {
     return fail(res, 500, error.message);
@@ -45,14 +53,9 @@ exports.getForumId = async (req, res) => {
 exports.listForumFilesYear = async (req, res) => {
   const { forum_id } = req.params;
   try {
-    const result = await forumService.listForumFilesYear(forum_id);
-    const rows = result.rows
-      ? result.rows[0]
-      : Array.isArray(result)
-        ? result[0]
-        : result;
-    console.table(rows);
-    return ok(res, rows);
+    const rows = await forumService.listForumFilesYear(forum_id);
+    const years = (rows ?? []).map((r) => r.ano);
+    return ok(res, years);
   } catch (error) {
     console.error("listForumFilesYear:", error.message);
     return ok(res, []);
@@ -86,9 +89,13 @@ exports.listTagsFilesYear = async (req, res) => {
   const { forum_id, year } = req.params;
   try {
     const forumResults = await forumService.listTagsFilesYear(forum_id, year);
-    const rows = forumResults.rows;
-    console.table(rows);
-    return ok(res, rows);
+    // DB returns { id, tag, criado_em, criador }; the frontend expects { id, name, count }.
+    const tags = (forumResults.rows ?? []).map((r) => ({
+      id: r.id,
+      name: r.tag,
+      count: r.count ?? 0,
+    }));
+    return ok(res, tags);
   } catch (error) {
     return fail(res, 500, "internal server error");
   }
@@ -189,11 +196,12 @@ exports.getForumByName = async (req, res) => {
     if (!result || !result.rows || result.rows.length === 0) {
       return fail(res, 404, "forum not found");
     }
-    return ok(res, result.rows[0]);
+    return ok(res, resolveForumImages(result.rows[0]));
   } catch (error) {
     return fail(res, 500, "server error");
   }
 };
+
 
 exports.getSingleForum = async (req, res) => {
   const user_id = req.user ? req.user.id : null;
@@ -202,7 +210,7 @@ exports.getSingleForum = async (req, res) => {
     const forum = await forumService.getSingleForum(forum_id);
     const forum_followers = await forumService.listForumFollowers(forum_id);
     let response = {
-      ...forum.rows[0],
+      ...resolveForumImages(forum.rows[0]),
       ...forum_followers.rows,
     };
 

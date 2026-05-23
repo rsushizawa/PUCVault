@@ -1,65 +1,39 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const userController = require('../controllers/userController');
+const userController = require("../controllers/userController");
 
 const authMiddleware = require('../middlewares/authMiddleware');
 const roleMiddleware = require('../middlewares/roleMiddleware');
 const optionalauthMiddleware = require('../middlewares/optionalauthMiddleware');
 
-router.patch('/:user_id/change_role',
+router.patch(
+  "/:user_id/change_role",
   authMiddleware,
   roleMiddleware(['ADMIN', 'SUPERADMIN']),
   userController.changeRole
 );
 
+router.patch("/:target_id/follow", authMiddleware, userController.follow);
 
-router.patch('/:target_id/follow',
+router.get("/me", authMiddleware, userController.me);
+
+router.patch("/me", authMiddleware, userController.updateMe);
+
+router.get("/by-username/:username", userController.userByUsername);
+
+router.get("/:user_id/forums", userController.followedForums);
+
+router.get("/:user_id/forum-follow/:forum_id", userController.checkForumFollow);
+
+router.get("/:user_id", optionalauthMiddleware, userController.userInfo);
+
+router.patch(
+  "/:user_id/description",
   authMiddleware,
-  userController.follow
+  userController.changeDescription,
 );
 
-router.get('/me',
-  authMiddleware,
-  userController.me
-);
+router.patch("/toggle-2fa", authMiddleware, userController.toggle2FA);
 
-// TODO: PATCH /user/me to edit own nome/nome_usuario — frontend updateMe() needs it.
-// Blocked on a publico profile-update function (see TO-DO.md ### DB).
-
-router.get('/by-username/:username',
-  userController.userByUsername
-);
-
-router.get('/:user_id/forums',
-  userController.followedForums
-);
-
-router.get('/:target_id/is-following',
-  authMiddleware,
-  userController.isFollowing
-);
-
-router.get('/:user_id/forum-follow/:forum_id',
-  userController.checkForumFollow
-);
-
-router.get('/:user_id',
-  optionalauthMiddleware,
-  userController.userInfo
-);
-
-router.patch('/:user_id/description',
-  authMiddleware,
-  userController.changeDescription
-);
-
-router.patch('/toggle-2fa',
-  authMiddleware,
-  userController.toggle2FA
-);
-
-router.delete('/delete',
-  authMiddleware,
-  userController.deleteAccount
-);
+router.delete("/delete", authMiddleware, userController.deleteAccount);
 module.exports = router;

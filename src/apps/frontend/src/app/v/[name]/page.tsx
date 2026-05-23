@@ -12,7 +12,9 @@ import CommunityFiles from "@/components/community-files";
 import ForumAdminPanel from "@/components/forum-admin-panel";
 import { getForumByName, getCommunityPosts, getCommunity, followCommunity, updateForumDescription } from "@/lib/api/communities";
 import type { ForumSummary } from "@/lib/api/communities";
+import { uploadForumImage } from "@/lib/api/images";
 import { createPost, votePost } from "@/lib/api/posts";
+import { Camera } from "lucide-react";
 import { getMe } from "@/lib/api/auth";
 import type { UserProfile } from "@/lib/api/auth";
 import type { Post } from "@/types/api";
@@ -44,10 +46,24 @@ export default function VaultPage() {
 
   const [activeTab, setActiveTab] = useState<Tab>("forum");
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [activeTab]);
+
   // Forum config state
   const [configDescricao, setConfigDescricao] = useState("");
   const [configSaving, setConfigSaving] = useState(false);
   const [configMsg, setConfigMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  // Forum image config state (SUPERADMIN only)
+  const perfilInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+  const [perfilUrl, setPerfilUrl] = useState("");
+  const [bannerUrl, setBannerUrl] = useState("");
+  const [perfilFile, setPerfilFile] = useState<File | null>(null);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [imgSaving, setImgSaving] = useState(false);
+  const [imgMsg, setImgMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   // Posts + pagination
   const [posts, setPosts] = useState<Post[]>([]);
@@ -69,6 +85,8 @@ export default function VaultPage() {
       .then((f) => {
         setForum(f);
         setConfigDescricao(f.descricao ?? "");
+        setPerfilUrl(f.img_perfil ?? "");
+        setBannerUrl(f.img_banner ?? "");
         return getCommunity(String(f.id));
       })
       .then((extended) => {
@@ -156,6 +174,28 @@ export default function VaultPage() {
     }
   }
 
+  async function handleSaveForumImages(e: React.FormEvent) {
+    e.preventDefault();
+    if (!forum || (!perfilFile && !bannerFile)) return;
+    setImgSaving(true);
+    setImgMsg(null);
+    try {
+      if (perfilFile) await uploadForumImage(String(forum.id), "perfil", perfilFile);
+      if (bannerFile) await uploadForumImage(String(forum.id), "banner", bannerFile);
+      const refreshed = await getForumByName(decodedName);
+      setPerfilUrl(refreshed.img_perfil ?? "");
+      setBannerUrl(refreshed.img_banner ?? "");
+      setForum((prev) => prev ? { ...prev, img_perfil: refreshed.img_perfil, img_banner: refreshed.img_banner } : prev);
+      setPerfilFile(null);
+      setBannerFile(null);
+      setImgMsg({ ok: true, text: "Imagens atualizadas com sucesso." });
+    } catch {
+      setImgMsg({ ok: false, text: "Erro ao salvar imagens. Tente novamente." });
+    } finally {
+      setImgSaving(false);
+    }
+  }
+
   async function handlePost(data: { title: string; content: string; tags: Tag[]; file?: File }) {
     if (!forum) return;
     await createPost(String(forum.id), {
@@ -233,8 +273,8 @@ export default function VaultPage() {
                         tags={post.tags}
                         voteCount={Number(post.engajamento)}
                         commentCount={Number(post.comentarios)}
-                        onUpvote={() => votePost(String(post.id), 1).catch(() => {})}
-                        onDownvote={() => votePost(String(post.id), -1).catch(() => {})}
+                        initialVote={post.userVote}
+                        onVote={(v) => votePost(String(post.id), v).catch(() => {})}
                       />
                     ))}
                   </div>
@@ -265,6 +305,89 @@ export default function VaultPage() {
             {activeTab === "config" && forum && (
               <section className="bg-surface-raised rounded-xl p-6 border border-surface-overlay flex flex-col gap-5 max-w-2xl">
                 <h2 className="text-text-primary font-semibold">Configurações do fórum</h2>
+
+                {user?.cargo === Cargo.SUPERADMIN && (
+                  <form onSubmit={handleSaveForumImages} className="flex flex-col gap-4 pb-5 border-b border-surface-overlay">
+                    <label className="text-text-secondary text-xs font-medium">Imagens</label>
+
+                    {/* Banner */}
+                    <div className="relative w-full h-32 rounded-lg overflow-hidden bg-accent/10 border border-surface-overlay">
+                      {bannerUrl ? (
+                        <img src={bannerUrl} alt="Banner" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full" />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => bannerInputRef.current?.click()}
+                        className="absolute bottom-2 right-2 flex items-center gap-1.5 bg-surface-base/80 text-text-primary text-xs font-medium px-2.5 py-1.5 rounded-lg hover:bg-surface-base transition-all duration-200 cursor-pointer"
+                      >
+                        <Camera size={12} />
+                        Trocar banner
+                      </button>
+                      <input
+                        ref={bannerInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setBannerFile(file);
+                            setBannerUrl(URL.createObjectURL(file));
+                          }
+                        }}
+                      />
+                    </div>
+
+                    {/* Icon */}
+                    <div className="flex items-center gap-4">
+                      <div className="relative">
+                        <div className="w-16 h-16 rounded-full bg-accent/15 flex items-center justify-center overflow-hidden shrink-0 border border-accent/20">
+                          {perfilUrl ? (
+                            <img src={perfilUrl} alt="Ícone" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full" />
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => perfilInputRef.current?.click()}
+                          className="absolute -bottom-1 -right-1 w-6 h-6 bg-accent rounded-full flex items-center justify-center hover:opacity-90 transition-all duration-200 cursor-pointer"
+                          aria-label="Trocar ícone do fórum"
+                        >
+                          <Camera size={12} className="text-surface-base" />
+                        </button>
+                        <input
+                          ref={perfilInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setPerfilFile(file);
+                              setPerfilUrl(URL.createObjectURL(file));
+                            }
+                          }}
+                        />
+                      </div>
+                      <p className="text-text-muted text-xs">Clique no ícone para trocar a imagem do fórum</p>
+                    </div>
+
+                    {imgMsg && (
+                      <p className={`text-sm ${imgMsg.ok ? "text-green-400" : "text-red-400"}`}>{imgMsg.text}</p>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={imgSaving || (!perfilFile && !bannerFile)}
+                      className="self-end bg-accent text-surface-base text-sm font-semibold px-5 py-2 rounded-lg hover:opacity-90 transition-all duration-200 disabled:opacity-50 cursor-pointer"
+                    >
+                      {imgSaving ? "Salvando..." : "Salvar imagens"}
+                    </button>
+                  </form>
+                )}
 
                 <div className="flex flex-col gap-1.5">
                   <label className="text-text-secondary text-xs font-medium">Nome</label>

@@ -1,9 +1,11 @@
 "use server";
 import { serverFetch, serverFormData } from "@/lib/api/server";
 
-export async function votePost(id: string, value: 1 | -1): Promise<void> {
-  const action = value === 1 ? "upvote" : "downvote";
-  await serverFetch(`/posts/${id}/${action}`, { method: "PATCH" });
+export async function votePost(id: string, value: 1 | 0 | -1): Promise<void> {
+  await serverFetch(`/posts/rate-content`, {
+    method: "PATCH",
+    body: JSON.stringify({ rate_vector: [[Number(id)], [value]] }),
+  });
 }
 
 export async function createPost(

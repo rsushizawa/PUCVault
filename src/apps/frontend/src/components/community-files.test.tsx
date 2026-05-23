@@ -105,7 +105,7 @@ describe("CommunityFiles", () => {
     await waitFor(() => screen.getByText("Resumos"));
     fireEvent.click(screen.getByText("Resumos"));
     await waitFor(() =>
-      expect(getFilesByYearAndTag).toHaveBeenCalledWith("name-77", 2024, "Resumos")
+      expect(getFilesByYearAndTag).toHaveBeenCalledWith("name-77", 2024, 1)
     );
   });
 

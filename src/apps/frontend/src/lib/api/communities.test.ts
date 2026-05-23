@@ -80,32 +80,31 @@ describe("getFileTagsByYear", () => {
 })
 
 describe("getFilesByYearAndTag", () => {
-  const mockFiles = [
-    { post_id: 101, title: "Aula 01.pdf", file_url: "/files/aula01.pdf", uploaded_at: "2024-03-15T10:00:00Z" },
-    { post_id: 102, title: "Lista 01.pdf", file_url: "/files/lista01.pdf", uploaded_at: "2024-04-01T10:00:00Z" },
+  const mockRaw = [
+    { id: 101, titulo: "Aula 01.pdf", criado_em: "2024-03-15T10:00:00Z" },
+    { id: 102, titulo: "Lista 01.pdf", criado_em: "2024-04-01T10:00:00Z" },
+  ]
+  const mockArrayNames = ["Aula 01.pdf", "Lista 01.pdf"]
+  const mockFilesResult = [
+    { post_id: 101, title: "Aula 01.pdf", file_url: "/api/posts/101/files", uploaded_at: "2024-03-15T10:00:00Z" },
+    { post_id: 102, title: "Lista 01.pdf", file_url: "/api/posts/102/files", uploaded_at: "2024-04-01T10:00:00Z" },
   ]
 
   it("returns unwrapped array of files", async () => {
-    mockFetch(mockFiles)
-    const result = await getFilesByYearAndTag("42", 2024, "Resumos")
-    expect(result).toEqual(mockFiles)
+    mockFetch({ content: mockRaw, array_names: mockArrayNames })
+    const result = await getFilesByYearAndTag("42", 2024, 3)
+    expect(result).toEqual(mockFilesResult)
   })
 
-  it("calls the correct endpoint with year and tag", async () => {
-    const spy = mockFetch([])
-    await getFilesByYearAndTag("42", 2024, "Resumos")
-    expect(spy.mock.calls[0][0]).toContain("/forums/42/files/year/2024/tag/Resumos")
+  it("calls the correct endpoint with year and tag id", async () => {
+    const spy = mockFetch({ content: [], array_names: [] })
+    await getFilesByYearAndTag("42", 2024, 3)
+    expect(spy.mock.calls[0][0]).toContain("/forums/42/files/year/2024/tag/3")
   })
 
-  it("URL-encodes tag names with special characters", async () => {
-    const spy = mockFetch([])
-    await getFilesByYearAndTag("42", 2024, "Cálculo I")
-    expect(spy.mock.calls[0][0]).toContain(encodeURIComponent("Cálculo I"))
-  })
-
-  it("returns empty array when data is null", async () => {
-    mockFetch(null)
-    const result = await getFilesByYearAndTag("42", 2024, "Resumos")
+  it("returns empty array when content is missing", async () => {
+    mockFetch({})
+    const result = await getFilesByYearAndTag("42", 2024, 3)
     expect(result).toEqual([])
   })
 
@@ -113,7 +112,7 @@ describe("getFilesByYearAndTag", () => {
     vi.spyOn(global, "fetch").mockResolvedValueOnce(
       new Response(JSON.stringify({ error: "server error" }), { status: 500 }),
     )
-    await expect(getFilesByYearAndTag("42", 2024, "Resumos")).rejects.toThrow("API 500")
+    await expect(getFilesByYearAndTag("42", 2024, 3)).rejects.toThrow("API 500")
   })
 })
 
@@ -160,7 +159,9 @@ describe("getCommunityPosts", () => {
   }))
 
   it("returns mapped posts and computed total", async () => {
-    mockFetch(mockRows)
+    vi.spyOn(global, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify({ data: mockRows, total: mockRows.length }), { status: 200 }),
+    )
     const { posts, total } = await getCommunityPosts("1", 1)
     expect(posts).toHaveLength(5)
     expect(total).toBe(5)

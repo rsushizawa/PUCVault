@@ -9,10 +9,10 @@ const defaultProps = {
 };
 
 describe("MarkdownEditor tabs", () => {
-  test("renders Write and Preview tabs", () => {
+  test("renders Escrever and Visualizar tabs", () => {
     render(<MarkdownEditor {...defaultProps} />);
-    expect(screen.getByRole("button", { name: /^write$/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^preview$/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Escrever$/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Visualizar$/i })).toBeInTheDocument();
   });
 
   test("shows textarea in Write mode by default", () => {
@@ -20,33 +20,26 @@ describe("MarkdownEditor tabs", () => {
     expect(screen.getByPlaceholderText("Type here...")).toBeInTheDocument();
   });
 
-  test("hides textarea when Preview tab is clicked", async () => {
-    const user = userEvent.setup();
-    render(<MarkdownEditor {...defaultProps} />);
-    await user.click(screen.getByRole("button", { name: /^preview$/i }));
-    expect(screen.queryByPlaceholderText("Type here...")).not.toBeInTheDocument();
-  });
-
-  test("shows 'Nothing to preview' when value is empty in Preview mode", async () => {
+  test("shows 'Nada para visualizar.' when value is empty in Preview mode", async () => {
     const user = userEvent.setup();
     render(<MarkdownEditor {...defaultProps} value="" />);
-    await user.click(screen.getByRole("button", { name: /^preview$/i }));
-    expect(screen.getByText(/nothing to preview/i)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /^Visualizar$/i }));
+    expect(screen.getByText(/nada para visualizar/i)).toBeInTheDocument();
   });
 
   test("renders markdown in Preview mode", async () => {
     const user = userEvent.setup();
     render(<MarkdownEditor {...defaultProps} value="**bold text**" />);
-    await user.click(screen.getByRole("button", { name: /^preview$/i }));
+    await user.click(screen.getByRole("button", { name: /^Visualizar$/i }));
     const el = screen.getByText("bold text");
     expect(el.tagName).toBe("STRONG");
   });
 
-  test("returns to Write mode when Write tab is clicked", async () => {
+  test("returns to Write mode when Escrever tab is clicked", async () => {
     const user = userEvent.setup();
     render(<MarkdownEditor {...defaultProps} />);
-    await user.click(screen.getByRole("button", { name: /^preview$/i }));
-    await user.click(screen.getByRole("button", { name: /^write$/i }));
+    await user.click(screen.getByRole("button", { name: /^Visualizar$/i }));
+    await user.click(screen.getByRole("button", { name: /^Escrever$/i }));
     expect(screen.getByPlaceholderText("Type here...")).toBeInTheDocument();
   });
 
@@ -71,37 +64,50 @@ describe("MarkdownEditor toolbar", () => {
   }
 
   test.each([
-    "Bold", "Italic", "Link", "Strikethrough", "Code",
-    "Bulleted list", "Numbered list", "Quote", "Insert image", "Embed",
-  ])("renders %s toolbar button", async (label) => {
+    ["Negrito", /^Negrito$/i],
+    ["Itálico", /^Itálico$/i],
+    ["Link", /^Link$/i],
+    ["Tachado", /^Tachado$/i],
+    ["Código", /^Código$/i],
+    ["Lista", /^Lista$/i],
+    ["Lista numerada", /^Lista numerada$/i],
+    ["Citação", /^Citação$/i],
+    ["Imagem", /^Imagem$/i],
+  ] as [string, RegExp][])("renders %s toolbar button", async (_label, pattern) => {
     await setup();
-    expect(screen.getByRole("button", { name: new RegExp(label, "i") })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: pattern })).toBeInTheDocument();
   });
 
-  test("Bold wraps selection with **", async () => {
+  test("Negrito wraps selection with **", async () => {
     const { user, onChange, textarea } = await setup("hello world");
     textarea().setSelectionRange(6, 11);
-    await user.click(screen.getByRole("button", { name: /bold/i }));
+    await user.click(screen.getByRole("button", { name: /^Negrito$/i }));
     expect(onChange).toHaveBeenCalledWith("hello **world**");
   });
 
-  test("Italic wraps selection with *", async () => {
+  test("Negrito inserts placeholder when nothing is selected", async () => {
+    const { user, onChange } = await setup();
+    await user.click(screen.getByRole("button", { name: /^Negrito$/i }));
+    expect(onChange).toHaveBeenCalledWith("**texto**");
+  });
+
+  test("Itálico wraps selection with *", async () => {
     const { user, onChange, textarea } = await setup("hello world");
     textarea().setSelectionRange(6, 11);
-    await user.click(screen.getByRole("button", { name: /italic/i }));
+    await user.click(screen.getByRole("button", { name: /^Itálico$/i }));
     expect(onChange).toHaveBeenCalledWith("hello *world*");
   });
 
-  test("Code wraps selection with backticks", async () => {
+  test("Código wraps selection with backticks", async () => {
     const { user, onChange, textarea } = await setup("hello world");
     textarea().setSelectionRange(6, 11);
-    await user.click(screen.getByRole("button", { name: /^code$/i }));
+    await user.click(screen.getByRole("button", { name: /^Código$/i }));
     expect(onChange).toHaveBeenCalledWith("hello `world`");
   });
 
-  test("Bulleted list prefixes current line with -", async () => {
+  test("Lista prefixes current line with -", async () => {
     const { user, onChange } = await setup("item");
-    await user.click(screen.getByRole("button", { name: /bulleted list/i }));
+    await user.click(screen.getByRole("button", { name: /^Lista$/i }));
     expect(onChange).toHaveBeenCalledWith("- item");
   });
 });

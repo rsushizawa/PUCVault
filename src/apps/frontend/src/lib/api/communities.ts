@@ -5,7 +5,7 @@ import { mapPostRow, type RawPostRow } from "./utils"
 export type { Forum } from "./types"
 export type ForumSummary = Forum
 
-export type FileTag   = { id: number; name: string; count: number }
+export type FileTag   = { id: number; name: string }
 export type FileEntry = { post_id: number; title: string; file_url: string; uploaded_at: string }
 
 export type ForumFollower = {
@@ -18,6 +18,15 @@ export type ForumFollower = {
 
 export function getForumByName(name: string): Promise<ForumSummary> {
   return apiFetch(`/forums/by-name/${encodeURIComponent(name)}`)
+}
+
+export async function searchForums(query: string): Promise<ForumSummary[]> {
+  try {
+    const result = await getForumByName(query)
+    return [result]
+  } catch {
+    return []
+  }
 }
 
 export function getForums(): Promise<ForumSummary[]> {
@@ -79,6 +88,17 @@ export async function getFileTagsByYear(forumId: string, year: number): Promise<
   return (await apiFetch<FileTag[]>(`/forums/${forumId}/files/year/${year}`)) ?? []
 }
 
-export async function getFilesByYearAndTag(forumId: string, year: number, tagName: string): Promise<FileEntry[]> {
-  return (await apiFetch<FileEntry[]>(`/forums/${forumId}/files/year/${year}/tag/${encodeURIComponent(tagName)}`)) ?? []
+type RawFileRow = { id: number; titulo: string; arquivo_caminho: string; criado_em: string; arquivo_nome: string }
+
+export async function getFilesByYearAndTag(forumId: string, year: number, tagId: number): Promise<FileEntry[]> {
+  const raw = await apiFetch<{ content: RawFileRow[]; array_names: string[] }>(
+    `/forums/${forumId}/files/year/${year}/tag/${tagId}`,
+  )
+  if (!raw?.content) return []
+  return raw.content.map((r, i) => ({
+    post_id: r.id,
+    title: raw.array_names[i] ?? r.titulo,
+    file_url: `/api/posts/${r.id}/files`,
+    uploaded_at: r.criado_em,
+  }))
 }

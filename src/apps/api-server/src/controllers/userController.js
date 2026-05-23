@@ -2,6 +2,17 @@ const userService = require("../services/userServices");
 const { z } = require("zod");
 const jwt = require("jsonwebtoken");
 const { ok, fail } = require("../helpers/response.js");
+const { imageUrl } = require("../utils/cloudinaryUtil");
+
+// Replaces stored Cloudinary public_ids with delivery URLs in place.
+function resolveUserImages(user) {
+  if (!user) return user;
+  if ("img_perfil" in user)
+    user.img_perfil = imageUrl(user.img_perfil, "perfil");
+  if ("img_banner" in user)
+    user.img_banner = imageUrl(user.img_banner, "banner");
+  return user;
+}
 
 exports.changeRole = async (req, res) => {
   const { roleNum } = req.body;
@@ -45,9 +56,34 @@ exports.me = async (req, res) => {
   try {
     const userInfo = await userService.getUserInfo(user_id, null);
     delete userInfo.rows[0].senha_hash;
-    const info = userInfo.rows[0];
-    console.log(info);
+    const info = resolveUserImages(userInfo.rows[0]);
     return ok(res, info);
+  } catch (error) {
+    return fail(res, 500, "server error");
+  }
+};
+
+const updateMeSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  username: z.string().min(1).max(50).optional(),
+});
+
+exports.updateMe = async (req, res) => {
+  const user_id = req.user.id;
+  const validation = updateMeSchema.safeParse(req.body);
+  if (!validation.success) {
+    return fail(res, 400, "invalid data");
+  }
+  const { name, username } = validation.data;
+
+  try {
+    if (name !== undefined) {
+      await userService.changeUsername(user_id, name);
+    }
+    if (username !== undefined) {
+      await userService.changeHandle(user_id, username);
+    }
+    return ok(res, null);
   } catch (error) {
     return fail(res, 500, "server error");
   }
@@ -59,7 +95,7 @@ exports.userInfo = async (req, res) => {
   try {
     const userInfo = await userService.getUserInfo(user_id, logged_id);
     delete userInfo.rows[0].senha_hash;
-    const info = userInfo.rows[0];
+    const info = resolveUserImages(userInfo.rows[0]);
     return ok(res, info);
   } catch (error) {
     return fail(res, 500, "server error");
@@ -71,7 +107,7 @@ exports.userByUsername = async (req, res) => {
   try {
     const user = await userService.getUserByUsername(username);
     if (!user) return fail(res, 404, "user not found");
-    return ok(res, user);
+    return ok(res, resolveUserImages(user));
   } catch (error) {
     return fail(res, 500, "server error");
   }
@@ -81,7 +117,12 @@ exports.followedForums = async (req, res) => {
   const { user_id } = req.params;
   try {
     const forums = await userService.getUserFollowedForums(user_id);
-    return ok(res, forums ?? []);
+    const resolved = (forums ?? []).map((f) => {
+      if ("img_perfil" in f) f.img_perfil = imageUrl(f.img_perfil, "perfil");
+      if ("img_banner" in f) f.img_banner = imageUrl(f.img_banner, "banner");
+      return f;
+    });
+    return ok(res, resolved);
   } catch (error) {
     return fail(res, 500, "server error");
   }

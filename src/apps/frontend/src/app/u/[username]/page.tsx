@@ -276,8 +276,8 @@ export default function UserProfilePage() {
                       tags={post.tags}
                       voteCount={Number(post.engajamento)}
                       commentCount={Number(post.comentarios)}
-                      onUpvote={() => votePost(String(post.id), 1).catch(() => {})}
-                      onDownvote={() => votePost(String(post.id), -1).catch(() => {})}
+                      initialVote={post.userVote}
+                      onVote={(v) => votePost(String(post.id), v).catch(() => {})}
                     />
                   ))}
                 </div>

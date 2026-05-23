@@ -35,7 +35,6 @@ AS $$
 DECLARE
 	v_identidade_visual INT;
 BEGIN
-	-- TODO: substituir placeholders pelos IDs reais ao integrar Cloudflare Images
 	INSERT INTO privado.identidade_visual (img_perfil, img_banner)
 	VALUES ('abc-123', 'def-456')
 	RETURNING id INTO v_identidade_visual;
@@ -232,7 +231,6 @@ BEGIN
 		RAISE EXCEPTION 'Usuário silenciado não pode criar fórum.';
 	END IF;
 
-	-- TODO: substituir placeholders pelos IDs reais ao integrar Cloudflare Images
 	INSERT INTO privado.identidade_visual (img_perfil, img_banner)
 	VALUES ('abc-123', 'def-456')
 	RETURNING id INTO v_identidade_visual;

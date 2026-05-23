@@ -23,6 +23,7 @@ router.post('/verify-sign-in',
   authController.verifySignup
 );
 
+// No authMiddleware: logout must succeed even with an expired/invalid token.
 router.post('/logout',
   authController.logout
 );
@@ -38,11 +39,6 @@ router.post('/forgot-send-email',
 
 router.patch('/forgot-password',
   authController.forgotChangePassword
-);
-
-router.post('/logout',
-  authMiddleware,
-  authController.logout
 );
 
 module.exports = router;

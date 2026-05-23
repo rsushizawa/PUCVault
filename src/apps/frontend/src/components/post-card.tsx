@@ -20,8 +20,8 @@ interface PostCardProps {
   tags: string[];
   voteCount: number;
   commentCount: number;
-  onUpvote: () => void;
-  onDownvote: () => void;
+  initialVote?: 1 | 0 | -1;
+  onVote: (value: 1 | 0 | -1) => void;
 }
 
 export default function PostCard({
@@ -37,31 +37,27 @@ export default function PostCard({
   tags,
   voteCount,
   commentCount,
-  onUpvote,
-  onDownvote,
+  initialVote = 0,
+  onVote,
 }: PostCardProps) {
-  const [userVote, setUserVote] = useState<0 | 1 | -1>(0);
+  const [userVote, setUserVote] = useState<0 | 1 | -1>(initialVote);
   const [reportTarget, setReportTarget] = useState<{ type: "usuario" | "conteudo"; id: number; label: string } | null>(null);
 
   function handleUpvote() {
-    if (userVote === 1) {
-      setUserVote(0);
-    } else {
-      setUserVote(1);
-      onUpvote();
-    }
+    const next = userVote === 1 ? 0 : 1;
+    setUserVote(next);
+    onVote(next);
   }
 
   function handleDownvote() {
-    if (userVote === -1) {
-      setUserVote(0);
-    } else {
-      setUserVote(-1);
-      onDownvote();
-    }
+    const next = userVote === -1 ? 0 : -1;
+    setUserVote(next);
+    onVote(next);
   }
 
-  const displayCount = voteCount + userVote;
+  // voteCount (engajamento) already includes the user's own vote, so subtract
+  // the initial vote before re-adding the current one.
+  const displayCount = voteCount - initialVote + userVote;
   const countColor =
     userVote === 1 ? "text-accent" : userVote === -1 ? "text-red-400" : "text-text-secondary";
 
