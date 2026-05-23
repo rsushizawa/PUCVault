@@ -1,32 +1,25 @@
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 
-const path = require('path');
-const envPath = path.resolve(__dirname, '../../src/.env');
+const path = require("path");
+const envPath = path.resolve(__dirname, "../../src/.env");
+const { ok, fail } = require("../helpers/response.js");
 
-require('dotenv').config({ path: envPath });
+require("dotenv").config({ path: envPath });
 
-const passAccess = process.env.DB_PASS;
+const passAccess = process.env.JWT_SECRET;
 
 const authMiddleware = (req, res, next) => {
-  const authHeader = req.headers.authorization;
+  const token = req.cookies?.auth_token;
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (!token) {
     return res.status(401).json({ error: "Access denied, token not provided" });
   }
-
-  const token = authHeader.split(' ')[1];
-
   try {
-    const decode = jwt.verify(token, passAccess);
-
-    req.user = decode;
-
+    req.user = jwt.verify(token, passAccess);
     next();
-  } catch (error) {
+  } catch {
     return res.status(403).json({ error: "Token expired or invalid" });
   }
-
-
-}
+};
 
 module.exports = authMiddleware;

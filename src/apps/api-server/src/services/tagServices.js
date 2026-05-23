@@ -1,30 +1,5 @@
-const express = require('express');
-const cors = require('cors');
-const { z } = require('zod');
-const bcrypt = require('bcryptjs');
-const { Pool } = require('pg');
-const path = require('path');
+const db = require('../config/database');
 const { error, log } = require('console');
-const saltRounds = 10;
-const envPath = path.resolve(__dirname, '../../src/.env');
-
-require('dotenv').config({ path: envPath });
-const hostAccess = process.env.DB_HOST;
-const userAccess = process.env.DB_USER;
-const passAccess = process.env.DB_PASS;
-const portAccess = process.env.DB_PORT;
-const databaseAcess = process.env.DB_NAME;
-
-const pool = new Pool({
-  host: hostAccess,
-  port: portAccess,
-  database: databaseAcess,
-  user: userAccess,
-  password: passAccess,
-  ssl: {
-    rejectUnauthorized: false
-  }
-});
 
 function errorMsg(error) {
   console.error('--- DETALHES DO ERRO ---');
@@ -39,31 +14,52 @@ function errorMsg(error) {
 
 
 module.exports = {
-  async createTag(tagName, creator_id) {
-    let connect;
-
+  async getUserTags(creator_id) {
     try {
-      connect = pool.connect();
-      console.log('conexão sucedida createTag');
+      console.log('conexão sucedida printTags');
 
-      await pool.query('CALL publico.inserir_tag($1,$2)', [tagName, creator_id]);
+      const res = await db.query('SELECT * FROM publico.buscar_tags_por_criador( $1 )', [creator_id]);
+
+      return res;
+
     } catch (error) {
       errorMsg(error);
     }
   },
 
-  async validateTag(tag_id, validator_id, tagState) {
-    let connect;
+  async listTags() {
+    try {
+      console.log('conexão sucedida listTags');
+
+      const res = await db.query('SELECT * FROM pulbico.listar_tags()');
+      return res;
+
+    } catch (error) {
+      errorMsg(error);
+    }
+  },
+
+  async findTags(find) {
+    try {
+      console.log('conexão sucedida findTags');
+      const res = await db.query('SELECT * FROM publico.buscar_tags_relevantes($1)', [find]);
+      return res;
+    } catch (error) {
+      errorMsg(error);
+    }
+  },
+
+  async createTag(tagName, creator_id) {
 
     try {
-      connect = pool.connect();
-      console.log('conexão sucedida validateTag');
-
-      await pool.query('CALL publico.validar_tag($1,$2,$3)', [tag_id, validator_id, tagState]);
+      console.log('conexão sucedida createTag');
+      await db.query('CALL publico.inserir_tag($1,$2)', [tagName, creator_id]);
     } catch (error) {
-
+      errorMsg(error);
     }
   }
+
 };
+
 
 
