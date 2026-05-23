@@ -107,3 +107,18 @@ CREATE INDEX IF NOT EXISTS idx_denuncia_usuario_denunciante_denunciado ON privad
 -- utilizado em: inserir_denuncia_conteudo (verifica duplicata)
 CREATE INDEX IF NOT EXISTS idx_denuncia_conteudo_denunciado ON privado.denuncia_conteudo(conteudo_denunciado);
 CREATE INDEX IF NOT EXISTS idx_denuncia_conteudo_id_conteudo ON privado.denuncia_conteudo(id, conteudo_denunciado);
+
+
+--- índices para tabela penalidade
+--- utilizado em : resolver_denuncia(COUNT de strikes ainda vingentes por usuário)
+CREATE INDEX IF NOT EXISTS idx_penalidade_usuario_strike ON privado.penalidade(usuario_id, strike_valido_ate) WHERE removido_em IS NULL;
+
+--- utilizado em: corpo_denuncia_usuario, corpo_denuncia_postagem, corpo_denuncia_comentario (verificação de penalidades ainda ativas)
+CREATE INDEX IF NOT EXISTS idx_penalidade_usuario_vigente ON privado.penalidade(usuario_id, strike_valido_ate DESC)  WHERE removido_em IS NULL;
+
+
+--- utilizado em : dados_login_usuario(verificar expiração de silenciamento)
+CREATE INDEX IF NOT EXISTS idx_penalidade_usuario_validade ON privado.penalidade(usuario_id, aplicado_em);
+
+-- utilizado em: ON DELETE RESTRICT da FK denuncia_id (lookup)
+CREATE INDEX IF NOT EXISTS idx_penalidade_denuncia ON privado.penalidade(denuncia_id);
