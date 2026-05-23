@@ -45,7 +45,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="username"
-              className="bg-surface-input text-text-primary text-sm px-3 py-2 rounded-sm outline-none focus:ring-1 focus:ring-accent placeholder:text-text-muted"
+              className="bg-surface-input text-text-primary text-sm px-3 py-2 rounded-sm outline-none placeholder:text-text-muted"
               placeholder="seu@email.com ou seunome"
             />
           </div>
@@ -58,7 +58,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="current-password"
-              className="bg-surface-input text-text-primary text-sm px-3 py-2 rounded-sm outline-none focus:ring-1 focus:ring-accent"
+              className="bg-surface-input text-text-primary text-sm px-3 py-2 rounded-sm outline-none"
               placeholder="••••••••"
             />
           </div>
