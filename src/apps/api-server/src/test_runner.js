@@ -12,32 +12,61 @@ const BASE_URL = "http://localhost:8000";
 const TOKEN_FILE = path.join(__dirname, '.token_cache');
 const passAccess = process.env.JWT_SECRET || "fallback_secret";
 
-let globalToken = fs.existsSync(TOKEN_FILE) ? fs.readFileSync(TOKEN_FILE, 'utf8') : "";
+// Cookie jar — persists auth_token and other session cookies across requests
+const cookieJar = {};
+if (fs.existsSync(TOKEN_FILE)) {
+  try { Object.assign(cookieJar, JSON.parse(fs.readFileSync(TOKEN_FILE, 'utf8'))); } catch { /* ignore corrupt cache */ }
+}
+
 const rl = readline.createInterface({ input, output });
 
 // --- CORES ANSI ---
 const RESET = "\x1b[0m";
-const VERDE = "\x1b[32m";    // Sucesso real (2xx)
-const LARANJA = "\x1b[33m";  // Regras de Negócio / Erros do Cliente (400)
-const VERMELHO = "\x1b[31m"; // Erros Críticos do Servidor (5xx)
-const CIANO = "\x1b[36m";    // Informativos
+const VERDE = "\x1b[32m";
+const LARANJA = "\x1b[33m";
+const VERMELHO = "\x1b[31m";
+const CIANO = "\x1b[36m";
 
-// --- FUNÇÕES AUXILIARES ---
-const ask = async (question) => {
-  const answer = await rl.question(`   ${CIANO}${question}${RESET}`);
-  return answer.trim();
+const ask = async (question) => (await rl.question(`   ${CIANO}${question}${RESET}`)).trim();
+
+const updateCookieJar = (response) => {
+  let cookies = [];
+  if (typeof response.headers.getSetCookie === 'function') {
+    cookies = response.headers.getSetCookie();
+  } else {
+    const raw = response.headers.get('set-cookie');
+    if (raw) cookies = [raw];
+  }
+  for (const cookie of cookies) {
+    const [nameValue] = cookie.split(';');
+    const eqIdx = nameValue.indexOf('=');
+    if (eqIdx === -1) continue;
+    const name = nameValue.slice(0, eqIdx).trim();
+    const value = nameValue.slice(eqIdx + 1).trim();
+    const isExpired = cookie.toLowerCase().includes('max-age=0') ||
+      cookie.toLowerCase().includes('expires=thu, 01 jan 1970');
+    if (!value || isExpired) delete cookieJar[name];
+    else cookieJar[name] = value;
+  }
+  fs.writeFileSync(TOKEN_FILE, JSON.stringify(cookieJar));
 };
+
+const buildCookieHeader = () =>
+  Object.entries(cookieJar).map(([k, v]) => `${k}=${v}`).join('; ');
 
 // --- ENGINE CENTRAL DE TESTE FORMATADO ---
 const executeTest = async (funcName, urlPath, method = 'GET', body = null, useAuth = false) => {
   console.log(`\ntestando ${funcName}....`);
 
   const start = Date.now();
-  let headers = { 'Content-Type': 'application/json' };
+  const headers = { 'Content-Type': 'application/json' };
 
-  if (useAuth) {
-    headers['Authorization'] = `Bearer ${globalToken}`;
+  if (useAuth && !cookieJar['auth_token']) {
+    console.log(`${LARANJA}   ⚠️ Cookie de auth não encontrado. Faça login primeiro.${RESET}`);
   }
+
+  const cookieHeader = buildCookieHeader();
+  if (cookieHeader) headers['Cookie'] = cookieHeader;
 
   try {
     const res = await fetch(`${BASE_URL}${urlPath}`, {
@@ -46,6 +75,8 @@ const executeTest = async (funcName, urlPath, method = 'GET', body = null, useAu
       body: body ? JSON.stringify(body) : null
     });
 
+    updateCookieJar(res);
+
     const duration = Date.now() - start;
     const data = await res.json().catch(() => ({}));
 
@@ -53,11 +84,10 @@ const executeTest = async (funcName, urlPath, method = 'GET', body = null, useAu
     let msg = data.message || data.error || JSON.stringify(data);
     let cor = VERDE;
 
-    // 🕵️ DETECÇÃO DA ESTRUTURA ENVELOPADA DO HELPER 'PAGINATED' (Status 400 dentro de HTTP 200)
     const ehErroEnvelopado = (res.status === 200 && data && (data.status === 400 || data.data === 400));
 
     if (ehErroEnvelopado) {
-      statusExibido = 400; // Altera virtualmente no log do terminal para 400
+      statusExibido = 400;
       msg = data.total || data.message || "Erro de validação de regra de negócio";
       cor = LARANJA;
     } else if (res.status >= 400 && res.status < 500) {
@@ -66,12 +96,6 @@ const executeTest = async (funcName, urlPath, method = 'GET', body = null, useAu
       cor = VERMELHO;
     }
 
-    if (data.token) {
-      globalToken = data.token;
-      fs.writeFileSync(TOKEN_FILE, globalToken);
-    }
-
-    // Truncagem inteligente para listagens limpas e sem poluição visual no terminal
     if (!ehErroEnvelopado && msg.length > 120) {
       if (Array.isArray(data.rows) || Array.isArray(data.data) || Array.isArray(data)) {
         const totalItens = (data.rows || data.data || data).length;
@@ -94,18 +118,18 @@ const executeTest = async (funcName, urlPath, method = 'GET', body = null, useAu
 // --- DUMP DE DADOS (PRE-FETCH PARA PARÂMETROS) ---
 const fetchListings = async (endpoint) => {
   try {
-    const headers = globalToken ? { 'Authorization': `Bearer ${globalToken}` } : {};
+    const headers = {};
+    const cookieHeader = buildCookieHeader();
+    if (cookieHeader) headers['Cookie'] = cookieHeader;
     const res = await fetch(`${BASE_URL}${endpoint}`, { headers });
     const data = await res.json();
 
     if (res.status !== 200) return [];
-
     if (Array.isArray(data)) return data;
     if (data.rows && Array.isArray(data.rows)) return data.rows;
     if (data.data && Array.isArray(data.data)) return data.data;
     if (data.foruns && Array.isArray(data.foruns)) return data.foruns;
     if (data.usuarios && Array.isArray(data.usuarios)) return data.usuarios;
-
     return [];
   } catch {
     return [];
@@ -176,11 +200,12 @@ async function runRunner() {
     console.log("==================================================");
 
     let infoUser = "🔒 DESLOGADO";
-    if (globalToken) {
+    const authToken = cookieJar['auth_token'];
+    if (authToken) {
       try {
-        const payload = jwt.verify(globalToken, passAccess);
+        const payload = jwt.verify(authToken, passAccess);
         infoUser = `🔑 ID: ${payload.id} | CARGO: ${payload.cargo}`;
-      } catch { infoUser = "❌ TOKEN INVÁLIDO/EXPIRADO"; }
+      } catch { infoUser = "❌ COOKIE INVÁLIDO/EXPIRADO"; }
     }
     console.log(`STATUS ATUAL: ${infoUser}`);
     console.log("==================================================");
@@ -207,22 +232,21 @@ async function runRunner() {
 
       const userTest = `user_${Math.floor(Math.random() * 100000)}`;
 
-      // 1. Sign-in
       const r1 = await executeTest("auth_signin", "/auth/sign-in", "POST", {
         email: emailInput, name: "Automated Tester", username: userTest, password: "securePassword123", twofacauth: false
       });
 
-      // 2. Verify Sign-in
       if (r1.status === 200 || r1.status === 201) {
         console.log(`\n📬 Verifique o console do seu servidor backend para copiar o PIN gerado.`);
         const pin = await ask("Digite o PIN de 6 dígitos recebido: ");
-        await executeTest("auth_verify_signin", "/auth/verify-sign-in", "POST", { signupToken: r1.data.signupToken, pin_input: pin });
+        // signupToken may come from cookie (set by server) or response body — pass both paths
+        await executeTest("auth_verify_signin", "/auth/verify-sign-in", "POST", {
+          signupToken: r1.data.signupToken || "",
+          pin_input: pin
+        });
       }
 
-      // 3. Login
       await executeTest("auth_login", "/auth/login", "POST", { userEmail: emailInput, password: "securePassword123" });
-
-      // 4. Debug list logins
       await executeTest("auth_print_logins", "/auth/print/logins", "GET");
     }
 
@@ -241,10 +265,7 @@ async function runRunner() {
         const escolhaRole = await ask("Escolha o nível do cargo (1, 2 ou 3): ");
 
         let roleNum = parseInt(escolhaRole, 10);
-        if (![1, 2, 3].includes(roleNum)) {
-          console.log("   ❌ Opção inválida! Aplicando padrão: 1 (USUARIO)");
-          roleNum = 1;
-        }
+        if (![1, 2, 3].includes(roleNum)) { console.log("   ❌ Opção inválida! Aplicando padrão: 1 (USUARIO)"); roleNum = 1; }
 
         await executeTest("user_change_role", `/user/${targetUserId}/change_role`, "PATCH", { roleNum }, true);
         await executeTest("user_change_description", `/user/${targetUserId}/description`, "PATCH", { description: "Biografia dinâmica" }, true);
@@ -265,13 +286,12 @@ async function runRunner() {
         await executeTest("forums_toggle_follow", `/forums/${forumId}/follow`, "POST", null, true);
         await executeTest("forums_list_followers", `/forums/${forumId}/list`, "GET");
         await executeTest("forums_list_files_paginated", `/forums/${forumId}/files/page/1`, "GET");
-
         await executeTest("forums_list_files_year", `/forums/${forumId}/files/year`, "GET");
+
         const anoEscolhido = await interagirParametros('year', forumId);
-
         await executeTest("forums_list_tags_year", `/forums/${forumId}/files/year/${anoEscolhido}`, "GET");
-        const tagEscolhida = await interagirParametros('tag', { forum_id: forumId, year: anoEscolhido });
 
+        const tagEscolhida = await interagirParametros('tag', { forum_id: forumId, year: anoEscolhido });
         await executeTest("forums_list_posts_year_tag", `/forums/${forumId}/files/year/${anoEscolhido}/tag/${encodeURIComponent(tagEscolhida)}`, "GET");
       }
     }
@@ -292,9 +312,7 @@ async function runRunner() {
           await executeTest("posts_get_single", `/posts/${targetPost}`, "GET");
           await executeTest("posts_create_comment", `/posts/${targetPost}/comments/create`, "POST", { content: "Comentário automático" }, true);
           await executeTest("posts_list_comments", `/posts/${targetPost}/comments`, "GET");
-
-          const rateVector = [[parseInt(targetPost, 10)], [1]];
-          await executeTest("posts_rate_batch", "/posts/rate-content", "PATCH", { rate_vector: rateVector }, true);
+          await executeTest("posts_rate_batch", "/posts/rate-content", "PATCH", { rate_vector: [[parseInt(targetPost, 10)], [1]] }, true);
         }
       }
     }
@@ -310,15 +328,11 @@ async function runRunner() {
       const denunciaId = await interagirParametros('denuncia_id');
       if (denunciaId) {
         console.log(`\nConfiguração de Fechamento da Denúncia:`);
-        console.log(` 1. RESOLVIDA (Aplica punição imediata)`);
-        console.log(` 2. IGNORADA (Ajustado para validação Zod)`);
+        console.log(` 1. RESOLVIDA  2. IGNORADA`);
         const opStatus = await ask("Escolha o status desejado (1 ou 2): ");
 
         let payload = { novo_status: opStatus === '1' ? "RESOLVIDA" : "IGNORADA" };
-        if (payload.novo_status === "RESOLVIDA") {
-          payload.punicao = 0;
-          payload.tempo_silencio = "";
-        }
+        if (payload.novo_status === "RESOLVIDA") { payload.punicao = 0; payload.tempo_silencio = ""; }
 
         await executeTest("denuncia_resolve_patch", `/denuncias/${denunciaId}/resolver`, "PATCH", payload, true);
       }
@@ -333,6 +347,7 @@ async function runRunner() {
         console.log("   ❌ Erro: Email e Senha são obrigatórios para efetuar o login.");
       } else {
         await executeTest("auth_login_direto", "/auth/login", "POST", { userEmail, password });
+        if (cookieJar['auth_token']) console.log(`${VERDE}   🍪 Cookie auth_token recebido e salvo.${RESET}`);
       }
     }
 
