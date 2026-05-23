@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
 import NavBar from "@/components/navbar";
 import PostCard from "@/components/post-card";
 import {
@@ -10,17 +9,16 @@ import {
   Users,
   Calendar,
   FileText,
-  BookOpen,
   Paperclip,
   UserPlus,
   UserCheck,
 } from "lucide-react";
-import { getUserByUsername, getUserPosts, getUserFollowedForums, followUser, isFollowingUser } from "@/lib/api/users";
+import { getUserByUsername, getUserPosts, followUser, isFollowingUser } from "@/lib/api/users";
 import { useCurrentUser } from "@/context/current-user-context";
 import { votePost } from "@/lib/api/posts";
-import type { User as UserType, Post, Forum } from "@/lib/api/types";
+import type { User as UserType, Post } from "@/lib/api/types";
 
-type Tab = "posts" | "forums" | "arquivos";
+type Tab = "posts" | "arquivos";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
@@ -57,10 +55,6 @@ export default function UserProfilePage() {
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [postsLoading, setPostsLoading] = useState(false);
-  const [forums, setForums] = useState<Forum[]>([]);
-  const [forumsLoading, setForumsLoading] = useState(false);
-  const [forumsError, setForumsError] = useState(false);
-
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
 
@@ -85,14 +79,6 @@ export default function UserProfilePage() {
 
   function handleTabChange(tab: Tab) {
     setActiveTab(tab);
-    if (tab === "forums" && forums.length === 0 && !forumsLoading && profile) {
-      setForumsLoading(true);
-      setForumsError(false);
-      getUserFollowedForums(String(profile.id))
-        .then(setForums)
-        .catch(() => setForumsError(true))
-        .finally(() => setForumsLoading(false));
-    }
   }
 
   async function handleFollow() {
@@ -122,7 +108,6 @@ export default function UserProfilePage() {
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode; count?: number }[] = [
     { id: "posts", label: "Posts", icon: <FileText size={14} />, count: posts.length },
-    { id: "forums", label: "Fóruns seguidos", icon: <BookOpen size={14} /> },
     { id: "arquivos", label: "Arquivos", icon: <Paperclip size={14} />, count: filePosts.length },
   ];
 
@@ -279,48 +264,6 @@ export default function UserProfilePage() {
                       initialVote={post.userVote}
                       onVote={(v) => votePost(String(post.id), v).catch(() => {})}
                     />
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-
-          {/* Forums tab */}
-          {activeTab === "forums" && (
-            <>
-              {forumsLoading && (
-                <p className="text-text-muted text-sm animate-fade-in py-4">Carregando fóruns...</p>
-              )}
-              {forumsError && (
-                <p className="text-sm text-red-400 py-4">Não foi possível carregar os fóruns.</p>
-              )}
-              {!forumsLoading && !forumsError && forums.length === 0 && (
-                <p className="text-text-muted text-sm py-8 text-center">Nenhum fórum seguido.</p>
-              )}
-              {!forumsLoading && forums.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {forums.map((forum) => (
-                    <Link
-                      key={forum.id}
-                      href={`/v/${encodeURIComponent(forum.nome)}`}
-                      className="flex items-center gap-3 bg-surface-raised border border-surface-overlay rounded-xl p-3 hover:border-accent/30 transition-all duration-200"
-                    >
-                      <div className="w-10 h-10 rounded-full bg-surface-overlay border border-accent/10 flex items-center justify-center overflow-hidden shrink-0">
-                        {forum.img_perfil ? (
-                          <img src={forum.img_perfil} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <BookOpen size={16} className="text-text-muted" />
-                        )}
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-text-primary text-sm font-semibold truncate">
-                          v/{forum.nome}
-                        </span>
-                        {forum.descricao && (
-                          <span className="text-text-muted text-xs truncate">{forum.descricao}</span>
-                        )}
-                      </div>
-                    </Link>
                   ))}
                 </div>
               )}

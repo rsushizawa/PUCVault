@@ -127,9 +127,6 @@ exports.createForum = async (req, res) => {
 const descriptionSchema = z.object({
   description: z.string().min(8, "Descrição(mínimo 8 caracteres)").max(100),
 });
-const descriptionSchema = z.object({
-  description: z.string().min(8, "Descrição(mínimo 8 caracteres)").max(100),
-});
 
 exports.updateForumDescription = (req, res) => {
   try {
@@ -167,8 +164,6 @@ exports.validateForum = (req, res) => {
     const { forum_id } = req.params;
     const { forumState } = req.body;
     let status;
-    if (forumState === 1) status = "ATIVO";
-    else if (forumState === 0) status = "RECUSADO";
     if (forumState === 1) status = "ATIVO";
     else if (forumState === 0) status = "RECUSADO";
     else {

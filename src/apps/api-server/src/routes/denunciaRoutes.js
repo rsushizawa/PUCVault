@@ -15,12 +15,6 @@ router.get(
   denunciaController.listarDenuncias,
 );
 
-router.patch(
-  "/:denuncia_id/resolver",
-  authMiddleware,
-  denunciaController.denunciarConteudo,
-);
-
 router.get(
   "/users",
   authMiddleware,
@@ -38,12 +32,6 @@ router.get(
   authMiddleware,
   roleMiddleware(["ADMIN", "SUPERADMIN"]),
   denunciaController.listarComentariosDenunciados,
-);
-router.get(
-  "/",
-  authMiddleware,
-  roleMiddleware(["ADMIN", "SUPERADMIN"]),
-  denunciaController.listarDenuncias,
 );
 
 router.patch(

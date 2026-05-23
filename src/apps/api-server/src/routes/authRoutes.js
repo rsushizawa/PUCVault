@@ -1,27 +1,11 @@
 const express = require("express");
 const router = express.Router();
-<<<<<<< HEAD
 const authController = require("../controllers/authController.js");
+const authMiddleware = require("../middlewares/authMiddleware.js");
 
 router.get("/print/logins", authController.print);
 router.post("/login", authController.login);
-router.post("/sign-in", authController.signin);
-=======
-const authController = require('../controllers/authController.js');
-const authMiddleware = require('../middlewares/authMiddleware.js');
-
-router.get('/print/logins',
-  authController.print
-);
-
-router.post('/login',
-  authController.login
-);
-
-router.post('/verify-login',
-  authController.verifyLogin
-);
->>>>>>> 3c7af4a (otimizado backend, adicionado verificacao de email quando fizer signin, adicionar opcao de habilitar 2fa, adicionado opcao, overhaul de arquivos, feito um código pra teste backend, entre outras coisas)
+router.post("/verify-login", authController.verifyLogin);
 
 router.post('/sign-in',
   authController.signin
