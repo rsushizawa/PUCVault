@@ -6,31 +6,48 @@ const path = require('path');
 const envPath = path.resolve(__dirname, '../src/.env');
 const BASE_URL = "http://localhost:8000";
 const TOKEN_FILE = path.join(__dirname, '.token_cache');
-let globalToken = "";
 require('dotenv').config({ path: envPath });
 
 const passAccess = process.env.JWT_SECRET;
-// Caches temporários em memória para facilitar os testes das rotas stateless de PIN
+
+// Cookie jar — persists auth_token and other session cookies across requests
+const cookieJar = {};
+if (fs.existsSync(TOKEN_FILE)) {
+  try { Object.assign(cookieJar, JSON.parse(fs.readFileSync(TOKEN_FILE, 'utf8'))); } catch { /* ignore corrupt cache */ }
+}
+
 let lastSignupToken = "";
 let lastTwoFacToken = "";
 let lastPinToken = "";
 
-// Carrega o token da sessão anterior
-if (fs.existsSync(TOKEN_FILE)) {
-  globalToken = fs.readFileSync(TOKEN_FILE, 'utf8');
-}
-
-
 const rl = readline.createInterface({ input, output });
+const ask = async (question) => (await rl.question(`   ${question}`)).trim();
+const pause = async () => { await ask("\nPressione ENTER para voltar ao menu..."); };
 
-const ask = async (question) => {
-  const answer = await rl.question(`   ${question}`);
-  return answer.trim();
+const updateCookieJar = (response) => {
+  let cookies = [];
+  if (typeof response.headers.getSetCookie === 'function') {
+    cookies = response.headers.getSetCookie();
+  } else {
+    const raw = response.headers.get('set-cookie');
+    if (raw) cookies = [raw];
+  }
+  for (const cookie of cookies) {
+    const [nameValue] = cookie.split(';');
+    const eqIdx = nameValue.indexOf('=');
+    if (eqIdx === -1) continue;
+    const name = nameValue.slice(0, eqIdx).trim();
+    const value = nameValue.slice(eqIdx + 1).trim();
+    const isExpired = cookie.toLowerCase().includes('max-age=0') ||
+      cookie.toLowerCase().includes('expires=thu, 01 jan 1970');
+    if (!value || isExpired) delete cookieJar[name];
+    else cookieJar[name] = value;
+  }
+  fs.writeFileSync(TOKEN_FILE, JSON.stringify(cookieJar));
 };
 
-const pause = async () => {
-  await ask("\nPressione ENTER para voltar ao menu...");
-};
+const buildCookieHeader = () =>
+  Object.entries(cookieJar).map(([k, v]) => `${k}=${v}`).join('; ');
 
 // --- FUNÇÃO CENTRAL DE REQUISIÇÃO ---
 const testRoute = async (desc, urlPath, method = 'GET', body = null, useAuth = false, filePath = null) => {
@@ -41,41 +58,33 @@ const testRoute = async (desc, urlPath, method = 'GET', body = null, useAuth = f
     let headers = {};
     let requestBody;
 
-    if (useAuth) {
-      if (!globalToken) console.log("   ⚠️ AVISO: Token não encontrado. Faça login em Auth.");
-      headers['Authorization'] = `Bearer ${globalToken}`;
+    if (useAuth && !cookieJar['auth_token']) {
+      console.log("   ⚠️ AVISO: Cookie de auth não encontrado. Faça login em Auth.");
     }
+
+    const cookieHeader = buildCookieHeader();
+    if (cookieHeader) headers['Cookie'] = cookieHeader;
 
     if (filePath && fs.existsSync(filePath)) {
       const formData = new FormData();
       const fileBuffer = fs.readFileSync(filePath);
-
       const ext = path.extname(filePath).toLowerCase();
       let mimeType = 'application/octet-stream';
       if (ext === '.jpg' || ext === '.jpeg') mimeType = 'image/jpeg';
       else if (ext === '.png') mimeType = 'image/png';
       else if (ext === '.webp') mimeType = 'image/webp';
       else if (ext === '.gif') mimeType = 'image/gif';
-
       const blob = new Blob([fileBuffer], { type: mimeType });
       formData.append('file', blob, path.basename(filePath));
-
-      if (body) {
-        for (const key in body) {
-          formData.append(key, body[key]);
-        }
-      }
+      if (body) for (const key in body) formData.append(key, body[key]);
       requestBody = formData;
     } else {
       headers['Content-Type'] = 'application/json';
       requestBody = body ? JSON.stringify(body) : null;
     }
 
-    const res = await fetch(`${BASE_URL}${urlPath}`, {
-      method,
-      headers,
-      body: requestBody
-    });
+    const res = await fetch(`${BASE_URL}${urlPath}`, { method, headers, body: requestBody });
+    updateCookieJar(res);
 
     const duration = Date.now() - start;
     const data = await res.json().catch(() => ({}));
@@ -87,31 +96,14 @@ const testRoute = async (desc, urlPath, method = 'GET', body = null, useAuth = f
       console.log("   Motivo:", JSON.stringify(data, null, 2));
     } else {
       console.log("   Resposta:", JSON.stringify(data).substring(0, 700) + "...");
-
-      // --- CAPTURA SEGURA DE TOKEN DE ACESSO ---
-      if (data.token) {
-        globalToken = data.token;
-        fs.writeFileSync(TOKEN_FILE, globalToken);
-        console.log("   💾 Token de acesso final salvo localmente.");
-      }
+      if (cookieJar['auth_token']) console.log("   🍪 Cookie auth_token salvo.");
     }
 
-    // --- CAPTURA AUTOMÁTICA DE TOKENS TEMPORÁRIOS ---
-    if (data.signupToken) {
-      lastSignupToken = data.signupToken;
-      console.log("   💾 signupToken temporário interceptado e guardado na memória.");
-    }
-    if (data.twoFacToken) {
-      lastTwoFacToken = data.twoFacToken;
-      console.log("   💾 twoFacToken temporário interceptado e guardado na memória.");
-    }
-    if (data.pinToken) {
-      lastPinToken = data.pinToken;
-      console.log("   💾 pinToken de recuperação interceptado e guardado na memória.");
-    }
+    if (data.signupToken) { lastSignupToken = data.signupToken; console.log("   💾 signupToken temporário interceptado e guardado na memória."); }
+    if (data.twoFacToken) { lastTwoFacToken = data.twoFacToken; console.log("   💾 twoFacToken temporário interceptado e guardado na memória."); }
+    if (data.pinToken) { lastPinToken = data.pinToken; console.log("   💾 pinToken de recuperação interceptado e guardado na memória."); }
 
     return { status: res.status, data };
-
   } catch (err) {
     console.log(`❌ Erro na conexão: ${err.message}`);
     return { status: 500, data: { error: err.message } };
@@ -143,18 +135,15 @@ async function menuAuth() {
       const password = await ask("Senha: ");
       const check2FA = await ask("Ativar Verificação de Duas Etapas (2FA)? (s/n): ");
       const twofacauth = check2FA.toLowerCase() === 's';
-
       await testRoute("Sign-in", "/auth/sign-in", "POST", { email, name, username, password, twofacauth });
     }
     else if (opt === '2') {
       let tokenToUse = lastSignupToken;
       if (tokenToUse) {
         const useCache = await ask("Encontrei um signupToken na memória. Deseja usá-lo? (S/n): ");
-        if (useCache.toLowerCase() === 'n') {
-          tokenToUse = await ask("Cole o seu signupToken completo: ");
-        }
+        if (useCache.toLowerCase() === 'n') tokenToUse = await ask("Cole o seu signupToken completo: ");
       } else {
-        tokenToUse = await ask("Cole o seu signupToken completo: ");
+        tokenToUse = await ask("Cole o seu signupToken completo (ou ENTER se veio via cookie): ");
       }
       const pin_input = await ask("Digite o PIN de 6 dígitos recebido por e-mail: ");
       await testRoute("Confirmar Cadastro", "/auth/verify-sign-in", "POST", { signupToken: tokenToUse, pin_input });
@@ -168,11 +157,9 @@ async function menuAuth() {
       let tokenToUse = lastTwoFacToken;
       if (tokenToUse) {
         const useCache = await ask("Encontrei um twoFacToken na memória. Deseja usá-lo? (S/n): ");
-        if (useCache.toLowerCase() === 'n') {
-          tokenToUse = await ask("Cole o seu twoFacToken completo: ");
-        }
+        if (useCache.toLowerCase() === 'n') tokenToUse = await ask("Cole o seu twoFacToken completo: ");
       } else {
-        tokenToUse = await ask("Cole o seu twoFacToken completo: ");
+        tokenToUse = await ask("Cole o seu twoFacToken completo (ou ENTER se veio via cookie): ");
       }
       const pin_input = await ask("Digite o PIN de 2FA recebido por e-mail: ");
       await testRoute("Confirmar Login 2FA", "/auth/verify-login", "POST", { twoFacToken: tokenToUse, pin_input });
@@ -191,41 +178,23 @@ async function menuAuth() {
       let tokenToUse = lastPinToken;
       if (tokenToUse) {
         const useCache = await ask("Encontrei um pinToken na memória. Deseja usá-lo? (S/n): ");
-        if (useCache.toLowerCase() === 'n') {
-          tokenToUse = await ask("Cole o seu pinToken completo: ");
-        }
+        if (useCache.toLowerCase() === 'n') tokenToUse = await ask("Cole o seu pinToken completo: ");
       } else {
         tokenToUse = await ask("Cole o seu pinToken completo: ");
       }
       const pin = await ask("Digite o PIN de recuperação recebido: ");
       const new_password = await ask("Nova Senha: ");
       const confirm = await ask("Confirme a Nova Senha: ");
-
-      await testRoute("Confirmar Recuperação", "/auth/forgot-password", "PATCH", {
-        pinToken: tokenToUse,
-        pin,
-        new_password,
-        confirm
-      });
+      await testRoute("Confirmar Recuperação", "/auth/forgot-password", "PATCH", { pinToken: tokenToUse, pin, new_password, confirm });
     }
     else if (opt === '8') {
       console.log("\n🔄 Solicitando logout ao servidor...");
-
-      // 1. Dispara o POST para o servidor invalidar o token lá
       const resultado = await testRoute("Logout no Servidor", "/auth/logout", "POST", null, true);
 
-      // 2. Se o servidor respondeu com sucesso (status entre 200 e 299)
       if (resultado && resultado.status >= 200 && resultado.status < 300) {
-        console.log("🧹 Limpando credenciais locais do cache...");
-
-        // Apaga a variável na memória do terminal
-        globalToken = "";
-
-        // Limpa o arquivo físico de cache para deslogar definitivamente
-        if (fs.existsSync(TOKEN_FILE)) {
-          fs.writeFileSync(TOKEN_FILE, "");
-        }
-
+        console.log("🧹 Limpando cookies de sessão locais...");
+        for (const key of Object.keys(cookieJar)) delete cookieJar[key];
+        fs.writeFileSync(TOKEN_FILE, JSON.stringify({}));
         console.log("✅ Perfeito! Você foi deslogado do Servidor e do Cliente.");
       } else {
         console.log("❌ O servidor rejeitou o logout ou ocorreu um erro.");
@@ -364,23 +333,12 @@ async function menuPosts() {
       const fId = await ask("Forum ID: ");
       const title = await ask("Título: ");
       const content = await ask("Conteúdo: ");
-
       const tagsInput = await ask("IDs das Tags do post (Separados por vírgula, ex: 1,2 ou deixe vazio): ");
-
       const tags = tagsInput
         ? tagsInput.split(',').map(t => parseInt(t.trim(), 10)).filter(t => !isNaN(t))
         : [];
-
       const fileP = await ask("Caminho do anexo (Deixe vazio para nenhum): ");
-
-      await testRoute(
-        "Criar Post",
-        `/posts/${fId}/create`,
-        "POST",
-        { title, content, tags },
-        true,
-        fileP || null
-      );
+      await testRoute("Criar Post", `/posts/${fId}/create`, "POST", { title, content, tags }, true, fileP || null);
     } else if (opt === '2') {
       const fId = await ask("Forum ID: ");
       const page = await ask("Página (ex: 1): ");
@@ -400,19 +358,14 @@ async function menuPosts() {
       await testRoute("Listar Comentários", `/posts/${pId}/comments`, "GET");
     } else if (opt === '7') {
       console.log("\n--- AVALIAR CONTEÚDO EM LOTE ---");
-
       const idsRow = [];
       const ratingsRow = [];
 
       while (true) {
         const cIdInput = await ask("Content ID (ou digite 'fim' para encerrar e enviar): ");
         if (cIdInput.toLowerCase() === 'fim') break;
-
         const cId = parseInt(cIdInput, 10);
-        if (isNaN(cId)) {
-          console.log("   ❌ ID Inválido. Digite um número inteiro.");
-          continue;
-        }
+        if (isNaN(cId)) { console.log("   ❌ ID Inválido."); continue; }
 
         console.log("     1) Like (Upvote = 1)");
         console.log("     0) Tirar voto");
@@ -423,29 +376,24 @@ async function menuPosts() {
         if (voto === '1') valorRating = 1;
         else if (voto === '-1') valorRating = -1;
         else if (voto === '0') valorRating = 0;
-        else {
-          console.log("   ❌ Opção de voto inválida. Este item não foi adicionado.");
-          continue;
-        }
+        else { console.log("   ❌ Opção de voto inválida."); continue; }
 
         idsRow.push(cId);
         ratingsRow.push(valorRating);
-        console.log(`   📌 Adicionado à matriz: ID ${cId} com peso [${valorRating}]`);
+        console.log(`   📌 Adicionado: ID ${cId} com peso [${valorRating}]`);
         console.log("---------------------------------------------------------");
       }
 
       if (idsRow.length === 0) {
-        console.log("   ⚠️ Nenhuma avaliação foi inserida. Operação cancelada.");
+        console.log("   ⚠️ Nenhuma avaliação inserida. Operação cancelada.");
       } else {
-        const rate_vector = [idsRow, ratingsRow];
-        await testRoute("Rate Content Batch", "/posts/rate-content", "PATCH", { rate_vector }, true);
+        await testRoute("Rate Content Batch", "/posts/rate-content", "PATCH", { rate_vector: [idsRow, ratingsRow] }, true);
       }
     }
     await pause();
   }
 }
 
-// --- 🏷️ NOVO SUBMENU DE TAGS ---
 async function menuTags() {
   while (true) {
     console.log("\n--- [5] CONTROLE DE TAGS ---");
@@ -492,7 +440,6 @@ async function menuImages() {
     if (opt === '0') break;
 
     let loc = "";
-
     if (opt === '1' || opt === '2') {
       loc = (opt === '1') ? "perfil" : "banner";
       const fileP = await ask("Caminho da imagem: ");
@@ -526,7 +473,6 @@ function printReportTypes() {
   console.log("  6. OUTRO");
 }
 
-// --- 🚨 SUBMENU DE DENÚNCIAS TOTALMENTE ATUALIZADO COMS OS ENDPOINTS SOLICITADOS ---
 async function menuReport() {
   while (true) {
     console.log("\n--- [7] DENÚNCIAS (REPORT) ---");
@@ -543,12 +489,8 @@ async function menuReport() {
     if (opt === '0') break;
 
     const tipoReportMap = {
-      '1': "CONTEUDO_INADEQUADO",
-      '2': "SPAM",
-      '3': "PLÁGIO",
-      '4': "ASSÉDIO",
-      '5': "INFORMACAO_FALSA",
-      '6': "OUTRO"
+      '1': "CONTEUDO_INADEQUADO", '2': "SPAM", '3': "PLÁGIO",
+      '4': "ASSÉDIO", '5': "INFORMACAO_FALSA", '6': "OUTRO"
     };
 
     if (opt === '1') {
@@ -566,28 +508,21 @@ async function menuReport() {
       await testRoute("Report Content", `/denuncias/conteudo`, "POST", { tipo, conteudo_id }, true);
     }
     else if (opt === '3') {
-      console.log("\nFiltro de Status opcional (Deixe vazio para enviar NULL e usar o padrão):");
-      const statusInput = await ask("Status (RESOLVIDA ou IGNORADA): ");
-      const payload = statusInput ? { status: statusInput } : { status: null };
-      await testRoute("Listar Usuários Denunciados", `/denuncias/users`, "GET", payload, true);
+      const statusInput = await ask("Status (RESOLVIDA ou IGNORADA, ou ENTER para todos): ");
+      await testRoute("Listar Usuários Denunciados", `/denuncias/users`, "GET", statusInput ? { status: statusInput } : { status: null }, true);
     }
     else if (opt === '4') {
-      console.log("\nFiltro de Status opcional (Deixe vazio para enviar NULL e usar o padrão):");
-      const statusInput = await ask("Status (RESOLVIDA ou IGNORADA): ");
-      const payload = statusInput ? { status: statusInput } : { status: null };
-      await testRoute("Listar Postagens Denunciadas", `/denuncias/posts`, "GET", payload, true);
+      const statusInput = await ask("Status (RESOLVIDA ou IGNORADA, ou ENTER para todos): ");
+      await testRoute("Listar Postagens Denunciadas", `/denuncias/posts`, "GET", statusInput ? { status: statusInput } : { status: null }, true);
     }
     else if (opt === '5') {
-      console.log("\nFiltro de Status opcional (Deixe vazio para enviar NULL e usar o padrão):");
-      const statusInput = await ask("Status (RESOLVIDA ou IGNORADA): ");
-      const payload = statusInput ? { status: statusInput } : { status: null };
-      await testRoute("Listar Comentários Denunciados", `/denuncias/comentarios`, "GET", payload, true);
+      const statusInput = await ask("Status (RESOLVIDA ou IGNORADA, ou ENTER para todos): ");
+      await testRoute("Listar Comentários Denunciados", `/denuncias/comentarios`, "GET", statusInput ? { status: statusInput } : { status: null }, true);
     }
     else if (opt === '6') {
       await testRoute("Listar Todas as Denúncias", `/denuncias/`, "GET", null, true);
     }
     else if (opt === '7') {
-      console.log("\n--- RESOLVER DENÚNCIA ---");
       const denuncia_id = parseInt(await ask("ID da Denúncia que deseja resolver: "), 10);
 
       console.log("\nDefina o Novo Status:");
@@ -597,11 +532,7 @@ async function menuReport() {
       const statusMap = { '1': "RESOLVIDA", '2': "IGNORADA" };
       const novo_status = statusMap[escolhaStatus];
 
-      if (!novo_status) {
-        console.log("   ❌ Opção de status inválida. Operação cancelada.");
-        await pause();
-        continue;
-      }
+      if (!novo_status) { console.log("   ❌ Opção de status inválida."); await pause(); continue; }
 
       let punicao = null;
       let tempo_silencio = null;
@@ -613,48 +544,19 @@ async function menuReport() {
         console.log(" 2. Excluir Usuário permanentemente");
         console.log(" N. Nenhuma punição (Apenas fechar)");
         const escolhaPunicao = await ask('Escolha a opção (0, 1, 2 ou N): ');
-
-        if (['0', '1', '2'].includes(escolhaPunicao)) {
-          punicao = parseInt(escolhaPunicao, 10);
-        }
+        if (['0', '1', '2'].includes(escolhaPunicao)) punicao = parseInt(escolhaPunicao, 10);
 
         if (punicao === 1) {
           console.log("\nDefina o Tempo de Silenciamento:");
-          console.log(" 1. 1 Hora ('1 hour')");
-          console.log(" 2. 3 Horas ('3 hours')");
-          console.log(" 3. 6 Horas ('6 hours')");
-          console.log(" 4. 12 Horas ('12 hours')");
-          console.log(" 5. 1 Dia ('1 day')");
-          console.log(" 6. 3 Dias ('3 days')");
-          console.log(" 7. 7 Dias ('7 days')");
+          console.log(" 1. 1 Hora  2. 3 Horas  3. 6 Horas  4. 12 Horas");
+          console.log(" 5. 1 Dia   6. 3 Dias   7. 7 Dias");
           const escolhaTempo = await ask('Escolha a opção (1-7): ');
-
-          const tempoMap = {
-            '1': '1 hour',
-            '2': '3 hours',
-            '3': '6 hours',
-            '4': '12 hours',
-            '5': '1 day',
-            '6': '3 days',
-            '7': '7 days'
-          };
+          const tempoMap = { '1': '1 hour', '2': '3 hours', '3': '6 hours', '4': '12 hours', '5': '1 day', '6': '3 days', '7': '7 days' };
           tempo_silencio = tempoMap[escolhaTempo] || null;
         }
       }
 
-      const payload = {
-        novo_status,
-        punicao,
-        tempo_silencio
-      };
-
-      await testRoute(
-        "Resolve Report",
-        `/denuncias/${denuncia_id}/resolver`,
-        "PATCH",
-        payload,
-        true
-      );
+      await testRoute("Resolve Report", `/denuncias/${denuncia_id}/resolver`, "PATCH", { novo_status, punicao, tempo_silencio }, true);
     }
 
     await pause();
@@ -663,7 +565,6 @@ async function menuReport() {
 
 const jwt = require('jsonwebtoken');
 
-// --- MENU PRINCIPAL ---
 async function showMainMenu() {
   while (true) {
     console.clear();
@@ -672,19 +573,18 @@ async function showMainMenu() {
     console.log("=================================");
 
     let infoUsuarioHeader = "🔒 STATUS: DESLOGADO";
-
-    if (globalToken) {
+    const authToken = cookieJar['auth_token'];
+    if (authToken) {
       try {
-        const user = jwt.verify(globalToken, passAccess);
+        const user = jwt.verify(authToken, passAccess);
         infoUsuarioHeader = `🔑 ID: ${user.id} | CARGO: ${user.cargo || 'N/A'}`;
-      } catch (err) {
-        infoUsuarioHeader = "❌ STATUS: TOKEN EXPIRADO / INVÁLIDO";
+      } catch {
+        infoUsuarioHeader = "❌ STATUS: COOKIE EXPIRADO / INVÁLIDO";
       }
     }
 
     console.log(`STATUS: ${infoUsuarioHeader}`);
     console.log("=================================");
-
     console.log("\n 1. Autenticação & Senhas (PIN / 2FA)");
     console.log(" 2. Usuários (Perfil/Follow/Cargos)");
     console.log(" 3. Fóruns (Criação/Listagem)");
@@ -704,10 +604,7 @@ async function showMainMenu() {
     else if (choice === '5') await menuTags();
     else if (choice === '6') await menuImages();
     else if (choice === '7') await menuReport();
-    else {
-      console.log("   ❌ Opção inválida.");
-      await pause();
-    }
+    else { console.log("   ❌ Opção inválida."); await pause(); }
   }
   rl.close();
 }
