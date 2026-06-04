@@ -1,13 +1,15 @@
 "use client";
 
-export type Tab = "forum" | "arquivos";
+export type Tab = "forum" | "arquivos" | "moderação" | "config";
 
 interface TabsNavigationProps {
   activeTab: Tab;
   onTabChange: (tab: Tab) => void;
+  showMod?: boolean;
+  showConfig?: boolean;
 }
 
-const TABS: { id: Tab; label: string }[] = [
+const BASE_TABS: { id: Tab; label: string }[] = [
   { id: "forum", label: "Fórum" },
   { id: "arquivos", label: "Arquivos" },
 ];
@@ -15,11 +17,19 @@ const TABS: { id: Tab; label: string }[] = [
 export default function TabsNavigation({
   activeTab,
   onTabChange,
+  showMod = false,
+  showConfig = false,
 }: TabsNavigationProps) {
+  const tabs = [
+    ...BASE_TABS,
+    ...(showMod ? [{ id: "moderação" as Tab, label: "Moderação" }] : []),
+    ...(showConfig ? [{ id: "config" as Tab, label: "Configurações" }] : []),
+  ];
+
   return (
-    <nav className="bg-surface-base border-b border-surface-raised px-8 pb-px">
-      <div className="flex gap-8">
-        {TABS.map(({ id, label }) => {
+    <nav className="bg-surface-base border-b border-surface-raised px-4 sm:px-8 pb-px overflow-x-auto">
+      <div className="flex gap-6 sm:gap-8 min-w-max">
+        {tabs.map(({ id, label }) => {
           const isActive = activeTab === id;
           return (
             <button

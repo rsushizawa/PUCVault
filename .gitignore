@@ -5,6 +5,7 @@
 /src/api-server/node_modules
 /src/frontend/node
 /node_modules
+src/node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -85,9 +86,18 @@ next-env.d.ts
 
 CLAUDE.md
 AGENTS.md
+<<<<<<< HEAD
 src/node_modules
 
 # password
 .env
 .env.local
 .env.*.local
+node_modules/
+src/node_modules/
+
+# logs
+*.log
+logs/
+
+# package-lock.json

@@ -1,30 +1,6 @@
-const express = require('express');
-const cors = require('cors');
-const { z } = require('zod');
-const bcrypt = require('bcryptjs');
-const { Pool } = require('pg');
-const path = require('path');
+const db = require('../config/database');
 const { error, log } = require('console');
-const saltRounds = 10;
-const envPath = path.resolve(__dirname, '../../src/.env');
 
-require('dotenv').config({ path: envPath });
-const hostAccess = process.env.DB_HOST;
-const userAccess = process.env.DB_USER;
-const passAccess = process.env.DB_PASS;
-const portAccess = process.env.DB_PORT;
-const databaseAcess = process.env.DB_NAME;
-
-const pool = new Pool({
-  host: hostAccess,
-  port: portAccess,
-  database: databaseAcess,
-  user: userAccess,
-  password: passAccess,
-  ssl: {
-    rejectUnauthorized: false
-  }
-});
 
 function errorMsg(error) {
   console.error('--- DETALHES DO ERRO ---');
@@ -41,26 +17,72 @@ function errorMsg(error) {
 module.exports = {
 
   async printForums() {
-    let client;
     try {
-      client = await pool.connect();
       console.log('conexão sucedida printForums');
-      const res = await pool.query('SELECT * FROM publico.listar_foruns()');
+      const res = await db.query('SELECT * FROM publico.listar_foruns()');
 
-      console.table(res.rows);
+      return res;
     } catch (error) {
       errorMsg(error);
     }
   },
 
+  async listForumFiles(forum_id, page_num) {
+    try {
+      console.log('conexão sucedida listForumFiles');
+      const res = await db.query('SELECT * FROM publico.listar_arquivos_forum( $1, $2 )', [forum_id, page_num]);
+
+      return res;
+    } catch (error) {
+      errorMsg(error);
+    }
+  },
+
+  async checkUserForum(user_id, forum_id) {
+    try {
+      console.log('conexão sucedida checkUserForum');
+      const res = await db.query('SELECT * FROM publico.checar_se_usuario_segue_forum($1, $2)', [user_id, forum_id]);
+      return res;
+
+    } catch (error) {
+      errorMsg(error);
+    }
+  },
+
+  async listTagsFilesYear(forum_id, year) {
+    try {
+      console.log('conexão sucedida listTagsFilesYear');
+      const res = await db.query('SELECT * FROM publico.listar_tags_arquivo_por_ano( $1, $2 )', [forum_id, year]);
+      return res;
+    } catch (error) {
+      errorMsg(error);
+    }
+  },
+
+  async listPostFilesYear(forum_id, year, tag) {
+    try {
+      console.log('conexão sucedida listPostFilesYear');
+      const res = await db.query('SELECT * FROM publico.listar_postagens_arquivo ($1, $2, $3)', [forum_id, year, tag]);
+      return res.rows;
+    } catch (error) {
+      errorMsg(error);
+    }
+  },
+
+  async listForumFilesYear(forum_id) {
+    try {
+      console.log('conexão sucedida listForumFilesYear');
+      const res = await db.query('SELECT * FROM publico.listar_anos_com_arquivo( $1 )', [forum_id]);
+      return res.rows;
+    } catch (error) {
+      errorMsg(error);
+    }
+  },
 
   async searchForums(name) {
-    let connect;
     try {
-      connect = await pool.connect();
       console.log('conexão sucedida searchForums');
-
-      let returnvalue = await pool.query('SELECT * FROM publico.buscar_forum_por_nome( $1 )', [name]);
+      let returnvalue = await db.query('SELECT * FROM publico.buscar_forum_por_nome( $1 )', [name]);
       if (returnvalue.rows[0] === 0) {
         return null;
       }
@@ -72,70 +94,72 @@ module.exports = {
 
 
   async createForum(name, description, user_id) {
-    let connect;
     try {
-      connect = await pool.connect();
       console.log('conexão sucedida createForum');
-
-      await pool.query('CALL publico.inserir_forum( $1, $2, $3)', [name, description, user_id]);
-
+      await db.query('CALL publico.inserir_forum( $1, $2, $3)', [name, description, user_id]);
     } catch (error) {
       errorMsg(error);
     }
   },
 
   async updateForumDescription(forum_id, user_id, newDescription) {
-    let connect;
     try {
-      connect = await pool.connect();
       console.log('conexão sucedida updateForumDescription');
-
-      await pool.query('CALL publico.atualizar_descricao_forum( $1, $2, $3 )', [forum_id, user_id, newDescription]);
-
+      await db.query('CALL publico.atualizar_descricao_forum( $1, $2, $3 )', [forum_id, user_id, newDescription]);
     } catch (error) {
       errorMsg(error);
     }
   },
 
   async validateForum(forum_id, validator_id, forumState) {
-    let connect;
     try {
-      connect = await pool.connect();
       console.log('conexão sucedida validateForum');
-
-      await pool.query('CALL publico.validar_forum($1,$2,$3)', [forum_id, validator_id, forumState]);
-
+      await db.query('CALL publico.validar_forum($1,$2,$3)', [forum_id, validator_id, forumState]);
     } catch (error) {
       errorMsg(error);
     }
   },
 
   async listForumFollowers(forum_id) {
-    let connect;
     try {
-      connect = await pool.connect();
       console.log('conexão sucedida validateForum');
-
-      const res = await pool.query('SELECT * FROM publico.listar_seguidores_forum( $1 )', [forum_id]);
-
-      console.table(res.rows);
+      const res = await db.query('SELECT * FROM publico.listar_seguidores_forum( $1 )', [forum_id]);
+      return res;
     } catch (error) {
       errorMsg(error);
     }
-
   },
 
   async toggleFollowForum(user_id, forum_id) {
-    let client;
     try {
-      client = await pool.connect();
       console.log('conexão sucedida toggleFollowForum');
+      await db.query('CALL publico.alternar_seguir_forum($1,$2)', [user_id, forum_id]);
+    } catch (error) {
+      errorMsg(error);
+    }
+  },
 
-      await pool.query('CALL publico.alternar_seguir_forum($1,$2)', [user_id, forum_id]);
+  async getSingleForum(forum_id) {
+    try {
+      console.log('conexão sucedida getSingleForum');
+      const res = await db.query('SELECT * FROM publico.buscar_forum_por_id ( $1 )', [forum_id]);
+      return res;
+    } catch (error) {
+      errorMsg(error);
+    }
+  },
 
+  async getForumPostCount(forum_id) {
+    try {
+      const res = await db.query(
+        'SELECT total_posts FROM publico.listar_foruns() WHERE id = $1',
+        [forum_id]
+      );
+      return Number(res.rows[0]?.total_posts ?? 0);
     } catch (error) {
       errorMsg(error);
     }
   }
 
 };
+
