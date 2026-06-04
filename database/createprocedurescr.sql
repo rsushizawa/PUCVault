@@ -21,6 +21,8 @@
 -- CALL publico.incluir_tag_forum(<id do usuário>, <id do fórum>, <id da tag>);
 -- CALL publico.remover_tag_forum(<id do usuário>, <id do fórum>, <id da tag>);
 
+-- procedure para inserção de usuário atualizada
+-- uso: CALL publico.inserir_usuario(<nome>, <nome de usuário>, <email>, <senha hash>);
 CREATE PROCEDURE publico.inserir_usuario (
 	p_nome VARCHAR,
 	p_nome_usuario VARCHAR,
@@ -35,7 +37,7 @@ DECLARE
 	v_identidade_visual INT;
 BEGIN
 	INSERT INTO privado.identidade_visual (img_perfil, img_banner)
-	VALUES ('abc-123', 'def-456')
+	VALUES (NULL, NULL)
 	RETURNING id INTO v_identidade_visual;
 
 	INSERT INTO privado.usuario (nome, nome_usuario, email, senha_hash, identidade_visual)
@@ -43,6 +45,24 @@ BEGIN
 END;
 $$;
 
+-- procedure para atualizar descrição do usuário
+-- uso: CALL publico.atualizar_descricao_usuario(<id do usuário>, <nova descrição>);
+CREATE PROCEDURE publico.atualizar_descricao_usuario (
+	p_usuario_id INT,
+	p_nova_descricao VARCHAR
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+	UPDATE privado.usuario
+	SET descricao = p_nova_descricao
+	WHERE id = p_usuario_id;
+END;
+$$;
+
+-- uso: CALL publico.atualizar_nome_usuario(<id do usuário>, <novo nome>);
 CREATE PROCEDURE publico.atualizar_nome_usuario (
 	p_usuario_id INT,
 	p_novo_nome VARCHAR
@@ -58,6 +78,7 @@ BEGIN
 END;
 $$;
 
+-- uso: CALL publico.atualizar_senha_usuario(<id do usuário>, <nova senha hash>);
 CREATE PROCEDURE publico.atualizar_senha_usuario (
 	p_usuario_id INT,
 	p_nova_senha_hash VARCHAR
@@ -73,8 +94,14 @@ BEGIN
 END;
 $$;
 
-CREATE PROCEDURE publico.deletar_usuario (
-	p_usuario_id INT
+-- uso: CALL publico.deletar_usuario(<id usuário>);
+-- Sempre faz soft delete (excluido_em) + apaga conteúdo.
+-- Hard delete só ocorre se o usuário não tem fóruns, tags OU denúncias.
+-- uso: CALL publico.deletar_usuario(<id usuário>, <tipo exclusão>);
+-- tipo_exclusao: 'BANIMENTO' (mantém email) | 'CONTA' (libera email)s
+CREATE OR REPLACE PROCEDURE publico.deletar_usuario (
+	p_usuario_id INT,
+	p_tipo_exclusao VARCHAR DEFAULT 'CONTA'
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -85,10 +112,15 @@ DECLARE
 	v_tem_forum BOOLEAN;
 	v_tem_tag BOOLEAN;
 	v_tem_denuncia BOOLEAN;
+	v_cargo VARCHAR(15);
 BEGIN
-	SELECT identidade_visual INTO v_identidade_visual
+	SELECT identidade_visual, cargo INTO v_identidade_visual, v_cargo
 	FROM privado.usuario
 	WHERE id = p_usuario_id;
+
+	IF v_cargo = 'SUPERADMIN' THEN
+		RAISE EXCEPTION 'Um usuário SUPERADMIN não pode ser deletado / banido';
+	END IF;
 
 	SELECT
 		EXISTS (SELECT 1 FROM privado.forum    WHERE criador     = p_usuario_id),
@@ -96,11 +128,24 @@ BEGIN
 		EXISTS (SELECT 1 FROM privado.denuncia WHERE denunciante = p_usuario_id)
 	INTO v_tem_forum, v_tem_tag, v_tem_denuncia;
 
+	-- Sempre apaga o conteúdo do usuário
+	DELETE FROM privado.conteudo
+	WHERE criador = p_usuario_id;
+
 	IF v_tem_forum OR v_tem_tag OR v_tem_denuncia THEN
-		UPDATE privado.usuario
-		SET excluido_em = CURRENT_TIMESTAMP
-		WHERE id = p_usuario_id;
+		-- Soft delete: preserva fóruns, tags e denúncias
+		IF p_tipo_exclusao = 'CONTA' THEN
+			UPDATE privado.usuario
+			SET email = NULL,
+			    excluido_em = CURRENT_TIMESTAMP
+			WHERE id = p_usuario_id;
+		ELSE
+			UPDATE privado.usuario
+			SET excluido_em = CURRENT_TIMESTAMP
+			WHERE id = p_usuario_id;
+		END IF;
 	ELSE
+		-- Nada pendente: pode fazer hard delete
 		DELETE FROM privado.usuario
 		WHERE id = p_usuario_id;
 
@@ -110,6 +155,8 @@ BEGIN
 END;
 $$;
 
+-- alterna entre status ATIVO e SILENCIADO do usuário
+-- uso: CALL publico.alternar_status_usuario(<id do usuário>);
 CREATE PROCEDURE publico.alternar_status_usuario (
 	p_usuario_id INT
 )
@@ -119,7 +166,7 @@ SET search_path = ''
 AS $$
 BEGIN
 	UPDATE privado.usuario
-	SET
+		SET
 		status = CASE
 			WHEN status = 'ATIVO' THEN 'SILENCIADO'
 			ELSE 'ATIVO'
@@ -129,6 +176,8 @@ BEGIN
 END;
 $$;
 
+-- altera cargo de outro usuário com regras de permissão e segurança
+-- uso: CALL publico.alterar_cargo_usuario(<id do executor>, <id do alvo>, <novo cargo>);
 CREATE PROCEDURE publico.alterar_cargo_usuario (
 	p_executor_id INT,
 	p_alvo_id INT,
@@ -181,6 +230,8 @@ BEGIN
 END;
 $$;
 
+-- cria um fórum novo se o criador estiver ativo e não excluído
+-- uso: CALL publico.inserir_forum(<titulo>, <descricao>, <id do criador>);
 CREATE PROCEDURE publico.inserir_forum (
 	p_nome VARCHAR,
 	p_descricao VARCHAR,
@@ -209,7 +260,7 @@ BEGIN
 	END IF;
 
 	INSERT INTO privado.identidade_visual (img_perfil, img_banner)
-	VALUES ('abc-123', 'def-456')
+	VALUES (NULL, NULL)
 	RETURNING id INTO v_identidade_visual;
 
 	INSERT INTO privado.forum (nome, descricao, criador, identidade_visual)
@@ -217,6 +268,8 @@ BEGIN
 END;
 $$;
 
+-- valida fórum em espera apenas por validador/admin
+-- uso: CALL publico.validar_forum(<id do fórum>, <id do validador>, <'ATIVO' | 'RECUSADO'>);
 CREATE PROCEDURE publico.validar_forum (
 	p_forum_id INT,
 	p_validador_id INT,
@@ -257,6 +310,8 @@ BEGIN
 END;
 $$;
 
+-- atualiza descrição apenas se o usuário for criador e o fórum estiver ATIVO
+-- uso: CALL publico.atualizar_descricao_forum(<id do fórum>, <id do usuário>, <nova descrição>);
 CREATE PROCEDURE publico.atualizar_descricao_forum (
 	p_forum_id INT,
 	p_usuario_id INT,
@@ -289,6 +344,8 @@ BEGIN
 END;
 $$;
 
+-- atualiza imagem de perfil ou banner na identidade visual
+-- uso: CALL publico.atualizar_identidade_visual(<id da identidade visual>, <campo ('perfil' | 'banner')>, <novo id da imagem>);
 CREATE PROCEDURE publico.atualizar_identidade_visual (
 	p_identidade_visual_id INT,
 	p_campo VARCHAR,
@@ -352,50 +409,69 @@ BEGIN
 END;
 $$;
 
-CREATE PROCEDURE publico.inserir_postagem (
-	p_titulo VARCHAR,
-	p_conteudo TEXT,
-	p_criador INT,
-	p_forum INT,
-	p_arquivo TEXT,
-	p_tags INT[] DEFAULT NULL
+-- insere conteúdo, postagem e classificações de tags com validação de usuário e fórum ativo
+-- uso: CALL publico.inserir_postagem(<titulo>, <conteudo>, <id do criador>, <id do fórum>, <nome do arquivo>, <caminho do arquivo>, <ids das tags>);
+CREATE OR REPLACE PROCEDURE publico.inserir_postagem (
+  p_titulo VARCHAR,
+  p_conteudo TEXT,
+  p_criador INT,
+  p_forum INT,
+  p_arquivo_nome TEXT,
+  p_arquivo_caminho TEXT,
+  p_tags INT[] DEFAULT NULL
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
 DECLARE
-	v_conteudo INT;
-	v_status_criador VARCHAR(15);
-	v_excluido_criador TIMESTAMP WITH TIME ZONE;
+  v_conteudo_id INT;
+  v_status_usuario VARCHAR(15);
+  v_status_forum VARCHAR(20);
 BEGIN
-	SELECT usuario.status, usuario.excluido_em
-	INTO v_status_criador, v_excluido_criador
-	FROM privado.usuario AS usuario
-	WHERE usuario.id = p_criador;
+  -- 1. Validar Usuário (Status e Exclusão)
+  SELECT status, excluido_em INTO v_status_usuario
+  FROM privado.usuario
+  WHERE id = p_criador AND excluido_em IS NULL;
 
-	IF v_excluido_criador IS NOT NULL THEN
-		RAISE EXCEPTION 'Usuário excluído não pode criar postagem.';
-	END IF;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Usuário inexistente ou excluído.';
+  END IF;
 
-	IF v_status_criador = 'SILENCIADO' THEN
-		RAISE EXCEPTION 'Usuário silenciado não pode criar postagem.';
-	END IF;
+  IF v_status_usuario = 'SILENCIADO' THEN
+    RAISE EXCEPTION 'Usuário silenciado não pode criar postagem.';
+  END IF;
 
-	INSERT INTO privado.conteudo (conteudo, criador)
-	VALUES (p_conteudo, p_criador)
-	RETURNING id INTO v_conteudo;
+  -- 2. Validar se o Fórum está ATIVO
+  SELECT status INTO v_status_forum
+  FROM privado.forum
+  WHERE id = p_forum;
 
-	INSERT INTO privado.postagem (id, titulo, arquivo, forum)
-	VALUES (v_conteudo, p_titulo, p_arquivo, p_forum);
+  IF v_status_forum IS NULL OR v_status_forum != 'ATIVO' THEN
+    RAISE EXCEPTION 'Postagens só podem ser criadas em fóruns ativos.';
+  END IF;
 
-	IF p_tags IS NOT NULL THEN
-		INSERT INTO privado.classificacao (postagem, tag)
-		SELECT v_conteudo, UNNEST(p_tags);
-	END IF;
+  -- 3. Inserir na tabela pai (conteudo)
+  INSERT INTO privado.conteudo (conteudo, criador)
+  VALUES (p_conteudo, p_criador)
+  RETURNING id INTO v_conteudo_id;
+
+  -- 4. Inserir na tabela filha (postagem) - CORRIGIDO NOMES E VALORES
+  INSERT INTO privado.postagem (id, titulo, arquivo_nome, arquivo_caminho, forum)
+  VALUES (v_conteudo_id, p_titulo, p_arquivo_nome, p_arquivo_caminho, p_forum);
+
+  -- 5. Inserir Tags (usando DISTINCT para evitar erros de duplicata no array)
+  IF p_tags IS NOT NULL AND array_length(p_tags, 1) > 0 THEN
+    INSERT INTO privado.classificacao (postagem, tag)
+    SELECT DISTINCT v_conteudo_id, t_id
+    FROM UNNEST(p_tags) AS t_id;
+  END IF;
+
 END;
 $$;
 
+-- insere comentário aninhado, respeitando limite de profundidade
+-- uso: CALL publico.inserir_comentario(<conteudo>, <id do criador>, <id do conteudo pai>);
 CREATE PROCEDURE publico.inserir_comentario (
 	p_conteudo TEXT,
 	p_criador INT,
@@ -445,6 +521,8 @@ BEGIN
 END;
 $$;
 
+-- remove conteúdo apenas pelo autor ou SUPERADMIN
+-- uso: CALL publico.deletar_conteudo(<id do conteudo>, <id do executor>);
 CREATE PROCEDURE publico.deletar_conteudo (
 	p_conteudo_id INT,
 	p_executor_id INT
@@ -472,7 +550,9 @@ BEGIN
 END;
 $$;
 
-CREATE PROCEDURE publico.avaliar_conteudo (
+-- insere/atualiza/remove avaliação de conteúdo; impede autoavaliação
+-- uso: CALL publico.avaliar_conteudo(<id do usuário>, <id do conteudo>, <avaliação (1 | -1 | 0)>);
+CREATE OR REPLACE PROCEDURE publico.avaliar_conteudo (
 	p_usuario_id INT,
 	p_conteudo_id INT,
 	p_avaliacao SMALLINT
@@ -482,36 +562,72 @@ SECURITY DEFINER
 SET search_path = ''
 AS $$
 DECLARE
-	v_status_usuario VARCHAR(15);
+ v_status_usuario VARCHAR(15);
 	v_excluido_usuario TIMESTAMP WITH TIME ZONE;
+	v_criador_conteudo INT;
 	v_avaliacao_atual SMALLINT;
 BEGIN
+	-- Buscar dados do usuário
 	SELECT usuario.status, usuario.excluido_em
 	INTO v_status_usuario, v_excluido_usuario
 	FROM privado.usuario AS usuario
 	WHERE usuario.id = p_usuario_id;
 
+	-- Verificar se usuário existe
+	IF v_status_usuario IS NULL AND v_excluido_usuario IS NULL THEN
+		RAISE EXCEPTION 'Usuário com ID % não encontrado.', p_usuario_id;
+	END IF;
+
+	-- Verificar se usuário está excluído
 	IF v_excluido_usuario IS NOT NULL THEN
 		RAISE EXCEPTION 'Usuário excluído não pode avaliar conteúdo.';
 	END IF;
 
+	-- Verificar se usuário está silenciado
 	IF v_status_usuario = 'SILENCIADO' THEN
 		RAISE EXCEPTION 'Usuário silenciado não pode avaliar conteúdo.';
 	END IF;
 
+	SELECT criador INTO v_criador_conteudo
+	FROM privado.conteudo
+	WHERE id = p_conteudo_id;
+
+	IF NOT FOUND THEN
+		RAISE EXCEPTION 'Conteúdo com ID % não encontrado.', p_conteudo_id;
+	END IF;
+
+	IF v_criador_conteudo = p_usuario_id THEN
+		RAISE EXCEPTION 'Usuário não pode avaliar o próprio conteúdo.';
+	END IF;
+
+	-- Buscar avaliação atual
 	SELECT avaliacao.avaliacao
 	INTO v_avaliacao_atual
 	FROM privado.avaliacao AS avaliacao
 	WHERE avaliacao.usuario = p_usuario_id
 	AND avaliacao.conteudo = p_conteudo_id;
 
+	-- Remover avaliação
 	IF p_avaliacao = 0 THEN
-		DELETE FROM privado.avaliacao
-		WHERE usuario = p_usuario_id
-		AND conteudo = p_conteudo_id;
+		IF v_avaliacao_atual IS NOT NULL THEN
+			DELETE FROM privado.avaliacao
+			WHERE usuario = p_usuario_id
+			AND conteudo = p_conteudo_id;
+		END IF;
 		RETURN;
 	END IF;
 
+	-- Validar valor da avaliação
+	IF p_avaliacao NOT IN (1, -1) THEN
+		RAISE EXCEPTION 'Avaliação inválida: use 1 (upvote), -1 (downvote) ou 0 (remover).';
+	END IF;
+
+	-- Se já tem a mesma avaliação, não faz nada
+	IF v_avaliacao_atual IS NOT NULL AND v_avaliacao_atual = p_avaliacao THEN
+		RETURN;
+	END IF;
+
+	-- Inserir ou atualizar
 	IF v_avaliacao_atual IS NULL THEN
 		INSERT INTO privado.avaliacao (usuario, conteudo, avaliacao)
 		VALUES (p_usuario_id, p_conteudo_id, p_avaliacao);
@@ -524,7 +640,9 @@ BEGIN
 END;
 $$;
 
-CREATE PROCEDURE publico.inserir_denuncia_usuario (
+-- registra denúncia de usuário, evitando duplicatas e auto-denúncia
+-- uso: CALL publico.inserir_denuncia_usuario(<tipo>, <id do denunciante>, <id do denunciado>);
+CREATE OR REPLACE PROCEDURE publico.inserir_denuncia_usuario (
 	p_tipo VARCHAR,
 	p_denunciante_id INT,
 	p_denunciado_id INT
@@ -536,6 +654,7 @@ AS $$
 DECLARE
 	v_status_denunciante VARCHAR(15);
 	v_excluido_denunciante TIMESTAMP WITH TIME ZONE;
+	v_excluido_denunciado TIMESTAMP WITH TIME ZONE;
 	v_denuncia INT;
 	v_duplicata BOOLEAN;
 BEGIN
@@ -554,6 +673,19 @@ BEGIN
 
 	IF p_denunciante_id = p_denunciado_id THEN
 		RAISE EXCEPTION 'Usuário não pode denunciar a si mesmo.';
+	END IF;
+
+	SELECT usuario.excluido_em
+	INTO v_excluido_denunciado
+	FROM privado.usuario AS usuario
+	WHERE usuario.id = p_denunciado_id;
+
+	IF NOT FOUND THEN
+		RAISE EXCEPTION 'Usuário denunciado não encontrado.';
+	END IF;
+
+	IF v_excluido_denunciado IS NOT NULL THEN
+		RAISE EXCEPTION 'Não é possível denunciar um usuário excluído.';
 	END IF;
 
 	SELECT EXISTS (
@@ -577,6 +709,8 @@ BEGIN
 END;
 $$;
 
+-- registra denúncia de conteúdo, evitando duplicatas e auto-denúncia
+-- uso: CALL publico.inserir_denuncia_conteudo(<tipo>, <id do denunciante>, <id do conteudo>);
 CREATE PROCEDURE publico.inserir_denuncia_conteudo (
 	p_tipo VARCHAR,
 	p_denunciante_id INT,
@@ -636,10 +770,15 @@ BEGIN
 END;
 $$;
 
-CREATE PROCEDURE publico.resolver_denuncia (
+-- uso: CALL publico.resolver_denuncia(<id denúncia>, <id executor>, <'RESOLVIDA' | 'IGNORADA'>, <punição>, <tempo silêncio>);
+-- punicao: 0 = exclui postagem, 1 = exclui postagem + silencia, 2 = exclui usuário
+-- tempo_silencio: INTERVAL (ex: '1 hour', '12 hours', '1 day', '3 days', '7 days')
+CREATE OR REPLACE PROCEDURE publico.resolver_denuncia (
 	p_denuncia_id INT,
 	p_executor_id INT,
-	p_novo_status VARCHAR
+	p_novo_status VARCHAR,
+	p_punicao SMALLINT DEFAULT NULL,
+	p_tempo_silencio INTERVAL DEFAULT NULL
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -648,13 +787,22 @@ AS $$
 DECLARE
 	v_status_denuncia VARCHAR(20);
 	v_cargo_executor VARCHAR(15);
+	v_conteudo_denunciado INT;
+	v_usuario_denunciado INT;
+	v_criador_conteudo INT;
+	v_strike_valido_ate TIMESTAMPTZ;
+	v_total_strikes INT;
 BEGIN
-	SELECT denuncia.status, usuario.cargo
-	INTO v_status_denuncia, v_cargo_executor
+	-- 1. Buscar dados da denúncia + cargo do executor
+	SELECT denuncia.status, usuario.cargo, dc.conteudo_denunciado, du.usuario_denunciado
+	INTO v_status_denuncia, v_cargo_executor, v_conteudo_denunciado, v_usuario_denunciado
 	FROM privado.denuncia AS denuncia
 	JOIN privado.usuario AS usuario ON usuario.id = p_executor_id
+	LEFT JOIN privado.denuncia_conteudo AS dc ON dc.id = denuncia.id
+	LEFT JOIN privado.denuncia_usuario AS du ON du.id = denuncia.id
 	WHERE denuncia.id = p_denuncia_id;
 
+	-- 2. Validações
 	IF v_status_denuncia != 'ABERTA' THEN
 		RETURN;
 	END IF;
@@ -667,15 +815,92 @@ BEGIN
 		RAISE EXCEPTION 'Status inválido: %. Use ''RESOLVIDA'' ou ''IGNORADA''.', p_novo_status;
 	END IF;
 
+	-- 3. Marcar denúncia como resolvida
 	UPDATE privado.denuncia
-	SET
-		status = p_novo_status,
-		resolvido_em = CURRENT_TIMESTAMP,
-		resolvido_por = p_executor_id
+	SET status = p_novo_status,
+	    resolvido_em = CURRENT_TIMESTAMP,
+	    resolvido_por = p_executor_id
 	WHERE id = p_denuncia_id;
+
+	-- 4. Se IGNORADA ou sem punição, encerra aqui
+	IF p_novo_status = 'IGNORADA' OR p_punicao IS NULL THEN
+		RETURN;
+	END IF;
+
+	-- 5. Aplicar punição
+	IF p_punicao = 0 THEN
+		-- Exclui apenas a postagem denunciada
+		IF v_conteudo_denunciado IS NOT NULL THEN
+			DELETE FROM privado.conteudo WHERE id = v_conteudo_denunciado;
+		END IF;
+
+	ELSIF p_punicao = 1 THEN
+		-- Exclui a postagem
+		IF v_conteudo_denunciado IS NOT NULL THEN
+			SELECT criador INTO v_criador_conteudo
+			FROM privado.conteudo WHERE id = v_conteudo_denunciado;
+
+			DELETE FROM privado.conteudo WHERE id = v_conteudo_denunciado;
+		ELSE
+			-- Denúncia de usuário: pegar o denunciado
+			v_criador_conteudo := v_usuario_denunciado;
+		END IF;
+
+		-- Silencia o criador do conteúdo
+		IF v_criador_conteudo IS NOT NULL THEN
+			-- Calcular strike_valido_ate conforme a regra
+			IF p_tempo_silencio IS NULL THEN
+				p_tempo_silencio := INTERVAL '3 days';
+			END IF;
+
+			v_strike_valido_ate := CURRENT_TIMESTAMP +
+				CASE
+					WHEN p_tempo_silencio <= INTERVAL '1 day' THEN INTERVAL '7 days'
+					WHEN p_tempo_silencio <= INTERVAL '3 days' THEN INTERVAL '3 months'
+					ELSE INTERVAL '6 months'
+				END;
+
+			-- Registrar penalidade
+			INSERT INTO privado.penalidade (usuario_id, denuncia_id, duracao, strike_valido_ate)
+			VALUES (v_criador_conteudo, p_denuncia_id, p_tempo_silencio, v_strike_valido_ate);
+
+			-- Silenciar usuário
+			UPDATE privado.usuario
+			SET status = 'SILENCIADO',
+			    ultima_mudanca_status = CURRENT_TIMESTAMP
+			WHERE id = v_criador_conteudo;
+
+			-- Contar strikes vigentes
+			SELECT COUNT(*) INTO v_total_strikes
+			FROM privado.penalidade
+			WHERE usuario_id = v_criador_conteudo
+			  AND strike_valido_ate > CURRENT_TIMESTAMP;
+
+			-- Se 4 ou mais strikes, excluir usuário
+			IF v_total_strikes >= 4 THEN
+				CALL publico.deletar_usuario(v_criador_conteudo, 'BANIMENTO');
+			END IF;
+		END IF;
+
+	ELSIF p_punicao = 2 THEN
+		-- Descobrir quem excluir
+		IF v_conteudo_denunciado IS NOT NULL THEN
+			SELECT criador INTO v_criador_conteudo
+			FROM privado.conteudo WHERE id = v_conteudo_denunciado;
+		ELSE
+			v_criador_conteudo := v_usuario_denunciado;
+		END IF;
+
+		-- Excluir usuário com banimento
+		IF v_criador_conteudo IS NOT NULL THEN
+			CALL publico.deletar_usuario(v_criador_conteudo, 'BANIMENTO');
+		END IF;
+	END IF;
 END;
 $$;
 
+-- alterna entre seguir e deixar de seguir um fórum ativo
+-- uso: CALL publico.alternar_seguir_forum(<id do usuário>, <id do fórum>);
 CREATE PROCEDURE publico.alternar_seguir_forum (
 	p_usuario_id INT,
 	p_forum_id INT
@@ -721,6 +946,8 @@ BEGIN
 END;
 $$;
 
+-- alterna entre seguir e deixar de seguir um usuário
+-- uso: CALL publico.alternar_seguir_usuario(<id do seguidor>, <id do seguido>);
 CREATE PROCEDURE publico.alternar_seguir_usuario (
 	p_seguidor_id INT,
 	p_seguido_id INT
