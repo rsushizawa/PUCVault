@@ -36,13 +36,10 @@ SELECT
 	FROM privado.usuario AS usuario
 	JOIN privado.identidade_visual AS identidade_visual
 		ON identidade_visual.id = usuario.identidade_visual
-
 	LEFT JOIN privado.seguir_usuario AS seguido
 		ON seguido.seguido = usuario.id
-
 	LEFT JOIN privado.seguir_usuario AS segue
 		ON segue.seguidor = usuario.id
-		
 	LEFT JOIN (
 		SELECT conteudo.criador, SUM(avaliacao.avaliacao) AS total
 		FROM privado.conteudo AS conteudo
@@ -70,19 +67,25 @@ SELECT
 -- usado para exibir o "cabeçalho" do fórum
 CREATE OR REPLACE VIEW privado.visualizar_forum AS
 SELECT
+  -- informações do fórum
   forum.id,
   forum.nome,
   forum.descricao,
   forum.criado_em,
   forum.status,
   
+  -- informações do criador
   usuario.nome_usuario,
 
+  -- identidade visual
   iddv.img_perfil,
   iddv.img_banner,
 
+  -- subqueries info
+  -- quantidade de seguidores do fórum
   COALESCE(seguidores.total, 0) AS seguidores,
   
+  -- quantidade de postagens do fórum
   COALESCE(postagens.total, 0) AS total_posts
 
   FROM privado.forum AS forum
@@ -106,6 +109,7 @@ SELECT
     GROUP BY postagem.forum
   ) AS postagens ON postagens.forum = forum.id;
 	
+-- usado para exibir dados completos de uma postagem com engajamento e tags
 CREATE OR REPLACE VIEW privado.visualizar_postagem AS
 SELECT
 	postagem.id,
@@ -166,6 +170,7 @@ SELECT
 		GROUP BY comentario.conteudo_pai
 	) AS comentarios ON comentarios.conteudo_pai = postagem.id;
 
+-- usado para exibir comentários com engajamento e informações do criador
 CREATE OR REPLACE VIEW privado.exibir_comentarios AS
 SELECT
 	comentario.id,
@@ -209,6 +214,7 @@ SELECT
 -- strikes vigentes: removido_em IS NULL e strike_valido_ate no futuro
 
 -- cabeçalho base — sem strikes (só dados do denunciante)
+-- usado como base para views de denúncia
 CREATE OR REPLACE VIEW privado.cabecalho_denuncia AS
 SELECT
 	denuncia.id                 AS denuncia_id,
@@ -253,6 +259,7 @@ SELECT
 	) AS strikes ON strikes.usuario_id = denuncia_usuario.usuario_denunciado;
 
 -- denúncia de postagem — cabeçalho + postagem denunciada + strikes vigentes do criador da postagem
+-- usado para montar o corpo da denúncia de postagem
 CREATE OR REPLACE VIEW privado.corpo_denuncia_postagem AS
 SELECT
 	cabecalho.*,
@@ -276,6 +283,7 @@ SELECT
 	) AS strikes ON strikes.usuario_id = postagem.criador;
 
 -- denúncia de comentário — cabeçalho + comentário denunciado + conteudo pai + strikes vigentes do criador
+-- usado para montar o corpo da denúncia de comentário
 CREATE OR REPLACE VIEW privado.corpo_denuncia_comentario AS
 SELECT
 	cabecalho.*,

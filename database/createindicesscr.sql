@@ -1,3 +1,4 @@
+-- Índices para suportar consultas de funções e views do schema público/privado
 -- indices para tabela usuario
 -- utilizado em: dados_login_usuario, buscar_usuario_por_email, buscar_usuario_por_nome_usuario
 CREATE INDEX IF NOT EXISTS idx_usuario_email ON privado.usuario(email);
@@ -17,7 +18,7 @@ CREATE INDEX IF NOT EXISTS idx_forum_criador ON privado.forum(criador);
 
 -- indices para tabela tag
 -- utilizado em: buscar_tags_relevantes (busca por similaridade)
--- extensao necessaria para busca textual
+-- extensão necessária para busca textual com trigram
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE INDEX IF NOT EXISTS idx_tag_tag_trgm ON privado.tag USING gin (tag gin_trgm_ops);
 
@@ -42,11 +43,9 @@ CREATE INDEX IF NOT EXISTS idx_conteudo_status ON privado.conteudo(status);
 CREATE INDEX IF NOT EXISTS idx_postagem_forum ON privado.postagem(forum);
 CREATE INDEX IF NOT EXISTS idx_postagem_forum_criado ON privado.postagem(forum, id DESC);
 
--- utilizado em: listar_arquivos_forum, listar_anos_com_arquivo, listar_tags_arquivo_por_ano, listar_postagens_arquivo
-CREATE INDEX IF NOT EXISTS idx_postagem_arquivo ON privado.postagem(arquivo) WHERE arquivo IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_postagem_forum_arquivo ON privado.postagem(forum, id DESC) WHERE arquivo IS NOT NULL;
-
--- utilizado em: buscar_postagem (ja tem indice da primary key)
+-- utilizado em: listar_arquivos_forum, listar_anos_com_arquivo, listar_tags_arquivo_por_ano, listar_postagens_arquivo (consulta somente postagens com arquivo)
+CREATE INDEX IF NOT EXISTS idx_postagem_arquivo ON privado.postagem(arquivo_nome) WHERE arquivo_nome IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_postagem_forum_arquivo ON privado.postagem(forum, id DESC) WHERE arquivo_nome IS NOT NULL;
 
 -- indices para tabela comentario
 -- utilizado em: listar_comentarios_postagem (busca recursiva por conteudo_pai)
@@ -75,7 +74,7 @@ CREATE INDEX IF NOT EXISTS idx_seguir_forum_usuario ON privado.seguir_forum(usua
 -- utilizado em: checar_se_usuario_segue_forum, alternar_seguir_forum
 CREATE INDEX IF NOT EXISTS idx_seguir_forum_usuario_forum ON privado.seguir_forum(usuario, forum);
 
--- utilizado em: listar_postagens_feed (subquery com where)
+-- utilizado em: listar_postagens_feed (subquery com filtro por usuário seguido e fórum)
 CREATE INDEX IF NOT EXISTS idx_seguir_forum_usuario_forum_list ON privado.seguir_forum(usuario, forum);
 
 -- indices para tabela seguir_usuario
@@ -107,3 +106,40 @@ CREATE INDEX IF NOT EXISTS idx_denuncia_usuario_denunciante_denunciado ON privad
 -- utilizado em: inserir_denuncia_conteudo (verifica duplicata)
 CREATE INDEX IF NOT EXISTS idx_denuncia_conteudo_denunciado ON privado.denuncia_conteudo(conteudo_denunciado);
 CREATE INDEX IF NOT EXISTS idx_denuncia_conteudo_id_conteudo ON privado.denuncia_conteudo(id, conteudo_denunciado);
+
+-- indices para tabela avaliacao
+-- utilizado em: buscar_postagem, listar_postagens_forum, listar_postagens_feed,
+--               listar_postagens_usuario, listar_postagens_arquivo, listar_comentarios_postagem
+--               (subquery de avaliacao_usuario_logado)
+CREATE INDEX IF NOT EXISTS idx_avaliacao_usuario_conteudo 
+ON privado.avaliacao(usuario, conteudo);
+
+-- indices para tabela penalidade
+-- utilizado em: listar_penalidades_usuario (ordenacao por aplicado_em DESC)
+CREATE INDEX IF NOT EXISTS idx_penalidade_usuario_aplicado 
+ON privado.penalidade(usuario_id, aplicado_em DESC);
+
+-- utilizado em: resolver_denuncia (contagem de strikes vigentes)
+CREATE INDEX IF NOT EXISTS idx_penalidade_usuario_strike 
+ON privado.penalidade(usuario_id, strike_valido_ate) 
+WHERE removido_em IS NULL;
+
+-- utilizado em: dados_login_usuario (verificar expiração de silêncio e penalidades ativas do usuário)
+CREATE INDEX IF NOT EXISTS idx_penalidade_usuario_removido 
+ON privado.penalidade(usuario_id, removido_em, aplicado_em, duracao) 
+WHERE removido_em IS NULL;
+
+-- utilizado em: remover_silencio (busca silêncios ativos do usuário sem removido_em)
+CREATE INDEX IF NOT EXISTS idx_penalidade_usuario_removido_null 
+ON privado.penalidade(usuario_id) 
+WHERE removido_em IS NULL;
+
+-- indices para tabela denuncia_conteudo
+-- utilizado em: listar_denuncias (LEFT JOIN com denuncia_conteudo)
+CREATE INDEX IF NOT EXISTS idx_denuncia_conteudo_id_conteudo 
+ON privado.denuncia_conteudo(id, conteudo_denunciado);
+
+-- indices para tabela denuncia_usuario
+-- utilizado em: listar_denuncias (LEFT JOIN com denuncia_usuario)
+CREATE INDEX IF NOT EXISTS idx_denuncia_usuario_id_denunciado 
+ON privado.denuncia_usuario(id, usuario_denunciado);

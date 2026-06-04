@@ -1,31 +1,37 @@
--- SELECT * FROM publico.dados_login_usuario(p_email := 'usuario@email.com');
--- SELECT * FROM publico.dados_login_usuario(p_nome_usuario := 'joao123');
--- SELECT * FROM publico.listar_usuarios();
--- SELECT * FROM publico.buscar_usuario_por_id(<id>, <id usuario logado>);
--- SELECT * FROM publico.buscar_usuario_por_nome_usuario(<nome_usuario>);
--- SELECT * FROM publico.buscar_usuario_por_email(<email>);
--- SELECT * FROM publico.buscar_forum_por_nome(<nome>);
--- SELECT * FROM publico.buscar_forum_por_id(<id>);
--- SELECT * FROM publico.listar_foruns();
--- SELECT * FROM publico.listar_seguidores_forum(<id forum>);
--- SELECT * FROM publico.buscar_tags_por_criador(<id criador>);
--- SELECT * FROM publico.listar_postagens_forum(<id forum>, <pagina | default 1>, <id usuario logado>);
--- SELECT * FROM publico.listar_arquivos_forum(<id forum>, <pagina | default 1>, <id usuario logado>);
--- SELECT * FROM publico.listar_comentarios_postagem(<id postagem>, <id usuario logado>);
--- SELECT * FROM publico.listar_tags();
--- SELECT * FROM publico.buscar_postagem(<id postagem>, <id usuario logado>);
--- SELECT * FROM publico.buscar_tags_relevantes(<chars>, <limite | default 5>);
--- SELECT * FROM publico.listar_tags_relacionadas_forum(<id forum>);
--- SELECT * FROM publico.listar_postagens_feed(<id usuario>, <pagina | default 1>);
--- SELECT * FROM publico.listar_anos_com_arquivo(<id forum>);
--- SELECT * FROM publico.listar_tags_arquivo_por_ano(<id forum>, <ano>);
--- SELECT * FROM publico.listar_postagens_arquivo(<id forum>, <ano>, <id tag>, <id usuario logado>);
--- SELECT * FROM publico.checar_se_usuario_segue_forum(<id usuario>, <id forum>);
--- SELECT * FROM publico.listar_postagens_usuario(<id usuario>, <pagina | default 1>, <id usuario logado>);
--- SELECT * FROM publico.listar_denuncias();
--- SELECT * FROM publico.listar_penalidades_usuario(<id usuario>);
+-- uso: SELECT * FROM publico.dados_login_usuario(<email || nome_usuario>);
+-- uso: SELECT * FROM publico.listar_usuarios();
+-- uso: SELECT * FROM publico.buscar_usuario_por_id(<id>);
+-- uso: SELECT * FROM publico.buscar_usuario_por_nome_usuario(<nome_usuario>);
+-- uso: SELECT * FROM publico.buscar_usuario_por_email(<email>);
+-- uso: SELECT * FROM publico.buscar_forum_por_nome(<tag>);
+-- uso: SELECT * FROM publico.buscar_forum_por_id(<id>);
+-- uso: SELECT * FROM publico.listar_foruns();
+-- uso: SELECT * FROM publico.listar_seguidores_forum(<id>);
+-- uso: SELECT * FROM publico.buscar_tags_por_criador(<id criador>);
+-- uso: SELECT * FROM publico.listar_postagens_forum(<id fórum>, <offset paginação (20) |  default = 1>);
+-- uso: SELECT * FROM publico.listar_arquivos_forum(<id fórum>, <offset paginação (20) | default = 1>);
+-- uso: SELECT * FROM publico.listar_comentarios_postagem(<id postagem>);
+-- uso: SELECT * FROM publico.listar_tags();
+-- uso: SELECT * FROM publico.buscar_postagem(<id postagem>);
+-- uso: SELECT * FROM publico.buscar_tags_relevantes(<chars>, <quantidade de retorno | default = 5>);
+-- uso: SELECT * FROM publico.listar_tags_relacionadas_forum(<id fórum>);
+-- uso: SELECT * FROM publico.listar_postagens_feed(<id usuário>, <offset paginação (20) |  default = 1>);
+-- uso: SELECT * FROM publico.listar_anos_com_arquivo(<id fórum>);
+-- uso: SELECT * FROM publico.listar_tags_arquivo_por_ano(<id forum>, <ano>);
+-- uso: SELECT * FROM publico.listar_postagens_arquivo(<id do fórum>, <ano>, <id da tag>);
+-- uso: SELECT * FROM publico.checar_se_usuario_segue_forum(<id usuario>, <id forum>);
+-- uso: SELECT * FROM publico.listar_postagens_usuario(1, p_pagina := 1);
+-- uso: SELECT * FROM publico.listar_denuncias();
+-- uso: SELECT * FROM publico.listar_penalidades_usuario(<id do usuário>);
+-- uso: SELECT * FROM publico.listar_denuncias_usuario(<status | default 'ABERTA'>);
+-- uso: SELECT * FROM publico.listar_denuncias_postagem(<status | default 'ABERTA'>);
+-- uso: SELECT * FROM publico.listar_denuncias_comentario(<status | default 'ABERTA'>);
+-- uso: SELECT * FROM publico.quantidade_arquivos_por_nome(<nome do arquivo>);
+-- uso: SELECT * FROM publico.deletar_usuario_retornando_arquivos(<id usuario>, <tipo exclusão: 'CONTA' | 'BANIMENTO'>);
 
--- retorna dados para autenticação e remove silêncio expirado automaticamente
+-- retorna dados usados para operações de autentificação
+-- também remove silêncio expirado automaticamente
+-- uso: SELECT * FROM publico.dados_login_usuario(<id || email || nome_usuario>);
 CREATE OR REPLACE FUNCTION publico.dados_login_usuario(
 	p_id INT DEFAULT NULL,
 	p_email VARCHAR DEFAULT NULL,
@@ -80,6 +86,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.listar_usuarios();
 CREATE OR REPLACE FUNCTION publico.listar_usuarios()
 RETURNS SETOF privado.perfil_usuario
 LANGUAGE plpgsql
@@ -92,6 +99,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.buscar_usuario_por_id(<id>);
 CREATE OR REPLACE FUNCTION publico.buscar_usuario_por_id (
 	p_id INT,
 	p_usuario_logado_id INT DEFAULT NULL
@@ -135,6 +143,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.buscar_usuario_por_nome_usuario(<nome_usuario>);
 CREATE OR REPLACE FUNCTION publico.buscar_usuario_por_nome_usuario (
 	p_nome_usuario VARCHAR
 )
@@ -150,6 +159,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.buscar_usuario_por_email(<email>);
 CREATE OR REPLACE FUNCTION publico.buscar_usuario_por_email (
 	p_email VARCHAR
 )
@@ -171,6 +181,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.buscar_forum_por_nome(<tag>);
 CREATE OR REPLACE FUNCTION publico.buscar_forum_por_nome (
 	p_nome VARCHAR
 )
@@ -186,6 +197,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.buscar_forum_por_id(<id>);
 CREATE OR REPLACE FUNCTION publico.buscar_forum_por_id (
 	p_id INT
 )
@@ -201,6 +213,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.listar_foruns();
 CREATE OR REPLACE FUNCTION publico.listar_foruns()
 RETURNS SETOF privado.visualizar_forum
 LANGUAGE plpgsql
@@ -210,10 +223,11 @@ AS $$
 BEGIN
 	RETURN QUERY
 	SELECT * FROM privado.visualizar_forum
-	WHERE status = 'ATIVO';
+	WHERE status ~* 'ATIVO';
 END;
 $$;
 
+-- uso: SELECT * FROM publico.listar_seguidores_forum(<id>);
 CREATE OR REPLACE FUNCTION publico.listar_seguidores_forum (
 	p_id INT
 )
@@ -232,6 +246,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.buscar_tags_por_criador(<id criador>);
 CREATE OR REPLACE FUNCTION publico.buscar_tags_por_criador(
 	p_id INT
 )
@@ -247,6 +262,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.listar_postagens_forum(<id fórum>, <offset paginação |  default = 1>);
 CREATE OR REPLACE FUNCTION publico.listar_postagens_forum (
 	p_forum_id INT,
 	p_pagina INT DEFAULT 1,
@@ -296,6 +312,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.listar_arquivos_forum(<id fórum>, <offset paginação (20) | default = 1>);
 CREATE OR REPLACE FUNCTION publico.listar_arquivos_forum (
 	p_forum_id INT,
 	p_pagina INT DEFAULT 1
@@ -316,6 +333,8 @@ BEGIN
 END;
 $$;
 
+-- retorna a árvore de comentários de uma postagem, incluindo respostas encadeadas
+-- uso: SELECT * FROM publico.listar_comentarios_postagem(<id postagem>, <id usuario | opcional>);
 CREATE OR REPLACE FUNCTION publico.listar_comentarios_postagem (
 	p_postagem_id INT,
 	p_usuario_id INT DEFAULT NULL
@@ -369,6 +388,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.listar_tags();
 CREATE OR REPLACE FUNCTION publico.listar_tags ()
 RETURNS SETOF privado.tag
 LANGUAGE plpgsql
@@ -381,6 +401,9 @@ BEGIN
 END;
 $$;
 
+SELECT * FROM publico.buscar_postagem(1);
+
+-- uso: SELECT * FROM publico.buscar_postagem(<id postagem>);
 CREATE OR REPLACE FUNCTION publico.buscar_postagem (
 	p_id INT,
 	p_usuario_logado_id INT DEFAULT NULL
@@ -426,6 +449,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.buscar_tags_relevantes(<chars>, <quantidade de retorno | default = 5>);
 CREATE OR REPLACE FUNCTION publico.buscar_tags_relevantes (
 	p_busca VARCHAR,
 	p_limite INT DEFAULT 5
@@ -472,6 +496,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.listar_tags_relacionadas_forum(<id fórum>);
 CREATE OR REPLACE FUNCTION publico.listar_tags_relacionadas_forum (
 	p_forum INT
 )
@@ -484,12 +509,16 @@ BEGIN
 	RETURN QUERY
 	SELECT tag.*
 	FROM privado.tag AS tag
-	JOIN privado.incluir_tag AS incluir_tag ON incluir_tag.tag = tag.id
+	JOIN privado.incluir_tag AS incluir_tag
+		ON incluir_tag.tag = tag.id
 	WHERE incluir_tag.forum = p_forum
 	ORDER BY tag.tag ASC;
 END;
 $$;
 
+SELECT * FROM publico.listar_postagens_feed(1,1);
+-- retorna postagens para o feed do usuário, ordenadas por engajamento e conexões de seguidos
+-- uso: SELECT * FROM publico.listar_postagens_feed(<id usuário>, <offset paginação (20) | default = 1>);
 CREATE OR REPLACE FUNCTION publico.listar_postagens_feed (
 	p_usuario_id INT,
 	p_pagina INT DEFAULT 1
@@ -551,7 +580,8 @@ BEGIN
 END;
 $$;
 
--- retorna os anos com postagens com arquivo em um fórum
+-- retorna os anos que possuem postagens com arquivo em um fórum
+-- uso: SELECT * FROM publico.listar_anos_com_arquivo(<id fórum>);
 CREATE OR REPLACE FUNCTION publico.listar_anos_com_arquivo (
 	p_forum_id INT
 )
@@ -564,14 +594,16 @@ BEGIN
 	RETURN QUERY
 	SELECT DISTINCT EXTRACT(YEAR FROM conteudo.criado_em)::INT AS ano
 	FROM privado.postagem AS postagem
-	JOIN privado.conteudo AS conteudo ON conteudo.id = postagem.id
+	JOIN privado.conteudo AS conteudo
+		ON conteudo.id = postagem.id
 	WHERE postagem.forum = p_forum_id
 	AND postagem.arquivo_nome IS NOT NULL
 	ORDER BY ano DESC;
 END;
 $$;
 
--- retorna as tags de postagens com arquivo em um fórum e ano específicos
+-- retorna as tags que possuem postagens com arquivo em um fórum e ano específicos
+-- uso: SELECT * FROM publico.listar_tags_arquivo_por_ano(<id forum>, <ano>);
 CREATE OR REPLACE FUNCTION publico.listar_tags_arquivo_por_ano (
 	p_forum_id INT,
 	p_ano INT
@@ -599,6 +631,7 @@ END;
 $$;
 
 -- retorna postagens com arquivo filtradas por fórum, ano e tag
+-- uso: SELECT * FROM publico.listar_postagens_arquivo(<id do fórum>, <ano>, <id da tag>);
 CREATE OR REPLACE FUNCTION publico.listar_postagens_arquivo (
 	p_forum_id INT,
 	p_ano INT,
@@ -625,6 +658,8 @@ BEGIN
 END;
 $$;
 
+-- chegagem booleana se um usuário segue um fórum
+-- uso: SELECT * FROM publico.checar_se_usuario_segue_forum(<id usuario>, <id forum>);
 CREATE OR REPLACE FUNCTION publico.checar_se_usuario_segue_forum (
 	p_usuario INT,
 	p_forum INT
@@ -645,6 +680,7 @@ BEGIN
 END;
 $$;
 
+-- uso: SELECT * FROM publico.listar_postagens_usuario(<id do perfil>, <offset paginação>, <id do logado (opicional)>);
 CREATE OR REPLACE FUNCTION publico.listar_postagens_usuario (
 	p_usuario_id INT,
 	p_pagina INT DEFAULT 1,
@@ -694,6 +730,8 @@ BEGIN
 END;
 $$;
 
+-- lista denúncias abertas com informações de denunciante e strikes ativos
+-- uso: SELECT * FROM publico.listar_denuncias();
 CREATE OR REPLACE FUNCTION publico.listar_denuncias ()
 RETURNS TABLE (
 	id INT,
@@ -750,6 +788,8 @@ BEGIN
 END;
 $$;
 
+-- function para listar histórico de penalidades de um usuário
+-- uso: SELECT * FROM publico.listar_penalidades_usuario(<id do usuário>);
 CREATE OR REPLACE FUNCTION publico.listar_penalidades_usuario (
 	p_usuario_id INT
 )
@@ -781,5 +821,145 @@ BEGIN
 	FROM privado.penalidade AS penalidade
 	WHERE penalidade.usuario_id = p_usuario_id
 	ORDER BY penalidade.aplicado_em DESC;
+END;
+$$;
+
+-- uso: SELECT * FROM publico.listar_denuncias_usuario(<status | default 'ABERTA'>);
+CREATE OR REPLACE FUNCTION publico.listar_denuncias_usuario (
+	p_status VARCHAR DEFAULT 'ABERTA'
+)
+RETURNS SETOF privado.corpo_denuncia_usuario
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+	RETURN QUERY
+	SELECT *
+	FROM privado.corpo_denuncia_usuario
+	WHERE denuncia_status = p_status
+	ORDER BY denuncia_criado_em ASC;
+END;
+$$;
+
+-- uso: SELECT * FROM publico.listar_denuncias_postagem(<status | default 'ABERTA'>);
+CREATE OR REPLACE FUNCTION publico.listar_denuncias_postagem (
+	p_status VARCHAR DEFAULT 'ABERTA'
+)
+RETURNS SETOF privado.corpo_denuncia_postagem
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+	RETURN QUERY
+	SELECT *
+	FROM privado.corpo_denuncia_postagem
+	WHERE denuncia_status = p_status
+	ORDER BY denuncia_criado_em ASC;
+END;
+$$;
+
+-- uso: SELECT * FROM publico.listar_denuncias_comentario(<status | default 'ABERTA'>);
+CREATE OR REPLACE FUNCTION publico.listar_denuncias_comentario (
+	p_status VARCHAR DEFAULT 'ABERTA'
+)
+RETURNS SETOF privado.corpo_denuncia_comentario
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+	RETURN QUERY
+	SELECT *
+	FROM privado.corpo_denuncia_comentario
+	WHERE denuncia_status = p_status
+	ORDER BY denuncia_criado_em ASC;
+END;
+$$;
+
+-- uso: SELECT * FROM publico.quantidade_arquivos_por_nome(<nome do arquivo>);
+CREATE OR REPLACE FUNCTION publico.quantidade_arquivos_por_nome(
+	P_nome_arquivo VARCHAR
+)
+RETURNS TABLE (
+	nome VARCHAR,
+	quantidade INT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+	RETURN QUERY
+	SELECT
+			p_nome_arquivo AS nome,
+			COUNT(*)::INT AS quantidade
+	FROM privado.postagem
+	WHERE arquivo_nome = p_nome_arquivo;
+END;
+$$;
+
+-- retorna img_perfil, img_banner e arquivo_caminho de todas as postagens antes de deletar
+-- uso: SELECT * FROM publico.deletar_usuario_retornando_arquivos(<id usuario>, <tipo exclusão: 'CONTA' | 'BANIMENTO'>);
+CREATE OR REPLACE FUNCTION publico.deletar_usuario_retornando_arquivos (
+	p_usuario_id INT,
+	p_tipo_exclusao VARCHAR DEFAULT 'CONTA'
+)
+RETURNS TABLE (arquivo TEXT)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+	v_cargo VARCHAR(15);
+	v_excluido_em TIMESTAMPTZ;
+BEGIN
+	SELECT usuario.cargo, usuario.excluido_em
+	INTO v_cargo, v_excluido_em
+	FROM privado.usuario AS usuario
+	WHERE usuario.id = p_usuario_id;
+
+	IF NOT FOUND THEN
+		RAISE EXCEPTION 'Usuário com ID % não encontrado.', p_usuario_id;
+	END IF;
+
+	IF v_cargo = 'SUPERADMIN' THEN
+		RAISE EXCEPTION 'Um usuário SUPERADMIN não pode ser deletado / banido.';
+	END IF;
+
+	IF v_excluido_em IS NOT NULL THEN
+		RAISE EXCEPTION 'Usuário com ID % já está excluído.', p_usuario_id;
+	END IF;
+
+	IF p_tipo_exclusao NOT IN ('CONTA', 'BANIMENTO') THEN
+		RAISE EXCEPTION 'Tipo de exclusão inválido: %. Use ''CONTA'' ou ''BANIMENTO''.', p_tipo_exclusao;
+	END IF;
+
+	-- img_perfil e img_banner sempre nas duas primeiras linhas
+	RETURN QUERY
+	SELECT identidade_visual.img_perfil
+	FROM privado.usuario AS usuario
+	JOIN privado.identidade_visual AS identidade_visual
+		ON identidade_visual.id = usuario.identidade_visual
+	WHERE usuario.id = p_usuario_id;
+
+	RETURN QUERY
+	SELECT identidade_visual.img_banner
+	FROM privado.usuario AS usuario
+	JOIN privado.identidade_visual AS identidade_visual
+		ON identidade_visual.id = usuario.identidade_visual
+	WHERE usuario.id = p_usuario_id;
+
+	-- arquivo_caminho de todas as postagens com arquivo
+	RETURN QUERY
+	SELECT postagem.arquivo_caminho
+	FROM privado.postagem AS postagem
+	JOIN privado.conteudo AS conteudo ON conteudo.id = postagem.id
+	WHERE conteudo.criador = p_usuario_id
+	AND postagem.arquivo_caminho IS NOT NULL;
+
+	-- executar o delete
+	CALL publico.deletar_usuario(p_usuario_id, p_tipo_exclusao);
 END;
 $$;
